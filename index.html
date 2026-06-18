@@ -121,12 +121,12 @@
                 </div>
 
                 <form id="orderForm" class="bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-6 md:space-y-8" onsubmit="handleOrderSubmit(event)" onkeypress="return preventEnterSubmit(event)">
-                    <div class="space-y-4">
+                    <div id="cartSectionAnchor" class="space-y-4 scroll-mt-20">
                         <div class="flex items-center gap-2 border-b border-stone-100 pb-3">
                             <span class="bg-[#5B7290] text-white text-xs md:text-sm font-black px-2 py-0.5 rounded">02</span>
                             <h3 class="text-sm md:text-base font-black text-[#5B7290] tracking-widest uppercase">確認已打包的組合明細</h3>
                         </div>
-                        <div id="cartListContainer" class="space-y-2.5">
+                        <div id="cartListContainer" class="space-y-2.5 transition-all duration-300">
                             <p class="text-stone-400 text-center py-6 text-xs md:text-base">購物車目前空空的喔！</p>
                         </div>
                     </div>
@@ -474,7 +474,6 @@
                 const shouldDisable = virtualStock <= 0 || isBoxNotSelected; 
                 let statusText = '剩 ' + (virtualStock >= 0 ? virtualStock : 0);
                 
-                // 🛠️ 已修正：將手機端的 text 提升至 16px (text-base) 繞過 iOS 自動放大懲罰，並在外層加入 no-zoom-area 控制
                 return `
                 <div class="flex items-center justify-between py-3 gap-2">
                     <div class="flex-1 min-w-0">
@@ -613,6 +612,7 @@
             return currentTotal; 
         }
         
+        // 🛠️ 重新加回：高質感打包動態過場與 Toast 機制
         window.packBoxToCart = function() { 
             const boxSelect = document.getElementById('boxSelect'); 
             if(boxSelect.value === "") { alert("請先挑選要使用的包裝類型！"); return; } 
@@ -640,11 +640,55 @@
             if (hasError) return; 
             if(totalFlavorsCountInBox === 0) { alert("此組合內還沒有放入任何甜點喔！"); return; } 
             if (currentBoxLimit && totalFlavorsCountInBox !== currentBoxLimit) { alert(`數量不符！「${boxName}」必須剛好裝滿 ${currentBoxLimit} 個品項。`); return; } 
-            cart.push({ boxName: boxName, boxExtra: boxExtra, flavors: boxFlavors, flavorsCost: boxFlavorsCost, totalQty: totalFlavorsCountInBox, boxTotalCost: boxFlavorsCost + boxExtra }); 
-            boxSelect.value = ""; 
-            currentBoxLimit = null; 
-            renderFlavorMenu(); 
-            renderCart(); 
+            
+            // 🎬 啟動打包狀態動畫效果
+            const packBtn = document.getElementById('packBtn');
+            packBtn.disabled = true;
+            packBtn.innerText = "✨ 正在將美味組合打包裝箱...";
+            packBtn.className = "w-full bg-[#3E4F66] text-white font-extrabold tracking-widest h-12 rounded-xl transition-all text-sm md:text-base uppercase shadow-inner animate-pulse scale-98";
+
+            setTimeout(() => {
+                cart.push({ boxName: boxName, boxExtra: boxExtra, flavors: boxFlavors, flavorsCost: boxFlavorsCost, totalQty: totalFlavorsCountInBox, boxTotalCost: boxFlavorsCost + boxExtra }); 
+                boxSelect.value = ""; 
+                currentBoxLimit = null; 
+                renderFlavorMenu(); 
+                renderCart(); 
+
+                // 彈出飄浮 Toast 提示
+                showToastNotification(`🛍️ 已成功打包 1 組【${boxName}】放入明細！`);
+
+                // 還原按鈕樣式
+                packBtn.disabled = false;
+                packBtn.className = "w-full bg-[#5B7290] text-white font-extrabold tracking-widest h-12 rounded-xl hover:bg-[#3E4F66] transition-colors text-sm md:text-base uppercase shadow-xs cursor-pointer";
+                packBtn.innerText = "確定組合，打包放入購物車";
+
+                // 自動平滑滾動到明細區塊
+                document.getElementById('cartSectionAnchor').scrollIntoView({ behavior: 'smooth' });
+                
+                // 讓購物車列表微微產生閃爍過場，加強視覺引導
+                const cartList = document.getElementById('cartListContainer');
+                cartList.classList.add('opacity-40', 'scale-98');
+                setTimeout(() => { cartList.classList.remove('opacity-40', 'scale-98'); }, 200);
+            }, 600);
+        }
+
+        // 🛠️ 飄浮 Toast 元件生成函式
+        function showToastNotification(message) {
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-6 left-1/2 -translate-x-1/2 bg-stone-900/95 text-white font-bold px-5 py-3.5 rounded-2xl shadow-xl z-50 text-xs md:text-sm tracking-wide flex items-center gap-2 border border-stone-800 transition-all duration-300 transform translate-y-10 opacity-0";
+            toast.innerHTML = `<span>${message}</span>`;
+            document.body.appendChild(toast);
+            
+            // 觸發進場動畫
+            setTimeout(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            }, 50);
+
+            // 3秒後自動退場並刪除
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 3000);
         }
 
         window.removeFromCart = function(cartIdx) { cart.splice(cartIdx, 1); renderFlavorMenu(); renderCart(); }
