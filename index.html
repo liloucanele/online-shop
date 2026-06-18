@@ -65,6 +65,9 @@
         let countdownSeconds = 20;
 
         let pendingOrderSnapshot = null;
+
+        // 全域變存，專供分享 LINE 使用的簡約純文字
+        let sharePlainText = "";
     </script>
 
     <nav class="bg-[#5B7290] text-white p-4 md:p-5 shadow-sm sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
@@ -196,7 +199,7 @@
                         <div id="shipFeeDisplay" class="hidden">7-11 冷凍運費 Shipping: <span class="font-bold text-stone-700 md:text-base">+$129</span></div>
                         <div id="couponDiscountDisplay" class="hidden text-red-500 font-bold">折扣折抵 Discount: <span class="md:text-base">-$0</span></div>
                         
-                        <div class="text-[#222222] font-black text-xl md:text-2xl pt-2.5 border-t border-stone-220 mt-2">
+                        <div class="text-[#222222] font-black text-xl md:text-2xl pt-2.5 border-t border-stone-200 mt-2">
                             總金額 Total：<span id="totalDisplay" class="text-xl md:text-2xl font-black text-[#5B7290]">$0</span>
                         </div>
                     </div>
@@ -612,7 +615,6 @@
             return currentTotal; 
         }
         
-        // 🛠️ 重新加回：高質感打包動態過場與 Toast 機制
         window.packBoxToCart = function() { 
             const boxSelect = document.getElementById('boxSelect'); 
             if(boxSelect.value === "") { alert("請先挑選要使用的包裝類型！"); return; } 
@@ -641,7 +643,6 @@
             if(totalFlavorsCountInBox === 0) { alert("此組合內還沒有放入任何甜點喔！"); return; } 
             if (currentBoxLimit && totalFlavorsCountInBox !== currentBoxLimit) { alert(`數量不符！「${boxName}」必須剛好裝滿 ${currentBoxLimit} 個品項。`); return; } 
             
-            // 🎬 啟動打包狀態動畫效果
             const packBtn = document.getElementById('packBtn');
             packBtn.disabled = true;
             packBtn.innerText = "✨ 正在將美味組合打包裝箱...";
@@ -654,34 +655,28 @@
                 renderFlavorMenu(); 
                 renderCart(); 
 
-                // 彈出飄浮 Toast 提示
                 showToastNotification(`🛍️ 已成功打包 1 組【${boxName}】放入明細！`);
 
-                // 還原按鈕樣式
                 packBtn.disabled = false;
                 packBtn.className = "w-full bg-[#5B7290] text-white font-extrabold tracking-widest h-12 rounded-xl hover:bg-[#3E4F66] transition-colors text-sm md:text-base uppercase shadow-xs cursor-pointer";
                 packBtn.innerText = "確定組合，打包放入購物車";
                 
-                // 讓購物車列表微微產生閃爍過場，加強視覺引導
                 const cartList = document.getElementById('cartListContainer');
                 cartList.classList.add('opacity-40', 'scale-98');
                 setTimeout(() => { cartList.classList.remove('opacity-40', 'scale-98'); }, 200);
             }, 600);
         }
 
-        // 🛠️ 飄浮 Toast 元件生成函式
         function showToastNotification(message) {
             const toast = document.createElement('div');
             toast.className = "fixed bottom-6 left-1/2 -translate-x-1/2 bg-stone-900/95 text-white font-bold px-5 py-3.5 rounded-2xl shadow-xl z-50 text-xs md:text-sm tracking-wide flex items-center gap-2 border border-stone-800 transition-all duration-300 transform translate-y-10 opacity-0";
             toast.innerHTML = `<span>${message}</span>`;
             document.body.appendChild(toast);
             
-            // 觸發進場動畫
             setTimeout(() => {
                 toast.classList.remove('translate-y-10', 'opacity-0');
             }, 50);
 
-            // 3秒後自動退場並刪除
             setTimeout(() => {
                 toast.classList.add('translate-y-2', 'opacity-0');
                 setTimeout(() => { toast.remove(); }, 300);
@@ -851,6 +846,8 @@
                 
                 if(result.status === "success") {
                     document.getElementById('formContainer').classList.add('hidden');
+                    
+                    // 1. 產生網頁專用 HTML (維持畫面豐富度)
                     let cartDetailsHtml = cart.map((box, idx) => { const flavorsStr = box.flavors.map(f => `${f.name} x ${f.quantity}個`).join('、'); return `<div>組合 ${idx + 1} [${box.boxName}]：${flavorsStr}</div>`; }).join('');
                     const methodText = shipMethodVal === 'delivery' ? '7-11 店到店取貨' : '門市自取付款';
                     const dateLabelText = shipMethodVal === 'delivery' ? '希望到貨日期' : '自取日期';
@@ -877,6 +874,24 @@
                         </div>
                     `;
                     document.getElementById('receiptContainer').classList.remove('hidden');
+
+                    // 2. 建立專屬於 LINE 分享的簡約純文字（排除提示、簡化多餘換行與縮排）
+                    let shareCartText = cart.map((box, idx) => {
+                        const flavorsStr = box.flavors.map(f => `${f.name}x${f.quantity}`).join(', ');
+                        return `▫️ 組合 ${idx + 1} [${box.boxName}]\n   ${flavorsStr}`;
+                    }).join('\n');
+
+                    sharePlainText = `✨ Lilou 預購成功確認單 ✨\n\n` +
+                                     `▪️ 預購編號：${orderId}\n` +
+                                     `▪️ 顧客姓名：${custName}\n` +
+                                     `▪️ 聯絡電話：${custPhone}\n` +
+                                     `▪️ 配送方式：${methodText}\n` +
+                                     `▪️ 取貨地址：${finalDatabaseAddress}\n` +
+                                     `▪️ ${dateLabelText}：${shipDate}\n\n` +
+                                     `【購物明細】\n${shareCartText}\n\n` +
+                                     `💰 總金額：$${finalTotal} 元\n\n` +
+                                     `如有任何調整需求，請私訊官方 LINE，謝謝您的支持！`;
+
                     cart = []; appliedCoupon = null; 
                 } else if (result.status === "error") { alert(result.message); }
             } catch(err) { 
@@ -886,7 +901,24 @@
         }
 
         window.cancelOrderSubmission = function() { if (submissionTimeout) clearTimeout(submissionTimeout); if (submissionInterval) clearInterval(submissionInterval); pendingOrderSnapshot = null; document.getElementById('countdownOverlay').classList.add('hidden'); alert("已成功取消本次傳送！資料皆完整保留，您可以重新調整訂單內容。"); }
-        window.shareReceipt = function() { const receiptText = document.getElementById('receiptContent').innerText; if (navigator.share) { navigator.share({ title: 'Lilou 預購收據確認單', text: '這是我在 Lilou 的甜點預購單明細紀錄：\\n\\n' + receiptText, }).then(() => console.log('分享成功')).catch((error) => console.log('使用者取消分享', error)); } else { window.print(); } }
+        
+        window.shareReceipt = function() { 
+            // 如果瀏覽器支援原生的分享功能（包含手機端直接喚起 LINE/FB 分享選單）
+            if (navigator.share) { 
+                navigator.share({ 
+                    title: 'Lilou 預購收據確認單', 
+                    text: sharePlainText, 
+                }).then(() => console.log('分享成功')).catch((error) => console.log('使用者取消分享', error)); 
+            } else { 
+                // 桌機或不支援環境，點擊按鈕改為直接複製該簡約文字到剪貼簿，並提示使用者
+                navigator.clipboard.writeText(sharePlainText).then(() => {
+                    alert("📋 簡約版明細已複製到您的剪貼簿！可以至 LINE 直接黏貼傳送囉。");
+                }).catch(() => {
+                    window.print(); // 防禦機制：不支援複製則呼叫列印
+                });
+            } 
+        }
+        
         fetchOptions();
     </script>
 </body>
