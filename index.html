@@ -37,6 +37,10 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        /* 防止手機端快速點擊 ＋ — 時被瀏覽器誤判為雙擊放大 */
+        .no-zoom-area {
+            touch-action: manipulation;
+        }
     </style>
 </head>
 <body class="bg-[#F4F6F9] text-[#222222] min-h-screen flex flex-col font-sans antialiased selection:bg-[#5B7290]/20">
@@ -470,7 +474,7 @@
                 const shouldDisable = virtualStock <= 0 || isBoxNotSelected; 
                 let statusText = '剩 ' + (virtualStock >= 0 ? virtualStock : 0);
                 
-                // 🛠️ 已修正：將按鈕容器與＋/— 按鈕使用高相容性的純寬高樣式重寫，解決 Tailwind v4 下寬度跑掉的問題
+                // 🛠️ 已修正：將手機端的 text 提升至 16px (text-base) 繞過 iOS 自動放大懲罰，並在外層加入 no-zoom-area 控制
                 return `
                 <div class="flex items-center justify-between py-3 gap-2">
                     <div class="flex-1 min-w-0">
@@ -478,16 +482,61 @@
                         <span class="text-[#5B7290] font-black text-sm md:text-base">$${p.price}</span>
                         <span class="text-[10px] md:text-xs ${virtualStock <= 0 ? 'text-red-500 font-bold' : 'text-stone-400'} ml-0.5">${statusText}</span>
                     </div>
-                    <div class="shrink-0 flex items-center bg-stone-100 rounded-xl p-1 border border-stone-200 gap-1 ${(isBoxNotSelected || shouldDisable) ? 'opacity-30 select-none' : ''}">
-                        <button type="button" onclick="stepFlavorQty(${idx}, -1)" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 shadow-sm active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">—</button>
-                        <input type="number" id="flavorQty_${idx}" data-idx="${idx}" min="0" max="${virtualStock >= 0 ? virtualStock : 0}" value="0" readonly style="width: 44px; height: 32px;" class="flavor-input text-center text-sm md:text-base font-black bg-transparent border-0 focus:outline-none select-none pointer-events-none text-stone-800">
-                        <button type="button" id="plusBtn_${idx}" onclick="stepFlavorQty(${idx}, 1)" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 shadow-sm active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">＋</button>
+                    <div class="no-zoom-area shrink-0 flex items-center bg-stone-100 rounded-xl p-1 border border-stone-200 gap-1 ${(isBoxNotSelected || shouldDisable) ? 'opacity-30 select-none' : ''}">
+                        <button type="button" onclick="stepFlavorQty(${idx}, -1)" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">—</button>
+                        <input type="number" id="flavorQty_${idx}" data-idx="${idx}" min="0" max="${virtualStock >= 0 ? virtualStock : 0}" value="0" ${shouldDisable ? 'disabled' : ''} oninput="handleFlavorInput(this, ${idx})" onblur="handleFlavorBlur(this)" style="width: 44px; height: 32px;" class="flavor-input text-center text-base md:text-base font-black bg-transparent border-0 focus:outline-none text-stone-800">
+                        <button type="button" id="plusBtn_${idx}" onclick="stepFlavorQty(${idx}, 1)" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">＋</button>
                     </div>
                 </div>`;
             }).join('');
         }
 
-        window.stepFlavorQty = function(idx, change) { const input = document.getElementById(`flavorQty_${idx}`); if (!input) return; let currentVal = parseInt(input.value) || 0; let newVal = currentVal + change; const maxStock = parseInt(input.max) || 0; if (newVal < 0) newVal = 0; if (newVal > maxStock) newVal = maxStock; input.value = newVal; calculateCurrentBoxTotal(input, idx, currentVal); }
+        window.stepFlavorQty = function(idx, change) { 
+            const input = document.getElementById(`flavorQty_${idx}`); 
+            if (!input) return; 
+            let currentVal = parseInt(input.value) || 0; 
+            let newVal = currentVal + change; 
+            const maxStock = parseInt(input.max) || 0; 
+            if (newVal < 0) newVal = 0; 
+            if (newVal > maxStock) newVal = maxStock; 
+            input.value = newVal; 
+            calculateCurrentBoxTotal(input, idx, currentVal); 
+        }
+
+        window.handleFlavorInput = function(inputObj, idx) {
+            let newVal = inputObj.value;
+            if (newVal === "") return;
+            
+            let parsedVal = parseInt(newVal) || 0;
+            if (parsedVal < 0) parsedVal = 0;
+            
+            const maxAllowed = parseInt(inputObj.max) || 0;
+            let currentTotalWithoutSelf = 0;
+            document.querySelectorAll('.flavor-input').forEach(inp => {
+                if(inp !== inputObj) currentTotalWithoutSelf += (parseInt(inp.value) || 0);
+            });
+
+            if (currentBoxLimit && (currentTotalWithoutSelf + parsedVal) > currentBoxLimit) {
+                const maxSelfAllowedByBox = currentBoxLimit - currentTotalWithoutSelf;
+                alert(`數量超標！此組合限制容量為 ${currentBoxLimit} 個。`);
+                parsedVal = maxSelfAllowedByBox < 0 ? 0 : maxSelfAllowedByBox;
+            }
+
+            if (parsedVal > maxAllowed) {
+                alert(`數量超過目前剩餘可用庫存上限！`);
+                parsedVal = maxAllowed;
+            }
+
+            inputObj.value = parsedVal;
+            calculateCurrentBoxTotal(null);
+        }
+
+        window.handleFlavorBlur = function(inputObj) {
+            if (inputObj.value === "") {
+                inputObj.value = "0";
+            }
+            calculateCurrentBoxTotal(null);
+        }
         
         window.handleBoxChange = function() { 
             const boxSelect = document.getElementById('boxSelect'); 
@@ -528,7 +577,41 @@
             calculateCurrentBoxTotal(null); 
         }
         
-        function calculateCurrentBoxTotal(currentInputObj, changedIdx = null, previousVal = 0) { const inputs = document.querySelectorAll('.flavor-input'); let currentTotal = 0; inputs.forEach(input => { currentTotal += (parseInt(input.value) || 0); }); if (currentBoxLimit && currentTotal > currentBoxLimit) { if (currentInputObj && changedIdx !== null) { alert(`數量超標！此組合限制容量為 ${currentBoxLimit} 個。`); currentInputObj.value = previousVal; currentTotal = 0; inputs.forEach(input => { currentTotal += (parseInt(input.value) || 0); }); } } const display = document.getElementById('currentBoxCountDisplay'); if (currentBoxLimit) { display.innerText = `已選: ${currentTotal} / ${currentBoxLimit} 個`; inputs.forEach(input => { const idx = parseInt(input.getAttribute('data-idx')); const product = localProducts[idx]; if (!product) return; let occupiedInCart = 0; cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === product.name); if (matchFlavor) occupiedInCart += matchFlavor.quantity; }); const virtualStock = product.stock - occupiedInCart; const selfValue = parseInt(input.value) || 0; let allowedMax = selfValue + (currentBoxLimit - currentTotal); if (allowedMax > virtualStock) allowedMax = virtualStock; input.max = allowedMax >= 0 ? allowedMax : 0; }); } else { const boxSelect = document.getElementById('boxSelect'); display.innerText = boxSelect.value === "" ? "請先挑選包裝類型" : `已選: ${currentTotal} 個`; } return currentTotal; }
+        function calculateCurrentBoxTotal(currentInputObj, changedIdx = null, previousVal = 0) { 
+            const inputs = document.querySelectorAll('.flavor-input'); 
+            let currentTotal = 0; 
+            inputs.forEach(input => { currentTotal += (parseInt(input.value) || 0); }); 
+            
+            if (currentBoxLimit && currentTotal > currentBoxLimit) { 
+                if (currentInputObj && changedIdx !== null) { 
+                    alert(`數量超標！此組合限制容量為 ${currentBoxLimit} 個。`); 
+                    currentInputObj.value = previousVal; 
+                    currentTotal = 0; 
+                    inputs.forEach(input => { currentTotal += (parseInt(input.value) || 0); }); 
+                } 
+            } 
+            
+            const display = document.getElementById('currentBoxCountDisplay'); 
+            if (currentBoxLimit) { 
+                display.innerText = `已選: ${currentTotal} / ${currentBoxLimit} 個`; 
+                inputs.forEach(input => { 
+                    const idx = parseInt(input.getAttribute('data-idx')); 
+                    const product = localProducts[idx]; 
+                    if (!product) return; 
+                    let occupiedInCart = 0; 
+                    cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === product.name); if (matchFlavor) occupiedInCart += matchFlavor.quantity; }); 
+                    const virtualStock = product.stock - occupiedInCart; 
+                    const selfValue = parseInt(input.value) || 0; 
+                    let allowedMax = selfValue + (currentBoxLimit - currentTotal); 
+                    if (allowedMax > virtualStock) allowedMax = virtualStock; 
+                    input.max = allowedMax >= 0 ? allowedMax : 0; 
+                }); 
+            } else { 
+                const boxSelect = document.getElementById('boxSelect'); 
+                display.innerText = boxSelect.value === "" ? "請先挑選包裝類型" : `已選: ${currentTotal} 個`; 
+            } 
+            return currentTotal; 
+        }
         
         window.packBoxToCart = function() { 
             const boxSelect = document.getElementById('boxSelect'); 
