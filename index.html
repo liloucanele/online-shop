@@ -39,7 +39,7 @@
         }
     </style>
 </head>
-<body class="bg-[#F4F6F9] text-[#222222] min-h-screen flex flex-col font-sans antialiased selection:bg-[#5B7290]/20 relative">
+<body class="bg-[#F4F6F9] text-[#222222] min-h-screen flex flex-col font-sans antialiased selection:bg-[#5B7290]/20">
 
     <script>
         // Google Apps Script 後台部署網址
@@ -62,8 +62,6 @@
 
         let pendingOrderSnapshot = null;
     </script>
-
-    <div id="toastContainer" class="fixed top-20 left-1/2 -translate-x-1/2 z-[100] pointer-events-none flex flex-col items-center gap-2 w-full max-w-sm px-4"></div>
 
     <nav class="bg-[#5B7290] text-white p-4 md:p-5 shadow-sm sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
         <div class="max-w-3xl mx-auto flex justify-between items-center">
@@ -118,7 +116,7 @@
                     </div>
                 </div>
 
-                <form id="orderForm" class="bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-6 md:space-y-8 transition-all duration-300" onsubmit="handleOrderSubmit(event)" onkeypress="return preventEnterSubmit(event)">
+                <form id="orderForm" class="bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-6 md:space-y-8" onsubmit="handleOrderSubmit(event)" onkeypress="return preventEnterSubmit(event)">
                     <div class="space-y-4">
                         <div class="flex items-center gap-2 border-b border-stone-100 pb-3">
                             <span class="bg-[#5B7290] text-white text-xs md:text-sm font-black px-2 py-0.5 rounded">02</span>
@@ -227,7 +225,6 @@
             <div class="space-y-1.5">
                 <div class="text-white font-black text-base md:text-lg tracking-widest">粒露 Lilou｜迷你可麗露專賣</div>
                 <div class="text-xs md:text-sm text-stone-400 font-medium tracking-wide">高雄市前鎮區景德路72巷12號</div>
-                <div class="text-xs text-stone-400 font-medium tracking-wide">營業時間 14:00-18:00，不定期公休</div>
                 <div class="text-[11px] text-stone-500 pt-1">© 2026 Lilou Dessert. All rights reserved.</div>
             </div>
             
@@ -303,7 +300,6 @@
             if (targetMode === 'shop') {
                 shopWrapper.classList.remove('hidden');
                 shopBtn.className = "cursor-pointer transition-all duration-200 border-b-2 border-white pb-0.5 text-white";
-                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 
@@ -473,7 +469,21 @@
                 if (isHidden) return ''; 
                 const shouldDisable = virtualStock <= 0 || isBoxNotSelected; 
                 let statusText = '剩 ' + (virtualStock >= 0 ? virtualStock : 0);
-                return `<div class="flex items-center justify-between py-3 gap-2"><div class="flex-1 min-w-0"><span class="font-bold text-stone-900 text-sm md:text-base break-words block">${p.name}</span><span class="text-[#5B7290] font-black text-sm md:text-base">$${p.price}</span><span class="text-[10px] md:text-xs ${virtualStock <= 0 ? 'text-red-500 font-bold' : 'text-stone-400'} ml-0.5">${statusText}</span></div><div class="shrink-0 flex items-center bg-stone-100 rounded-xl p-0.5 border border-stone-200 ${(isBoxNotSelected || shouldDisable) ? 'opacity-30 select-none' : ''}"><button type="button" onclick="stepFlavorQty(${idx}, -1)" ${shouldDisable ? 'disabled' : ''} class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg shadow-2xs active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm md:text-base">—</input><input type="number" id="flavorQty_${idx}" data-idx="${idx}" min="0" max="${virtualStock >= 0 ? virtualStock : 0}" value="0" readonly class="flavor-input w-10 md:w-12 text-center text-sm md:text-base font-black bg-transparent border-0 focus:outline-none h-8 select-none pointer-events-none text-stone-800"><button type="button" id="plusBtn_${idx}" onclick="stepFlavorQty(${idx}, 1)" ${shouldDisable ? 'disabled' : ''} class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg shadow-2xs active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm md:text-base">＋</button></div></div>`;
+                
+                // 🛠️ 已修正：將按鈕容器與＋/— 按鈕使用高相容性的純寬高樣式重寫，解決 Tailwind v4 下寬度跑掉的問題
+                return `
+                <div class="flex items-center justify-between py-3 gap-2">
+                    <div class="flex-1 min-w-0">
+                        <span class="font-bold text-stone-900 text-sm md:text-base break-words block">${p.name}</span>
+                        <span class="text-[#5B7290] font-black text-sm md:text-base">$${p.price}</span>
+                        <span class="text-[10px] md:text-xs ${virtualStock <= 0 ? 'text-red-500 font-bold' : 'text-stone-400'} ml-0.5">${statusText}</span>
+                    </div>
+                    <div class="shrink-0 flex items-center bg-stone-100 rounded-xl p-1 border border-stone-200 gap-1 ${(isBoxNotSelected || shouldDisable) ? 'opacity-30 select-none' : ''}">
+                        <button type="button" onclick="stepFlavorQty(${idx}, -1)" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 shadow-sm active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">—</button>
+                        <input type="number" id="flavorQty_${idx}" data-idx="${idx}" min="0" max="${virtualStock >= 0 ? virtualStock : 0}" value="0" readonly style="width: 44px; height: 32px;" class="flavor-input text-center text-sm md:text-base font-black bg-transparent border-0 focus:outline-none select-none pointer-events-none text-stone-800">
+                        <button type="button" id="plusBtn_${idx}" onclick="stepFlavorQty(${idx}, 1)" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 shadow-sm active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">＋</button>
+                    </div>
+                </div>`;
             }).join('');
         }
 
@@ -547,53 +557,7 @@
             if (hasError) return; 
             if(totalFlavorsCountInBox === 0) { alert("此組合內還沒有放入任何甜點喔！"); return; } 
             if (currentBoxLimit && totalFlavorsCountInBox !== currentBoxLimit) { alert(`數量不符！「${boxName}」必須剛好裝滿 ${currentBoxLimit} 個品項。`); return; } 
-            
             cart.push({ boxName: boxName, boxExtra: boxExtra, flavors: boxFlavors, flavorsCost: boxFlavorsCost, totalQty: totalFlavorsCountInBox, boxTotalCost: boxFlavorsCost + boxExtra }); 
-            
-            // 🎬【過場動畫 1】：打包按鈕狀態轉化（變綠與縮放反饋）
-            const packBtn = document.getElementById('packBtn');
-            const originalText = packBtn.innerText;
-            const originalClass = packBtn.className;
-            
-            packBtn.disabled = true;
-            packBtn.innerText = "✨ 已成功打包放入購物車！";
-            packBtn.className = "w-full bg-emerald-600 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-md transition-all duration-300 scale-98";
-            
-            // 🎬【過場動畫 2】：動態噴出頂部 Toast 提示
-            const toastContainer = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = "bg-stone-900 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 text-xs md:text-sm font-bold tracking-wide transition-all duration-300 transform translate-y-[-20px] opacity-0";
-            toast.innerHTML = `
-                <span class="text-emerald-400 text-base">🛒</span>
-                <span>成功打包：${boxName} (共 ${totalFlavorsCountInBox} 品項)</span>
-            `;
-            toastContainer.appendChild(toast);
-            
-            // 觸發 Toast 進場
-            setTimeout(() => {
-                toast.classList.remove('translate-y-[-20px]', 'opacity-0');
-            }, 50);
-            
-            // 3秒後自動淡出移除
-            setTimeout(() => {
-                toast.classList.add('translate-y-[-20px]', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-
-            // 🎬【過場動畫 3】：購物車卡片本體微微震動（Bounce）
-            const orderForm = document.getElementById('orderForm');
-            orderForm.classList.add('motion-safe:animate-bounce');
-            setTimeout(() => {
-                orderForm.classList.remove('motion-safe:animate-bounce');
-            }, 800);
-
-            // 恢復按鈕狀態（保留原地，不自動滾動視窗）
-            setTimeout(() => {
-                packBtn.innerText = originalText;
-                packBtn.className = originalClass;
-                packBtn.disabled = false;
-            }, 800);
-
             boxSelect.value = ""; 
             currentBoxLimit = null; 
             renderFlavorMenu(); 
@@ -798,7 +762,7 @@
         }
 
         window.cancelOrderSubmission = function() { if (submissionTimeout) clearTimeout(submissionTimeout); if (submissionInterval) clearInterval(submissionInterval); pendingOrderSnapshot = null; document.getElementById('countdownOverlay').classList.add('hidden'); alert("已成功取消本次傳送！資料皆完整保留，您可以重新調整訂單內容。"); }
-        window.shareReceipt = function() { const receiptText = document.getElementById('receiptContent').innerText; if (navigator.share) { navigator.share({ title: 'Lilou 預購收據確認單', text: '這是我在 Lilou 的甜點預購單明細紀錄：\n\n' + receiptText, }).then(() => console.log('分享成功')).catch((error) => console.log('使用者取消分享', error)); } else { window.print(); } }
+        window.shareReceipt = function() { const receiptText = document.getElementById('receiptContent').innerText; if (navigator.share) { navigator.share({ title: 'Lilou 預購收據確認單', text: '這是我在 Lilou 的甜點預購單明細紀錄：\\n\\n' + receiptText, }).then(() => console.log('分享成功')).catch((error) => console.log('使用者取消分享', error)); } else { window.print(); } }
         fetchOptions();
     </script>
 </body>
