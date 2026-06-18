@@ -39,7 +39,7 @@
         }
     </style>
 </head>
-<body class="bg-[#F4F6F9] text-[#222222] min-h-screen flex flex-col font-sans antialiased selection:bg-[#5B7290]/20">
+<body class="bg-[#F4F6F9] text-[#222222] min-h-screen flex flex-col font-sans antialiased selection:bg-[#5B7290]/20 relative">
 
     <script>
         // Google Apps Script 後台部署網址
@@ -62,6 +62,8 @@
 
         let pendingOrderSnapshot = null;
     </script>
+
+    <div id="toastContainer" class="fixed top-20 left-1/2 -translate-x-1/2 z-[100] pointer-events-none flex flex-col items-center gap-2 w-full max-w-sm px-4"></div>
 
     <nav class="bg-[#5B7290] text-white p-4 md:p-5 shadow-sm sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
         <div class="max-w-3xl mx-auto flex justify-between items-center">
@@ -116,8 +118,8 @@
                     </div>
                 </div>
 
-                <form id="orderForm" class="bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-6 md:space-y-8" onsubmit="handleOrderSubmit(event)" onkeypress="return preventEnterSubmit(event)">
-                    <div class="space-y-4">
+                <form id="orderForm" class="bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-6 md:space-y-8 transition-all duration-300" onsubmit="handleOrderSubmit(event)" onkeypress="return preventEnterSubmit(event)">
+                    <div id="cartSectionAnchor" class="space-y-4">
                         <div class="flex items-center gap-2 border-b border-stone-100 pb-3">
                             <span class="bg-[#5B7290] text-white text-xs md:text-sm font-black px-2 py-0.5 rounded">02</span>
                             <h3 class="text-sm md:text-base font-black text-[#5B7290] tracking-widest uppercase">確認已打包的組合明細</h3>
@@ -455,15 +457,12 @@
                 const virtualStock = p.stock - occupiedInCart; 
                 let isHidden = false;
                 
-                // 🚀 新增雙向「限」字商品與包裝過濾防呆邏輯
                 if (!isBoxNotSelected) {
                     if (bName.includes("限")) {
-                        // 1. 如果包裝名稱有「限」字，只留下名稱有「限」字的商品，非「限」商品隱藏
                         if (!p.name.includes("限")) {
                             isHidden = true;
                         }
                     } else {
-                        // 2. 如果包裝名稱沒有「限`」字，必須隱藏名稱含有「限」字的商品
                         if (p.name.includes("限")) {
                             isHidden = true;
                         }
@@ -499,7 +498,6 @@
             localProducts.forEach((p, idx) => { 
                 const qtyInput = document.getElementById(`flavorQty_${idx}`); 
                 if (qtyInput && parseInt(qtyInput.value) > 0) { 
-                    // 🚀 如果切換包裝樣式時，原本輸入框有數量且不符合「限」字對照規則，就進行欄位重設
                     if (bName.includes("限")) {
                         if (!p.name.includes("限")) hasViolation = true;
                     } else {
@@ -521,6 +519,7 @@
         
         function calculateCurrentBoxTotal(currentInputObj, changedIdx = null, previousVal = 0) { const inputs = document.querySelectorAll('.flavor-input'); let currentTotal = 0; inputs.forEach(input => { currentTotal += (parseInt(input.value) || 0); }); if (currentBoxLimit && currentTotal > currentBoxLimit) { if (currentInputObj && changedIdx !== null) { alert(`數量超標！此組合限制容量為 ${currentBoxLimit} 個。`); currentInputObj.value = previousVal; currentTotal = 0; inputs.forEach(input => { currentTotal += (parseInt(input.value) || 0); }); } } const display = document.getElementById('currentBoxCountDisplay'); if (currentBoxLimit) { display.innerText = `已選: ${currentTotal} / ${currentBoxLimit} 個`; inputs.forEach(input => { const idx = parseInt(input.getAttribute('data-idx')); const product = localProducts[idx]; if (!product) return; let occupiedInCart = 0; cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === product.name); if (matchFlavor) occupiedInCart += matchFlavor.quantity; }); const virtualStock = product.stock - occupiedInCart; const selfValue = parseInt(input.value) || 0; let allowedMax = selfValue + (currentBoxLimit - currentTotal); if (allowedMax > virtualStock) allowedMax = virtualStock; input.max = allowedMax >= 0 ? allowedMax : 0; }); } else { const boxSelect = document.getElementById('boxSelect'); display.innerText = boxSelect.value === "" ? "請先挑選包裝類型" : `已選: ${currentTotal} 個`; } return currentTotal; }
         
+        // 🚀 修改後的打包函式：加入動畫過場效果
         window.packBoxToCart = function() { 
             const boxSelect = document.getElementById('boxSelect'); 
             if(boxSelect.value === "") { alert("請先挑選要使用的包裝類型！"); return; } 
@@ -548,8 +547,56 @@
             if (hasError) return; 
             if(totalFlavorsCountInBox === 0) { alert("此組合內還沒有放入任何甜點喔！"); return; } 
             if (currentBoxLimit && totalFlavorsCountInBox !== currentBoxLimit) { alert(`數量不符！「${boxName}」必須剛好裝滿 ${currentBoxLimit} 個品項。`); return; } 
+            
             cart.push({ boxName: boxName, boxExtra: boxExtra, flavors: boxFlavors, flavorsCost: boxFlavorsCost, totalQty: totalFlavorsCountInBox, boxTotalCost: boxFlavorsCost + boxExtra }); 
-            // 成功打包提示 alert 已在此處被安全移除
+            
+            // 🎬 【過場動畫 1】：打包按鈕視覺回饋
+            const packBtn = document.getElementById('packBtn');
+            const originalText = packBtn.innerText;
+            const originalClass = packBtn.className;
+            
+            packBtn.disabled = true;
+            packBtn.innerText = "✨ 已成功打包放入購物車！";
+            packBtn.className = "w-full bg-emerald-600 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-md transition-all duration-300 scale-98";
+            
+            // 🎬 【過場動畫 2】：動態噴出頂部 Toast 提示框
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = "bg-stone-900 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 text-xs md:text-sm font-bold tracking-wide transition-all duration-300 transform translate-y-[-20px] opacity-0";
+            toast.innerHTML = `
+                <span class="text-emerald-400 text-base">🛒</span>
+                <span>成功打包：${boxName} (共 ${totalFlavorsCountInBox} 品項)</span>
+            `;
+            toastContainer.appendChild(toast);
+            
+            // 觸發 Toast 進場動畫
+            setTimeout(() => {
+                toast.classList.remove('translate-y-[-20px]', 'opacity-0');
+            }, 50);
+            
+            // 3 秒後 Toast 退場並移除
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-20px]', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+
+            // 🎬 【過場動畫 3】：購物車卡片本體微微震動（Bounce）提醒
+            const orderForm = document.getElementById('orderForm');
+            orderForm.classList.add('motion-safe:animate-bounce');
+            setTimeout(() => {
+                orderForm.classList.remove('motion-safe:animate-bounce');
+            }, 800);
+
+            // 恢復打包按鈕狀態並重設商店選單
+            setTimeout(() => {
+                packBtn.innerText = originalText;
+                packBtn.className = originalClass;
+                packBtn.disabled = false;
+                
+                // 🎬 【滾動導引】：平滑滾動到購物車區塊，優化手機操作體驗
+                document.getElementById('cartSectionAnchor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 800);
+
             boxSelect.value = ""; 
             currentBoxLimit = null; 
             renderFlavorMenu(); 
