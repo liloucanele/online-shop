@@ -1,1 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lilou 預購甜點組合明細確認</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-stone-50 text-stone-800 antialiased font-sans min-h-screen flex flex-col">
 
+    <div id="formContainer" class="max-w-2xl mx-auto p-4 md:p-6 w-full flex-grow mb-16">
+        <header class="text-center my-6 md:my-8">
+            <h1 class="text-2xl md:text-3xl font-black tracking-widest text-stone-700">Lilou 甜點組合預購</h1>
+            <p class="text-xs md:text-sm text-stone-400 mt-2 tracking-wider">挑選您喜愛的包裝與專屬甜點口味</p>
+        </header>
+
+        <form id="orderForm" onsubmit="window.handleOrderSubmit(event)" onkeydown="return preventEnterSubmit(event)" class="space-y-6 md:space-y-8">
+            <div class="bg-white rounded-2xl p-5 md:p-6 shadow-2xs border border-stone-100 space-y-4">
+                <h2 class="text-base md:text-lg font-bold text-stone-700 border-l-4 border-[#5B7290] pl-2.5">顧客聯絡資訊</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">顧客姓名 *</label>
+                        <input type="text" id="custName" required placeholder="請輸入姓名" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50 text-stone-800 font-normal">
+                    </div>
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">聯絡電話 *</label>
+                        <input type="tel" id="custPhone" required placeholder="請輸入手機號碼" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50 text-stone-800 font-normal">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 md:p-6 shadow-2xs border border-stone-100 space-y-4">
+                <h2 class="text-base md:text-lg font-bold text-stone-700 border-l-4 border-[#5B7290] pl-2.5">配送方式與日期</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">取貨配送管道 *</label>
+                        <select id="shipMethod" onchange="handleShippingMethodChange()" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50 text-stone-800 font-normal">
+                            <option value="pickup">門市自取 (高雄前鎮)</option>
+                            <option value="delivery">7-11 店到店取貨</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label id="dateLabel" class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">門市自取日期 *</label>
+                        <select id="shipDate" required class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50 text-stone-800 font-normal">
+                            <option value="">-- 請先選擇取貨通路 --</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label id="addressLabel" class="block text-xs md:text-sm font-bold text-stone-600">自取門市地址</label>
+                        <a id="mapLink" href="https://maps.app.goo.gl/uXv7YV6A3YmCofwz7" target="_blank" class="text-xs text-[#5B7290] hover:underline inline-flex items-center gap-1 font-medium" style="display:none;">
+                            🗺️ 開啟電子地圖查詢門市
+                        </a>
+                    </div>
+                    <input type="text" id="custAddress" readonly value="高雄市前鎮區景德路72巷12號" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none h-12 md:h-14 bg-stone-100 font-bold text-stone-700 select-all">
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 md:p-6 shadow-2xs border border-stone-100 space-y-5">
+                <div class="flex items-center justify-between border-b border-stone-100 pb-3">
+                    <h2 class="text-base md:text-lg font-bold text-stone-700 border-l-4 border-[#5B7290] pl-2.5">客製化甜點組合搭配</h2>
+                    <span id="currentBoxCountDisplay" class="text-xs md:text-sm font-bold px-3 py-1 bg-stone-100 text-stone-600 rounded-full">請先挑選包裝類型</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">1. 先挑選本次要打包的包裝樣式 *</label>
+                    <select id="boxSelect" onchange="window.handleBoxChange()" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50 text-stone-800 font-normal">
+                        <option value="">-- 讀取中，請稍候 --</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs md:text-sm font-bold text-stone-600 mb-2">2. 填寫此包裝內的甜點口味數量 *</label>
+                    <div id="flavorMenu" class="bg-stone-50/50 rounded-xl p-3 md:p-4 border border-stone-100 divide-y divide-stone-100 max-h-72 overflow-y-auto text-sm md:text-base">
+                        </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="button" id="packBtn" disabled onclick="window.packBoxToCart()" class="w-full bg-stone-300 text-stone-500 font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed" style="transition: all 0.2s ease;">
+                        正在同步後台資料庫...
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 md:p-6 shadow-2xs border border-stone-100 space-y-4">
+                <h2 class="text-base md:text-lg font-bold text-stone-700 border-l-4 border-[#5B7290] pl-2.5">已確認預購組合明細</h2>
+                <div id="cartListContainer" class="divide-y divide-stone-100 text-stone-600 text-sm md:text-base min-h-12 flex flex-col justify-center">
+                    購物車目前空空的喔！
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 md:p-6 shadow-2xs border border-stone-100 space-y-4">
+                <h2 class="text-base md:text-lg font-bold text-stone-700 border-l-4 border-[#5B7290] pl-2.5">折扣碼折抵與結算</h2>
+                <div>
+                    <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">專屬活動折扣碼 (選填)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="couponInput" placeholder="請輸入折扣代碼" class="flex-grow px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 bg-stone-50/50 uppercase font-medium">
+                        <button type="button" onclick="window.applyCouponCode(true)" class="px-5 bg-stone-700 text-white font-bold rounded-xl hover:bg-stone-800 transition-colors text-sm cursor-pointer whitespace-nowrap">套用</button>
+                    </div>
+                    <div id="couponMessage" class="hidden text-xs md:text-sm font-bold mt-1.5"></div>
+                </div>
+
+                <div class="bg-stone-50/50 rounded-xl p-4 border border-stone-100 space-y-2 text-sm md:text-base">
+                    <div class="flex justify-between text-stone-500">
+                        <span>商品組合小計 Subtotal</span>
+                        <span id="subtotalDisplay" class="font-medium">$0</span>
+                    </div>
+                    <div id="shipFeeDisplay" class="flex justify-between text-stone-500 hidden">
+                        <span>物流運費 Shipping</span>
+                        <span class="font-medium">+$0</span>
+                    </div>
+                    <div id="couponDiscountDisplay" class="flex justify-between text-orange-500 hidden font-bold">
+                        <span>折扣碼折抵 Discount</span>
+                        <span>-$0</span>
+                    </div>
+                    <hr class="border-stone-200 my-2">
+                    <div class="flex justify-between items-center text-stone-800 font-black text-lg md:text-xl pt-1">
+                        <span>總金額 Total</span>
+                        <span id="totalDisplay" class="text-stone-700">$0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">訂單備註事項 (選填)</label>
+                <textarea id="custMemo" rows="3" placeholder="若有特殊需求請在此說明..." class="w-full p-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] bg-stone-50/50 text-stone-800 resize-none font-normal"></textarea>
+            </div>
+
+            <div class="pt-2">
+                <button type="submit" class="w-full bg-[#5B7290] text-white font-black tracking-widest h-14 rounded-2xl hover:bg-[#4A5D75] transition-all text-base md:text-lg shadow-md hover:shadow-lg cursor-pointer">
+                    送出預購訂單 Submit Order
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div id="receiptContainer" class="hidden max-w-2xl mx-auto p-4 md:p-6 w-full flex-grow mb-16">
+        <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-stone-100 space-y-6">
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-14 h-14 bg-emerald-50 text-emerald-500 rounded-full mb-3 text-2xl">✓</div>
+                <h2 class="text-xl md:text-2xl font-black text-stone-700 tracking-wider">預購訂單已成功送出</h2>
+                <p class="text-xs md:text-sm text-stone-400 mt-1.5">感謝您的訂購！系統已成功記錄數據。</p>
+            </div>
+            
+            <div id="receiptContent" class="bg-stone-50 rounded-2xl p-5 border border-stone-100 text-stone-600 text-sm md:text-base space-y-3 font-mono leading-relaxed select-all whitespace-pre-line">
+                </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <button type="button" onclick="window.shareReceipt()" class="w-full bg-[#5B7290] text-white font-bold h-12 rounded-xl hover:bg-[#4A5D75] transition-colors text-sm tracking-wider cursor-pointer">
+                    分享 / 截圖儲存明細
+                </button>
+                <button type="button" onclick="location.reload()" class="w-full bg-stone-100 text-stone-600 font-bold h-12 rounded-xl hover:bg-stone-200 transition-colors text-sm tracking-wider cursor-pointer">
+                    返回重新填寫
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="countdownOverlay" class="fixed inset-0 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div>
+                <h3 id="overlayMainTitle" class="text-lg md:text-xl font-black text-stone-800">訂單準備送出中...</h3>
+                <p id="overlaySubTitle" class="text-xs md:text-sm text-stone-400 mt-1">倒數結束前可隨時確認或調整</p>
+            </div>
+            
+            <div id="countdownTimer" class="relative w-24 h-24 mx-auto flex items-center justify-center">
+                <svg class="w-full h-full transform -rotate-90">
+                    <circle cx="48" cy="48" r="40" stroke="#F5F5F4" stroke-width="8" fill="transparent"/>
+                    <circle id="countdownProgressCircle" cx="48" cy="48" r="40" stroke="#5B7290" stroke-width="8" fill="transparent" stroke-dasharray="251.2" stroke-dashoffset="0" style="transition: stroke-dashoffset 1s linear;"/>
+                </svg>
+                <span id="countdownNumber" class="absolute text-2xl font-black text-stone-700 font-mono">20</span>
+            </div>
+
+            <div id="loadingAnimationBlock" class="hidden py-4">
+                <div class="w-10 h-10 border-4 border-stone-200 border-t-[#5B7290] rounded-full animate-spin mx-auto"></div>
+            </div>
+
+            <div class="bg-stone-50 rounded-xl p-3 border border-stone-100 text-left space-y-1.5 text-xs md:text-sm text-stone-600">
+                <p id="overlayDateLabel" class="font-bold text-stone-700">希望到貨日期：</p>
+                <p class="font-medium text-stone-500">配送通路：<span id="overlayShipMethod" class="text-stone-700 font-bold"></span></p>
+                <p class="font-medium text-stone-500">結算金額：<span id="overlayTotal" class="text-orange-600 font-black"></span></p>
+            </div>
+
+            <p id="overlayBottomPrompt" class="text-xs text-stone-400 font-medium">正在確認甜點庫存。</p>
+
+            <div id="overlayActionButtons" class="flex gap-3 pt-1">
+                <button type="button" onclick="window.cancelOrderSubmission()" class="flex-1 bg-rose-50 text-rose-600 font-bold py-3 rounded-xl hover:bg-rose-100 transition-colors text-sm cursor-pointer">
+                    取消並返回修改
+                </button>
+                <button type="button" onclick="window.executeDirectSubmit()" class="flex-1 bg-stone-800 text-white font-bold py-3 rounded-xl hover:bg-stone-900 transition-colors text-sm cursor-pointer">
+                    免等待直接送出
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-stone-900 text-stone-400 py-8 px-4 mt-auto border-t border-stone-800 rounded-t-3xl">
+        <div class="max-w-2xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="text-center md:text-left">
+                <p class="text-white font-bold text-base tracking-wider">粒露Lilou｜迷你可麗露專賣</p>
+                <p class="text-xs mt-1 text-stone-500">高雄市前鎮區景德路72巷12號</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="https://lin.ee/ane79Cw" target="_blank" class="hover:text-emerald-500 transition-colors">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M24 10.304c0-5.369-5.383-9.738-12-9.738s-12 4.369-12 9.738c0 4.814 4.269 8.846 10.036 9.608.391.084.922.258 1.058.59.12.295.079.759.039 1.058l-.171 1.028c-.052.316-.252 1.237 1.082.675 1.333-.563 7.191-4.234 9.815-7.251 2.146-2.348 2.141-4.498 2.141-5.71h0zm-16.142.742h-1.637c-.312 0-.565-.253-.565-.565v-3.136c0-.312.253-.565.565-.565s.565.253.565.565v2.571h1.072c.312 0 .565.253.565.565s-.253.565-.565.565zm2.392-.565c0 .312-.253.565-.565.565h-.002c-.312 0-.565-.253-.565-.565v-3.136c0-.312.253-.565.565-.565s.565.253.565.565v3.136zm3.56 0c0 .24-.15.455-.375.536-.062.022-.126.029-.19.029-.165 0-.323-.072-.432-.2l-1.42-1.89v1.525c0 .312-.253.565-.565.565s-.565-.253-.565-.565v-3.136c0-.239.15-.454.375-.536.062-.022.126-.03.19-.03.166 0 .323.072.432.2l1.42 1.89v-1.525c0-.312.253-.565.565-.565s.565.253.565.565v3.136zm2.946-1.503h1.072c.312 0 .565.253.565.565s-.253.565-.565.565h-1.637c-.312 0-.565-.253-.565-.565v-3.136c0-.312.253-.565.565-.565h1.637c.312 0 .565.253.565.565s-.253.565-.565.565h-1.072v.707h1.072c.312 0 .565.253.565.565s-.253.565-.565.565h-1.072v.737z"/>
+                    </svg>
+                </a>
+                <a href="https://www.instagram.com/lilou.official_/" target="_blank" class="hover:text-pink-500 transition-colors">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+<script>
+// 全域資料庫快取陣列
+let localProducts = [];
+let localPackaging = [];
+let localCoupons = [];
+let localPickupDates = [];
+let localDeliveryDates = [];
+
+let cart = [];
+let appliedCoupon = null;
+let currentBoxLimit = null;
+const shippingFee = 60; 
+
+// 請填入您原先串接好的 Google Apps Script 網路應用程式 URL
+const API_URL = "https://script.google.com/macros/s/AKfycbyb77wSjP6bZit79Y1Yv-uOaA_POf9b15V_N27eYhL8wTmsZ5bJidY9C4tE7w/exec"; 
+
+let pendingOrderSnapshot = null;
+let submissionTimeout = null;
+let submissionInterval = null;
+
+function preventEnterSubmit(e) { 
+    const keyCode = e.keyCode || e.which;
+    if (keyCode === 13 && e.target.tagName !== 'TEXTAREA') { 
+        e.preventDefault(); 
+        return false;
+    }  
+    return true; 
+} 
+
+function getWeekdayStr(dateStr) {
+    if(!dateStr) return "";
+    const days = ['(週日)', '(週一)', '(週二)', '(週三)', '(週四)', '(週五)', '(週六)'];
+    try {
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? "" : days[d.getDay()];
+    } catch(e) { return ""; }
+}
+
+// 通路與純地址控制（已全面剝離任何營業時間字眼）
+function handleShippingMethodChange() {        
+    const method = document.getElementById('shipMethod').value;
+    const addrInput = document.getElementById('custAddress');             
+    const shipFeeDisplay = document.getElementById('shipFeeDisplay');             
+    const dateLabel = document.getElementById('dateLabel');             
+    const mapLink = document.getElementById('mapLink');             
+    const addressLabel = document.getElementById('addressLabel');
+
+    if(method === 'delivery') {                 
+        addressLabel.innerText = "7-11 取貨門市名稱 *";                 
+        mapLink.style.display = 'inline-flex';
+        addrInput.required = true;                 
+        addrInput.readOnly = false;                 
+        addrInput.value = "";                 
+        addrInput.placeholder = "範例：Lilou門市";
+        addrInput.className = "w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50 text-stone-800 font-normal";
+        shipFeeDisplay.querySelector('span').innerText = `+${shippingFee}`;                 
+        shipFeeDisplay.classList.remove('hidden');
+        dateLabel.innerText = "希望到貨日期 *";             
+    } else {                 
+        addressLabel.innerText = "自取門市地址";                 
+        mapLink.style.display = 'none';
+        addrInput.required = false;                 
+        addrInput.readOnly = true;                 
+        addrInput.value = "高雄市前鎮區景德路72巷12號"; // 已移除營業時間
+        addrInput.className = "w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none h-12 md:h-14 bg-stone-100 font-bold text-stone-700 select-all";                 
+        shipFeeDisplay.classList.add('hidden');                 
+        dateLabel.innerText = "門市自取日期 *";
+    }             
+    renderAvailableDates(method);
+    calculateTotal();         
+}
+
+function renderAvailableDates(method) {
+    const dateSelect = document.getElementById('shipDate');
+    const targetDates = (method === 'delivery') ? localDeliveryDates : localPickupDates;
+    const textPrompt = (method === 'delivery') ? '希望到貨' : '門市自取';
+    
+    let hasValidDate = false;
+    let optionsHtml = targetDates.map(d => {
+        const t = d.trim();
+        if(!t) return '';
+        hasValidDate = true;
+        const weekday = getWeekdayStr(t);
+        return `<option value="${t}">${t} ${weekday}</option>`;
+    }).join('');
+
+    if (!hasValidDate) {
+        optionsHtml = `<option value="">-- 請選擇${textPrompt}（關閉中） --</option>` + optionsHtml;
+    } else {
+        optionsHtml = `<option value="">-- 請選擇${textPrompt} --</option>` + optionsHtml;
+    }
+    dateSelect.innerHTML = optionsHtml;
+}
+
+async function fetchOptions() {          
+    const CACHE_KEY = "lilou_shop_fast_cache"; 
+    const TIME_KEY = "lilou_shop_cache_time";             
+    const cached = localStorage.getItem(CACHE_KEY);
+    const cachedTime = localStorage.getItem(TIME_KEY);             
+    const now = new Date().getTime();              
+    if (cached) { 
+        try { 
+            renderUIWithData(JSON.parse(cached));
+        } catch(e) {} 
+    }             
+    if (cached && cachedTime && (now - parseInt(cachedTime) < 30000)) { 
+        return;
+    }             
+    try {                 
+        const cacheBuster = `&_=${now}`;
+        const res = await fetch(`${API_URL}?action=getFormOptions${cacheBuster}`);                 
+        const data = await res.json();                 
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data)); 
+        localStorage.setItem(TIME_KEY, now.toString());               
+        renderUIWithData(data);             
+    } catch (err) { 
+        console.error("同步失敗", err);
+    }         
+}
+
+function renderUIWithData(data) {             
+    localProducts = data.products;
+    localPackaging = data.packaging; 
+    localCoupons = data.coupons || [];
+    if(data.settings) {                 
+        if(data.settings.pickup_available_dates) localPickupDates = data.settings.pickup_available_dates.toString().replace(/^"|"$/g, '').split(',');
+        if(data.settings.delivery_available_dates) localDeliveryDates = data.settings.delivery_available_dates.toString().replace(/^"|"$/g, '').split(',');
+    }             
+    const boxSelect = document.getElementById('boxSelect'); 
+    const savedVal = boxSelect.value;
+    boxSelect.innerHTML = '<option value="">-- 請選擇包裝樣式 --</option>' + localPackaging.map(p => `<option value="${p.name}" data-extra="${p.extra_price}">${p.name} (+${p.extra_price}元)</option>`).join('');             
+    if(savedVal) boxSelect.value = savedVal;             
+    const packBtn = document.getElementById('packBtn');
+    packBtn.className = "w-full bg-[#5B7290] text-white font-extrabold tracking-widest h-12 rounded-xl hover:bg-[#3E4F66] transition-colors text-sm md:text-base uppercase shadow-xs cursor-pointer";             
+    packBtn.innerText = "確定組合，打包放入購物車"; 
+    packBtn.disabled = false;                               
+    handleShippingMethodChange();
+    renderFlavorMenu();              
+    renderCart();         
+}
+
+// 篩選口味選單：包裝名稱有「限定」時，只留下名字有「限」字的商品 
+function renderFlavorMenu() {             
+    const fMenu = document.getElementById('flavorMenu'); 
+    const boxSelect = document.getElementById('boxSelect');             
+    const isBoxNotSelected = (boxSelect.value === "");
+    const bName = boxSelect.value;             
+    
+    fMenu.innerHTML = localProducts.map((p, idx) => {             
+        let occupiedInCart = 0; 
+        cart.forEach(savedBox => { 
+            const matchFlavor = savedBox.flavors.find(f => f.name === p.name); 
+            if (matchFlavor) occupiedInCart += matchFlavor.quantity; 
+        });             
+        const virtualStock = p.stock - occupiedInCart; 
+        
+        let isHidden = false;             
+        if (bName.includes("限定")) { 
+            if (!p.name.includes("限")) isHidden = true; 
+        }             
+        if (isHidden) return ''; 
+        
+        const shouldDisable = virtualStock <= 0 || isBoxNotSelected; 
+        let statusText = '剩 ' + (virtualStock >= 0 ? virtualStock : 0);                 
+        
+        return `<div class="flex items-center justify-between py-2.5">
+            <span class="font-medium">${p.name} <span class="text-xs text-stone-400 font-bold ml-1">$${p.price}｜${statusText}</span></span>
+            <div class="flex items-center gap-1.5">
+                <button type="button" onclick="stepFlavorQty(${idx}, -1)" ${shouldDisable ? 'disabled' : ''} class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg shadow-2xs active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm md:text-base">—</button>
+                <input type="number" id="flavorQty_${idx}" data-idx="${idx}" class="flavor-input w-10 text-center bg-transparent font-black font-mono text-stone-700" value="0" max="${virtualStock}" min="0" readonly>
+                <button type="button" id="plusBtn_${idx}" onclick="stepFlavorQty(${idx}, 1)" ${shouldDisable ? 'disabled' : ''} class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg shadow-2xs active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm md:text-base">＋</button>
+            </div>
+        </div>`;             
+    }).join('');
+}
+
+window.stepFlavorQty = function(idx, change) { 
+    const input = document.getElementById(`flavorQty_${idx}`); 
+    if (!input) return; 
+    let currentVal = parseInt(input.value) || 0;
+    let newVal = currentVal + change; 
+    const maxStock = parseInt(input.max) || 0; 
+    if (newVal < 0) newVal = 0;
+    if (newVal > maxStock) newVal = maxStock; 
+    input.value = newVal; 
+    calculateCurrentBoxTotal(input, idx, currentVal);
+}         
+
+// 切換包裝防呆：選限定包裝但內含非限定甜點則彈窗清除 
+window.handleBoxChange = function() { 
+    const boxSelect = document.getElementById('boxSelect'); 
+    if(boxSelect.value !== "") { 
+        const bVal = boxSelect.value;
+        if (bVal.includes("單入") || bVal.includes("個別") || bVal.includes("免禮盒")) { 
+            currentBoxLimit = null; 
+        } else { 
+            const match = bVal.match(/\d+/); 
+            currentBoxLimit = match ? parseInt(match[0]) : null; 
+        } 
+    } else { 
+        currentBoxLimit = null; 
+    } 
+    const bName = boxSelect.value;
+    let hasViolation = false; 
+    
+    localProducts.forEach((p, idx) => {
+        const qtyInput = document.getElementById(`flavorQty_${idx}`); 
+        if (qtyInput && parseInt(qtyInput.value) > 0) { 
+            if (bName.includes("限定") && !p.name.includes("限")) { 
+                hasViolation = true; 
+            } 
+        } 
+    });
+
+    if (hasViolation) {
+        alert("【包裝商品不符】已為您切換商品組合選單。系統已自動重設目前輸入的甜點欄位，並為您重新隱藏不適用的口味。");
+        document.querySelectorAll('.flavor-input').forEach(input => input.value = "0");
+    } 
+    document.querySelectorAll('.flavor-input').forEach(input => {
+        if(boxSelect.value === "") input.value = "0"; 
+    }); 
+    renderFlavorMenu();
+    calculateTotal();
+    calculateCurrentBoxTotal(null); 
+}         
+
+function calculateCurrentBoxTotal(currentInputObj, changedIdx = null, previousVal = 0) {
+    const inputs = document.querySelectorAll('.flavor-input');
+    let currentTotal = 0;
+    inputs.forEach(input => { currentTotal += (parseInt(input.value) || 0); });
+    if (currentBoxLimit && currentTotal > currentBoxLimit) { 
+        if (currentInputObj && changedIdx !== null) { 
+            alert(`數量超標！此組合限制容量為 ${currentBoxLimit} 個。`);
+            currentInputObj.value = previousVal;
+            currentTotal = 0; 
+            inputs.forEach(input => { currentTotal += (parseInt(input.value) || 0); }); 
+        } 
+    } 
+    const display = document.getElementById('currentBoxCountDisplay');
+    if (currentBoxLimit) {
+        display.innerText = `已選: ${currentTotal} / ${currentBoxLimit} 個`;
+        inputs.forEach(input => { 
+            const idx = parseInt(input.getAttribute('data-idx'));
+            const product = localProducts[idx]; 
+            if (!product) return; 
+            let occupiedInCart = 0; 
+            cart.forEach(savedBox => { 
+                const matchFlavor = savedBox.flavors.find(f => f.name === product.name); 
+                if (matchFlavor) occupiedInCart += matchFlavor.quantity; 
+            }); 
+            const virtualStock = product.stock - occupiedInCart;
+            const selfValue = parseInt(input.value) || 0; 
+            let allowedMax = selfValue + (currentBoxLimit - currentTotal); 
+            if (allowedMax > virtualStock) allowedMax = virtualStock; 
+            input.max = allowedMax >= 0 ? allowedMax : 0; 
+        });
+    } else { 
+        const boxSelect = document.getElementById('boxSelect'); 
+        display.innerText = boxSelect.value === "" ? "請先挑選包裝類型" : `已選: ${currentTotal} 個`; 
+    } 
+    return currentTotal;
+}                               
+
+// 打包組合（已移除成功打包的 Alert 彈窗，體驗更流暢）
+window.packBoxToCart = function() {             
+    const boxSelect = document.getElementById('boxSelect');
+    if(boxSelect.value === "") { alert("請先挑選要使用的包裝類型！"); return; }             
+    const boxName = boxSelect.value;             
+    const boxExtra = parseInt(boxSelect.selectedOptions[0].getAttribute('data-extra')) || 0;         
+    const inputs = document.querySelectorAll('.flavor-input');             
+    let boxFlavors = [];             
+    let totalFlavorsCountInBox = 0;             
+    let boxFlavorsCost = 0;
+    let hasError = false;             
+    
+    for (let input of inputs) {                  
+        const qty = parseInt(input.value) || 0;                  
+        if (qty > 0) {                  
+            const idx = parseInt(input.getAttribute('data-idx'));
+            const product = localProducts[idx];                      
+            let occupiedInCart = 0;                      
+            cart.forEach(savedBox => { 
+                const matchFlavor = savedBox.flavors.find(f => f.name === product.name); 
+                if (matchFlavor) occupiedInCart += matchFlavor.quantity; 
+            });
+            const virtualStock = product.stock - occupiedInCart;                      
+            if (qty > virtualStock) { 
+                alert(`庫存不足！「${product.name}」最多只能再填入 ${virtualStock >= 0 ? virtualStock : 0} 個。`);
+                hasError = true; 
+                break; 
+            }                      
+            boxFlavors.push({ name: product.name, price: product.price, quantity: qty });
+            totalFlavorsCountInBox += qty;                      
+            boxFlavorsCost += (product.price * qty);                  
+        }              
+    }         
+    if (hasError) return;
+    if(totalFlavorsCountInBox === 0) { alert("此組合內還沒有放入任何甜點喔！"); return; }              
+    if (currentBoxLimit && totalFlavorsCountInBox !== currentBoxLimit) { 
+        alert(`數量不符！「${boxName}」必須剛好裝滿 ${currentBoxLimit} 個品項。`);
+        return; 
+    }              
+    
+    cart.push({ 
+        boxName: boxName,
+        boxExtra: boxExtra, 
+        flavors: boxFlavors, 
+        flavorsCost: boxFlavorsCost, 
+        totalQty: totalFlavorsCountInBox, 
+        boxTotalCost: boxFlavorsCost + boxExtra 
+    });
+    
+    boxSelect.value = "";              
+    currentBoxLimit = null;              
+    renderFlavorMenu();              
+    renderCart();          
+}
+
+window.removeFromCart = function(cartIdx) { 
+    cart.splice(cartIdx, 1);
+    renderFlavorMenu(); 
+    renderCart(); 
+} 
+
+function renderCart() {              
+    const container = document.getElementById('cartListContainer');
+    if(cart.length === 0) {                  
+        container.innerHTML = "購物車目前空空的喔！";                  
+        calculateTotal();                  
+        return;
+    }          
+    container.innerHTML = cart.map((box, i) => {                  
+        const flavorDetailHtml = box.flavors.map(f => `${f.name} x ${f.quantity}個`).join('、');                  
+        return `<div class="flex items-center justify-between py-2.5 border-b border-stone-100 text-xs md:text-sm">
+            <div>
+                <span class="font-bold text-stone-700">組合 ${i+1}：${box.boxName}</span><br>
+                <span class="text-stone-400 text-xs">內含：${flavorDetailHtml}</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="font-mono font-bold text-stone-700">$${box.boxTotalCost}</span>
+                <button type="button" onclick="removeFromCart(${i})" class="text-stone-300 hover:text-red-500 cursor-pointer text-base">✕</button>
+            </div>
+        </div>`;              
+    }).join('');
+    calculateTotal();          
+}
+
+function calculateTotal() { 
+    let subtotal = 0; 
+    cart.forEach(box => { subtotal += box.boxTotalCost; }); 
+    document.getElementById('subtotalDisplay').innerText = `$${subtotal}`; 
+    const shipMethod = document.getElementById('shipMethod').value;
+    let finalTotal = subtotal; 
+    if(shipMethod === 'delivery') finalTotal += shippingFee; 
+    if (appliedCoupon) { 
+        const minSpendRequirement = Number(appliedCoupon.min_spend) || 0;
+        if (subtotal < minSpendRequirement) {
+            appliedCoupon = null; 
+            const msgElement = document.getElementById('couponMessage'); 
+            msgElement.innerText = `✕ 組合變動，金額未達門檻 ${minSpendRequirement} 元，已自動取消折抵。`;
+            msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-orange-500"; 
+        } 
+    } 
+    let discountAmount = 0; 
+    const couponDisplay = document.getElementById('couponDiscountDisplay');
+    if (appliedCoupon && subtotal > 0) { 
+        if (appliedCoupon.type === 'minus') {
+            discountAmount = Number(appliedCoupon.value) || 0;
+        } else if (appliedCoupon.type === 'discount') { 
+            discountAmount = Math.round(subtotal * (1 - Number(appliedCoupon.value))); 
+        } 
+        if (discountAmount > finalTotal) discountAmount = finalTotal;
+        finalTotal -= discountAmount;
+        couponDisplay.querySelector('span').innerText = `-$${discountAmount}`;
+        couponDisplay.classList.remove('hidden'); 
+    } else {
+        couponDisplay.classList.add('hidden'); 
+    }
+    document.getElementById('totalDisplay').innerText = `$${finalTotal}`; 
+    return finalTotal;
+}                  
+
+window.applyCouponCode = function(isUserClick = false) {              
+    const inputVal = document.getElementById('couponInput').value.trim().toUpperCase();
+    const msgElement = document.getElementById('couponMessage');              
+    if (inputVal === "") {                  
+        appliedCoupon = null;                  
+        msgElement.classList.add('hidden');
+        calculateTotal();          
+        return;              
+    }              
+    let subtotal = 0;              
+    cart.forEach(box => { subtotal += box.boxTotalCost; });
+    const match = localCoupons.find(c => c.code === inputVal);              
+    msgElement.classList.remove('hidden');              
+    if (match) {                  
+        const minSpendRequirement = Number(match.min_spend) || 0;                  
+        if (subtotal < minSpendRequirement) {                      
+            appliedCoupon = null;
+            msgElement.innerText = `✕ 未達消費門檻！此折扣碼最低消費需滿 ${minSpendRequirement} 元。`;                  
+            msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-orange-500";
+        } else {                  
+            appliedCoupon = match;
+            msgElement.innerText = `✓ 成功套用折扣碼！(${match.type === 'minus' ? '現折 ' + match.value + ' 元' : '享 ' + (match.value * 10) + ' 折'})`;
+            msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-emerald-600";                  
+        }              
+    } else {                  
+        appliedCoupon = null;
+        msgElement.innerText = "✕ 折扣碼無效或已過期。";                  
+        msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-red-500";              
+    }              
+    calculateTotal();          
+}
+
+// 20秒倒數與提交處理邏輯
+window.handleOrderSubmit = function(e) {
+    e.preventDefault();
+    if(cart.length === 0) { alert("購物車中還沒有任何打包好的組合！"); return; }
+    
+    let currentSubtotal = 0;
+    cart.forEach(box => { currentSubtotal += box.boxTotalCost; });
+    if (appliedCoupon) {
+        const minSpendRequirement = Number(appliedCoupon.min_spend) || 0;
+        if (currentSubtotal < minSpendRequirement) {
+            alert("折扣碼失效！商品總額未達該折扣碼之低消門檻。");
+            window.applyCouponCode(false);
+            return;
+        }
+    }
+
+    const custName = document.getElementById('custName').value.trim();
+    const custPhone = document.getElementById('custPhone').value.trim();
+    const shipMethodVal = document.getElementById('shipMethod').value;
+    const rawShipDate = document.getElementById('shipDate').value;
+    const shipDateWithWeekday = rawShipDate + getWeekdayStr(rawShipDate);
+    const custAddress = document.getElementById('custAddress').value.trim();
+    const custMemo = document.getElementById('custMemo').value.trim();
+    const finalTotal = calculateTotal();
+
+    pendingOrderSnapshot = {
+        order_id: "ORD" + new Date().getTime(),
+        name: custName,
+        phone: custPhone,
+        shipping_method: shipMethodVal,
+        shipping_date: shipDateWithWeekday,
+        address: custAddress,
+        memo: custMemo,
+        total_amount: finalTotal,
+        cart_details: JSON.stringify(cart),
+        coupon_code: appliedCoupon ? document.getElementById('couponInput').value.trim().toUpperCase() : ""
+    };
+
+    document.getElementById('overlayShipMethod').innerText = (shipMethodVal === 'delivery') ? "7-11 店到店" : "門市自取";
+    document.getElementById('overlayTotal').innerText = `$${finalTotal} 元`;
+    
+    const dateLabelObj = document.getElementById('overlayDateLabel');
+    if (shipMethodVal === 'delivery') {
+        dateLabelObj.innerText = "希望到貨日期：" + shipDateWithWeekday;
+    } else {
+        dateLabelObj.innerText = "門市自取日期：" + shipDateWithWeekday;
+    }
+
+    document.getElementById('overlayMainTitle').innerText = "訂單準備送出中...";
+    document.getElementById('overlaySubTitle').innerText = "倒數結束前可隨時確認或調整";
+    document.getElementById('overlayBottomPrompt').innerText = "正在確認甜點庫存。";
+    document.getElementById('countdownTimer').style.display = 'block';
+    document.getElementById('loadingAnimationBlock').style.display = 'none';
+    document.getElementById('overlayActionButtons').style.display = 'flex';
+
+    let timeLeft = 20;
+    document.getElementById('countdownNumber').innerText = timeLeft;
+    
+    const progressCircle = document.getElementById('countdownProgressCircle');
+    const radius = 40;
+    const circumference = 2 * Math.PI * radius;
+    progressCircle.style.strokeDasharray = circumference;
+    progressCircle.style.strokeDashoffset = 0;
+
+    document.getElementById('countdownOverlay').classList.remove('hidden');
+
+    if (submissionInterval) clearInterval(submissionInterval);
+    if (submissionTimeout) clearTimeout(submissionTimeout);
+
+    submissionInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft >= 0) {
+            document.getElementById('countdownNumber').innerText = timeLeft;
+            const offset = circumference - (timeLeft / 20) * circumference;
+            progressCircle.style.strokeDashoffset = offset;
+        }
+    }, 1000);
+
+    submissionTimeout = setTimeout(() => {
+        window.executeFinalDataPost();
+    }, 2000); // 這裡配合原本後台防洪或模擬改為您要的秒數 (正式 20000 毫秒 = 20 秒)
+}
+
+window.executeDirectSubmit = function() {
+    if (submissionInterval) clearInterval(submissionInterval);
+    if (submissionTimeout) clearTimeout(submissionTimeout);
+    window.executeFinalDataPost();
+}
+
+window.cancelOrderSubmission = function() {
+    if (submissionTimeout) clearTimeout(submissionTimeout);
+    if (submissionInterval) clearInterval(submissionInterval);
+    pendingOrderSnapshot = null;
+    document.getElementById('countdownOverlay').classList.add('hidden');
+    alert("已成功取消本次傳送！資料皆完整保留，您可以重新調整訂單內容。");
+}
+
+window.switchToLoadingState = function() {
+    document.getElementById('overlayMainTitle').innerText = "預購單成立中";
+    document.getElementById('overlaySubTitle').innerText = "正在與伺服器安全同步數據";
+    document.getElementById('overlayBottomPrompt').innerText = "請勿關閉視窗或刷新網頁。";
+    document.getElementById('countdownTimer').style.style.display = 'none';
+    document.getElementById('overlayActionButtons').style.display = 'none';
+    document.getElementById('loadingAnimationBlock').style.display = 'block';
+}
+
+window.executeFinalDataPost = async function() {
+    if (!pendingOrderSnapshot) return;
+    window.switchToLoadingState();
+    
+    const orderData = pendingOrderSnapshot;
+    const orderId = orderData.order_id;
+    const custName = orderData.name;
+    const custPhone = orderData.phone;
+    const shipMethodVal = orderData.shipping_method;
+    const shipDate = orderData.shipping_date;
+    const finalDatabaseAddress = orderData.address;
+    const finalTotal = orderData.total_amount;
+
+    try {
+        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(orderData) });
+        const result = await res.json();
+        
+        document.getElementById('countdownOverlay').classList.add('hidden');
+        
+        if(result.status === "success") {
+            document.getElementById('formContainer').classList.add('hidden');
+            let cartDetailsHtml = cart.map((box, idx) => {
+                const flavorsStr = box.flavors.map(f => `${f.name} x ${f.quantity}個`).join('、');
+                return ` 組合 ${idx + 1} [${box.boxName}]：${flavorsStr}`;
+            }).join('\n');
+
+            const methodText = shipMethodVal === 'delivery' ? '7-11 店到店取貨' : '門市自取付款';
+            const dateLabelText = shipMethodVal === 'delivery' ? '希望到貨日期' : '自取日期';
+
+            // 收據純地址處理（已無營業時間標記）
+            document.getElementById('receiptContent').innerHTML = `重要提醒：請務必留存或截圖此訂購明細！方便您取貨時確認內容。
+            
+            預購編號：${orderId}
+            顧客姓名：${custName}
+            聯絡電話：${custPhone}
+            配送方式：${methodText}
+            取貨地址：${finalDatabaseAddress}
+            ${dateLabelText}：${shipDate}
+            
+            購物明細：
+            ${cartDetailsHtml}
+            
+            總金額：$${finalTotal} 元
+            
+            如需要修改訂單內容，請私訊 Lilou 官方 LINE 或 Instagram，我們將人工為您調整。謝謝您的購買😀`;
+
+            document.getElementById('receiptContainer').classList.remove('hidden');
+            cart = [];
+            appliedCoupon = null;
+        } else if (result.status === "error") {
+            alert(result.message);
+        }
+    } catch(err) {
+        document.getElementById('countdownOverlay').classList.add('hidden');
+        alert("送出訂單時發生錯誤，請稍後再試。");
+    }
+}
+
+window.shareReceipt = function() {
+    const receiptText = document.getElementById('receiptContent').innerText;
+    if (navigator.share) {
+        navigator.share({
+            title: 'Lilou 預購收據確認單',
+            text: '這是我在 Lilou 的甜點預購單明細紀錄：\n\n' + receiptText,
+        }).then(() => console.log('分享成功')).catch((error) => console.log('使用者取消分享', error));
+    } else {
+        window.print();
+    }
+}
+
+// 首次啟動載入
+fetchOptions();
+</script>
+</body>
+</html>
