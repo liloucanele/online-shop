@@ -231,7 +231,7 @@
             <div class="flex items-center gap-4">
                 <a href="https://lin.ee/ane79Cw" target="_blank" class="w-10 h-10 rounded-xl bg-stone-800 hover:bg-[#06C755] flex items-center justify-center transition-all duration-200 text-stone-300 hover:text-white shadow-xs" title="官方 LINE">
                     <svg class="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path d="M24 10.304c0-5.369-5.383-9.738-12-9.738S0 4.935 0 10.304c0 4.814 4.269 8.846 10.036 9.564l-.64 2.42c-.074.284.18.528.455.353l2.844-1.815c.427.051.865.079(1.305.079 6.617 0 12-4.369 12-9.591zm-15.932 2.766h-1.635c-.244 0-.44-.197-.44-.44v-3.766c0-.244.196-.44.44-.44s.44.196.44.44v3.326h1.195c.244 0 .44.196.44.44s-.196.44-.44.44zm2.457-.44c0 .244-.196.44-.44.44s-.44-.196-.44-.44v-3.766c0-.244.196-.44.44-.44s.44.196.44.44v3.766zm4.27 0c0 .193-.122.361-.303.418-.045.014-.092.022-.137.022-.142 0-.275-.068-.358-.188l-1.657-2.392v2.14c0 .244-.196.44-.44.44s-.44-.196-.44-.44v-3.766c0-.192.122-.361.302-.417.046-.015.093-.023.138-.023.142 0 .275.068.358.188l1.657 2.392v-2.14c0-.244.196-.44.44-.44s.44.196.44.44v3.766zm3.326-1.195c0 .244-.196.44-.44.44h-1.195v.755h1.195c.244 0 .44.196.44.44s-.196.44-.44.44h-1.635c-.244 0-.44-.197-.44-.44v-3.766c0-.244.196-.44.44-.44h1.635c.244 0 .44.196.44.44s-.196.44-.44.44h-1.195v.733h1.195c.244 0 .44.196.44.44z"/>
+                        <path d="M24 10.304c0-5.369-5.383-9.738-12-9.738S0 4.935 0 10.304c0 4.814 4.269 8.846 10.036 9.564l-.64 2.42c-.074.284.18.528.455.353l2.844-1.815c.427.051.865.079 1.305.079 6.617 0 12-4.369 12-9.591zm-15.932 2.766h-1.635c-.244 0-.44-.197-.44-.44v-3.766c0-.244.196-.44.44-.44s.44.196.44.44v3.326h1.195c.244 0 .44.196.44.44s-.196.44-.44.44zm2.457-.44c0 .244-.196.44-.44.44s-.44-.196-.44-.44v-3.766c0-.244.196-.44.44-.44s.44.196.44.44v3.766zm4.27 0c0 .193-.122.361-.303.418-.045.014-.092.022-.137.022-.142 0-.275-.068-.358-.188l-1.657-2.392v2.14c0 .244-.196.44-.44.44s-.44-.196-.44-.44v-3.766c0-.192.122-.361.302-.417.046-.015.093-.023.138-.023.142 0 .275.068.358.188l1.657 2.392v-2.14c0-.244.196-.44.44-.44s.44.196.44.44v3.766zm3.326-1.195c0 .244-.196.44-.44.44h-1.195v.755h1.195c.244 0 .44.196.44.44s-.196.44-.44.44h-1.635c-.244 0-.44-.197-.44-.44v-3.766c0-.244.196-.44.44-.44h1.635c.244 0 .44.196.44.44s-.196.44-.44.44h-1.195v.733h1.195c.244 0 .44.196.44.44z"/>
                     </svg>
                 </a>
                 <a href="https://www.instagram.com/lilou.official_/" target="_blank" class="w-10 h-10 rounded-xl bg-stone-800 hover:bg-[#E1306C] flex items-center justify-center transition-all duration-200 text-stone-300 hover:text-white shadow-xs" title="官方 Instagram">
@@ -449,15 +449,30 @@
         function renderFlavorMenu() {
             const fMenu = document.getElementById('flavorMenu'); const boxSelect = document.getElementById('boxSelect');
             const isBoxNotSelected = (boxSelect.value === ""); const bName = boxSelect.value;
+            
             fMenu.innerHTML = localProducts.map((p, idx) => {
                 let occupiedInCart = 0; cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === p.name); if (matchFlavor) occupiedInCart += matchFlavor.quantity; });
-                const virtualStock = p.stock - occupiedInCart; let isHidden = false;
+                const virtualStock = p.stock - occupiedInCart; 
+                let isHidden = false;
                 
-                if (bName.includes("限定") && !p.name.includes("限")) {
-                    isHidden = true;
+                // 🚀 新增雙向「限」字商品與包裝過濾防呆邏輯
+                if (!isBoxNotSelected) {
+                    if (bName.includes("限")) {
+                        // 1. 如果包裝名稱有「限」字，只留下名稱有「限」字的商品，非「限」商品隱藏
+                        if (!p.name.includes("限")) {
+                            isHidden = true;
+                        }
+                    } else {
+                        // 2. 如果包裝名稱沒有「限」字，必須隱藏名稱含有「限」字的商品
+                        if (p.name.includes("限")) {
+                            isHidden = true;
+                        }
+                    }
                 }
                 
-                if (isHidden) return ''; const shouldDisable = virtualStock <= 0 || isBoxNotSelected; let statusText = '剩 ' + (virtualStock >= 0 ? virtualStock : 0);
+                if (isHidden) return ''; 
+                const shouldDisable = virtualStock <= 0 || isBoxNotSelected; 
+                let statusText = '剩 ' + (virtualStock >= 0 ? virtualStock : 0);
                 return `<div class="flex items-center justify-between py-3 gap-2"><div class="flex-1 min-w-0"><span class="font-bold text-stone-900 text-sm md:text-base break-words block">${p.name}</span><span class="text-[#5B7290] font-black text-sm md:text-base">$${p.price}</span><span class="text-[10px] md:text-xs ${virtualStock <= 0 ? 'text-red-500 font-bold' : 'text-stone-400'} ml-0.5">${statusText}</span></div><div class="shrink-0 flex items-center bg-stone-100 rounded-xl p-0.5 border border-stone-200 ${(isBoxNotSelected || shouldDisable) ? 'opacity-30 select-none' : ''}"><button type="button" onclick="stepFlavorQty(${idx}, -1)" ${shouldDisable ? 'disabled' : ''} class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg shadow-2xs active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm md:text-base">—</button><input type="number" id="flavorQty_${idx}" data-idx="${idx}" min="0" max="${virtualStock >= 0 ? virtualStock : 0}" value="0" readonly class="flavor-input w-10 md:w-12 text-center text-sm md:text-base font-black bg-transparent border-0 focus:outline-none h-8 select-none pointer-events-none text-stone-800"><button type="button" id="plusBtn_${idx}" onclick="stepFlavorQty(${idx}, 1)" ${shouldDisable ? 'disabled' : ''} class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg shadow-2xs active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm md:text-base">＋</button></div></div>`;
             }).join('');
         }
@@ -484,14 +499,17 @@
             localProducts.forEach((p, idx) => { 
                 const qtyInput = document.getElementById(`flavorQty_${idx}`); 
                 if (qtyInput && parseInt(qtyInput.value) > 0) { 
-                    if (bName.includes("限定") && !p.name.includes("限")) { 
-                        hasViolation = true; 
-                    } 
+                    // 🚀 如果切換包裝樣式時，原本輸入框有數量且不符合「限」字對照規則，就進行欄位重設
+                    if (bName.includes("限")) {
+                        if (!p.name.includes("限")) hasViolation = true;
+                    } else {
+                        if (p.name.includes("限")) hasViolation = true;
+                    }
                 } 
             }); 
             
             if (hasViolation) { 
-                alert("【包裝商品不符】已為您切換商品組合選單。系統已自動重設目前輸入的甜點欄位，並為您重新隱藏不適用的口味。"); 
+                alert("【包裝商品不符】已為您切換商品組合選單。系統已自動重設目前輸入的甜點欄位，並為您重新過濾專屬口味。"); 
                 document.querySelectorAll('.flavor-input').forEach(input => input.value = "0"); 
             } 
             
