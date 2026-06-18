@@ -39,7 +39,7 @@
         }
     </style>
 </head>
-<body class="bg-[#F4F6F9] text-[#222222] min-h-screen flex flex-col font-sans antialiased selection:bg-[#5B7290]/20">
+<body class="bg-[#F4F6F9] text-[#222222] min-h-screen flex flex-col font-sans antialiased selection:bg-[#5B7290]/20 relative">
 
     <script>
         // Google Apps Script 後台部署網址
@@ -62,6 +62,8 @@
 
         let pendingOrderSnapshot = null;
     </script>
+
+    <div id="toastContainer" class="fixed top-20 left-1/2 -translate-x-1/2 z-[100] pointer-events-none flex flex-col items-center gap-2 w-full max-w-sm px-4"></div>
 
     <nav class="bg-[#5B7290] text-white p-4 md:p-5 shadow-sm sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
         <div class="max-w-3xl mx-auto flex justify-between items-center">
@@ -116,7 +118,7 @@
                     </div>
                 </div>
 
-                <form id="orderForm" class="bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-6 md:space-y-8" onsubmit="handleOrderSubmit(event)" onkeypress="return preventEnterSubmit(event)">
+                <form id="orderForm" class="bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-6 md:space-y-8 transition-all duration-300" onsubmit="handleOrderSubmit(event)" onkeypress="return preventEnterSubmit(event)">
                     <div class="space-y-4">
                         <div class="flex items-center gap-2 border-b border-stone-100 pb-3">
                             <span class="bg-[#5B7290] text-white text-xs md:text-sm font-black px-2 py-0.5 rounded">02</span>
@@ -233,7 +235,7 @@
                     <svg class="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                         <path d="M24 10.304c0-5.369-5.383-9.738-12-9.738S0 4.935 0 10.304c0 4.814 4.269 8.846 10.036 9.564l-.64 2.42c-.074.284.18.528.455.353l2.844-1.815c.427.051.865.079 1.305.079 6.617 0 12-4.369 12-9.591zm-15.932 2.766h-1.635c-.244 0-.44-.197-.44-.44v-3.766c0-.244.196-.44.44-.44s.44.196.44.44v3.326h1.195c.244 0 .44.196.44.44s-.196.44-.44.44zm2.457-.44c0 .244-.196.44-.44.44s-.44-.196-.44-.44v-3.766c0-.244.196-.44.44-.44s.44.196.44.44v3.766zm4.27 0c0 .193-.122.361-.303.418-.045.014-.092.022-.137.022-.142 0-.275-.068-.358-.188l-1.657-2.392v2.14c0 .244-.196.44-.44.44s-.44-.196-.44-.44v-3.766c0-.192.122-.361.302-.417.046-.015.093-.023.138-.023.142 0 .275.068.358.188l1.657 2.392v-2.14c0-.244.196-.44.44-.44s.44.196.44.44v3.766zm3.326-1.195c0 .244-.196.44-.44.44h-1.195v.755h1.195c.244 0 .44.196.44.44s-.196.44-.44.44h-1.635c-.244 0-.44-.197-.44-.44v-3.766c0-.244.196-.44.44-.44h1.635c.244 0 .44.196.44.44s-.196.44-.44.44h-1.195v.733h1.195c.244 0 .44.196.44.44z"/>
                     </svg>
-                </a>
+                                </a>
                 <a href="https://www.instagram.com/lilou.official_/" target="_blank" class="w-10 h-10 rounded-xl bg-stone-800 hover:bg-[#E1306C] flex items-center justify-center transition-all duration-200 text-stone-300 hover:text-white shadow-xs" title="官方 Instagram">
                     <svg class="w-5 h-5 stroke-current fill-none stroke-2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
@@ -300,7 +302,7 @@
             if (targetMode === 'shop') {
                 shopWrapper.classList.remove('hidden');
                 shopBtn.className = "cursor-pointer transition-all duration-200 border-b-2 border-white pb-0.5 text-white";
-                // 已成功移除自動平滑捲動 window.scrollTo 代碼
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 
@@ -544,7 +546,53 @@
             if (hasError) return; 
             if(totalFlavorsCountInBox === 0) { alert("此組合內還沒有放入任何甜點喔！"); return; } 
             if (currentBoxLimit && totalFlavorsCountInBox !== currentBoxLimit) { alert(`數量不符！「${boxName}」必須剛好裝滿 ${currentBoxLimit} 個品項。`); return; } 
+            
             cart.push({ boxName: boxName, boxExtra: boxExtra, flavors: boxFlavors, flavorsCost: boxFlavorsCost, totalQty: totalFlavorsCountInBox, boxTotalCost: boxFlavorsCost + boxExtra }); 
+            
+            // 🎬【過場動畫 1】：打包按鈕狀態轉化（變綠與縮放反饋）
+            const packBtn = document.getElementById('packBtn');
+            const originalText = packBtn.innerText;
+            const originalClass = packBtn.className;
+            
+            packBtn.disabled = true;
+            packBtn.innerText = "✨ 已成功打包放入購物車！";
+            packBtn.className = "w-full bg-emerald-600 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-md transition-all duration-300 scale-98";
+            
+            // 🎬【過場動畫 2】：動態噴出頂部 Toast 提示
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = "bg-stone-900 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 text-xs md:text-sm font-bold tracking-wide transition-all duration-300 transform translate-y-[-20px] opacity-0";
+            toast.innerHTML = `
+                <span class="text-emerald-400 text-base">🛒</span>
+                <span>成功打包：${boxName} (共 ${totalFlavorsCountInBox} 品項)</span>
+            `;
+            toastContainer.appendChild(toast);
+            
+            // 觸發 Toast 進場
+            setTimeout(() => {
+                toast.classList.remove('translate-y-[-20px]', 'opacity-0');
+            }, 50);
+            
+            // 3秒後自動淡出移除
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-20px]', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+
+            // 🎬【過場動畫 3】：購物車卡片本體微微震動（Bounce）
+            const orderForm = document.getElementById('orderForm');
+            orderForm.classList.add('motion-safe:animate-bounce');
+            setTimeout(() => {
+                orderForm.classList.remove('motion-safe:animate-bounce');
+            }, 800);
+
+            // 恢復按鈕狀態（已移除自動滾動 window 程式碼）
+            setTimeout(() => {
+                packBtn.innerText = originalText;
+                packBtn.className = originalClass;
+                packBtn.disabled = false;
+            }, 800);
+
             boxSelect.value = ""; 
             currentBoxLimit = null; 
             renderFlavorMenu(); 
