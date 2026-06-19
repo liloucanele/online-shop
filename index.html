@@ -373,74 +373,54 @@
             return "";
         }
 
-        // =================================================================
-        // 🛡️ 終極模糊比對防禦機制：徹底無視後台空格、橫線、西元與跨平台 Bug
-        // =================================================================
+
         window.renderAvailableDates = function(method) {
             const dateSelect = document.getElementById('shipDate');
             const textPrompt = method === 'delivery' ? '希望到貨日期' : '自取日期';
             const targetDates = method === 'delivery' ? localDeliveryDates : localPickupDates;
             
-            const now = new Date();
-            const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-            
-            const limitDays = method === 'delivery' ? 7 : 2; 
-            const minAllowedTime = todayMidnight.getTime() + (limitDays * 24 * 60 * 60 * 1000);
-            
             let optionsHtml = "";
             let hasValidDate = false;
 
-            if(targetDates && targetDates.length > 0) {
+            // 檢查後端送過來的資料是否為有效陣列，且第一個元素不是提示純文字
+            if(targetDates && targetDates.length > 0 && targetDates[0] !== "目前無可選擇日期") {
                 targetDates.forEach(dateStr => {
                     if (!dateStr) return;
                     
+                    // 清洗前後端可能夾帶的雜質
                     let cleanDate = dateStr.toString().replace(/["'\r\n]/g, '').replace(/\s+/g, '').trim();
                     
                     if(cleanDate !== "") {
-                        let isDateValid = true;
+                        // 統一在前端將外觀標準化為「斜線格式 (YYYY/MM/DD)」
+                        cleanDate = cleanDate.replace(/-/g, '/');
+                        
                         let wStr = "";
                         try {
-                            let safeDateStr = cleanDate.replace(/-/g, '/');
-                            
-                            if (safeDateStr.split('/').length === 2) {
-                                safeDateStr = now.getFullYear() + '/' + safeDateStr;
-                            }
-                            
+                            // 動態為選單加上 (週一)、(週二) 等親切提示
+                            let safeDateStr = cleanDate;
                             const parts = safeDateStr.split('/');
-                            let parsedDate = null;
                             if (parts.length === 3) {
                                 const year = parseInt(parts[0], 10);
                                 const month = parseInt(parts[1], 10) - 1;
                                 const day = parseInt(parts[2], 10);
-                                parsedDate = new Date(year, month, day, 0, 0, 0, 0);
-                            }
-                            
-                            if(parsedDate && !isNaN(parsedDate.getTime())) {
-                                const checkDateMidnight = parsedDate.getTime();
-                                
-                                if (checkDateMidnight < minAllowedTime) { 
-                                    isDateValid = false; 
+                                const parsedDate = new Date(year, month, day);
+                                if(!isNaN(parsedDate.getTime())) {
+                                    const weekday = ["日", "一", "二", "三", "四", "五", "六"][parsedDate.getDay()];
+                                    wStr = ` (週${weekday})`;
                                 }
-                                
-                                const weekday = ["日", "一", "二", "三", "四", "五", "六"][parsedDate.getDay()];
-                                wStr = ` (週${weekday})`;
-                            } else { 
-                                isDateValid = false; 
                             }
-                        } catch(e){ 
-                            isDateValid = false; 
-                        }
+                        } catch(e){}
                         
-                        if (isDateValid) { 
-                            optionsHtml += `<option value="${cleanDate}">${cleanDate}${wStr}</option>`; 
-                            hasValidDate = true; 
-                        }
+                        optionsHtml += `<option value="${cleanDate}">${cleanDate}${wStr}</option>`;
+                        hasValidDate = true;
                     }
                 });
             }
 
-            if (!hasValidDate) {
-                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 (店到店需 ${limitDays} 天前預購) --</option>`;
+            // 智慧判定防呆：如果完全沒有符合的日期，或後端直接回傳無日期提示
+            if (!hasValidDate || (targetDates && targetDates[0] === "目前無可選擇日期")) {
+                const limitDays = method === 'delivery' ? 7 : 2;
+                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 (${method === 'delivery' ? '店到店' : '門市'}需 ${limitDays} 天前預購) --</option>`;
             } else {
                 optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
             }
