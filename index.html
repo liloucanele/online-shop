@@ -382,21 +382,17 @@
             let optionsHtml = "";
             let hasValidDate = false;
 
-            // 檢查後端送過來的資料是否為有效陣列，且第一個元素不是提示純文字
             if(targetDates && targetDates.length > 0 && targetDates[0] !== "目前無可選擇日期") {
                 targetDates.forEach(dateStr => {
                     if (!dateStr) return;
                     
-                    // 清洗前後端可能夾帶的雜質
                     let cleanDate = dateStr.toString().replace(/["'\r\n]/g, '').replace(/\s+/g, '').trim();
                     
                     if(cleanDate !== "") {
-                        // 統一在前端將外觀標準化為「斜線格式 (YYYY/MM/DD)」
                         cleanDate = cleanDate.replace(/-/g, '/');
                         
                         let wStr = "";
                         try {
-                            // 動態為選單加上 (週一)、(週二) 等親切提示
                             let safeDateStr = cleanDate;
                             const parts = safeDateStr.split('/');
                             if (parts.length === 3) {
@@ -417,7 +413,6 @@
                 });
             }
 
-            // 智慧判定防呆：如果完全沒有符合的日期，或後端直接回傳無日期提示
             if (!hasValidDate || (targetDates && targetDates[0] === "目前無可選擇日期")) {
                 const limitDays = method === 'delivery' ? 7 : 2;
                 optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 (${method === 'delivery' ? '店到店' : '門市'}需 ${limitDays} 天前預購) --</option>`;
