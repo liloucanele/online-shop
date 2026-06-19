@@ -389,7 +389,7 @@
 
             if (!hasValidDate) {
                 const limitDays = method === 'delivery' ? 7 : 2;
-                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期，請稍後再確認 --</option>`;
+                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 --</option>`;
             } else {
                 optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
             }
