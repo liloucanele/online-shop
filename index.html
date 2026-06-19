@@ -389,7 +389,7 @@
 
             if (!hasValidDate) {
                 const limitDays = method === 'delivery' ? 7 : 2;
-                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 (${method === 'delivery' ? '店到店' : '門市'}需 ${limitDays} 天前預購) --</option>`;
+                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期，請稍後再確認 --</option>`;
             } else {
                 optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
             }
@@ -422,19 +422,15 @@
                 
                 Object.keys(data.settings).forEach(key => {
                     const cleanKey = key.toString().replace(/\s+/g, '').trim().toLowerCase();
-                    
-                    // 🌟 超級全自動雷達：不管你是叫 711_date 還是 delivery_date，只要有這兩個字眼全部解鎖接收
-                    if(cleanKey.includes("pickup") || cleanKey.includes("store") || cleanKey.includes("自取")) {
-                        let rawStr = data.settings[key].toString().replace(/^["\s]+|["\s]+$/g, '').trim();
-                        if (rawStr !== "" && rawStr !== "目前無可選擇日期") {
-                            localPickupDates = rawStr.split(',');
-                        }
+                    const rawStr = data.settings[key].toString().replace(/^["\s]+|["\s]+$/g, '').trim();
+                    if (rawStr === "" || rawStr === "目前無可選擇日期") return;
+
+                    if (cleanKey === "pickup_available_dates") {
+                        localPickupDates = rawStr.split(',').map(d => d.trim()).filter(Boolean);
                     }
-                    if(cleanKey.includes("delivery") || cleanKey.includes("711") || cleanKey.includes("店到店")) {
-                        let rawStr = data.settings[key].toString().replace(/^["\s]+|["\s]+$/g, '').trim();
-                        if (rawStr !== "" && rawStr !== "目前無可選擇日期") {
-                            localDeliveryDates = rawStr.split(',');
-                        }
+
+                    if (cleanKey === "delivery_available_dates") {
+                        localDeliveryDates = rawStr.split(',').map(d => d.trim()).filter(Boolean);
                     }
                 });
             }
