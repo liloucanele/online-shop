@@ -330,7 +330,9 @@
                 mapLink.style.display = 'inline-flex'; 
                 addrInput.required = true;
                 addrInput.readOnly = false;
-                addrInput.value = "";
+                if(addrInput.value === "高雄市前鎮區景德路72巷12號" || addrInput.value === "") {
+                    addrInput.value = "";
+                }
                 addrInput.placeholder = "範例：Lilou門市";
                 addrInput.className = "w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50 text-stone-800 font-normal";
                 shipFeeDisplay.querySelector('span').innerText = `+$${shippingFee}`;
@@ -371,6 +373,9 @@
             return "";
         }
 
+        // =================================================================
+        // 🛡️ 終極模糊比對防禦機制：徹底無視後台空格、橫線、西元與跨平台 Bug
+        // =================================================================
         window.renderAvailableDates = function(method) {
             const dateSelect = document.getElementById('shipDate');
             const textPrompt = method === 'delivery' ? '希望到貨日期' : '自取日期';
@@ -379,7 +384,6 @@
             const now = new Date();
             const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
             
-            // 出貨限制天數：自取需 2 天以上，7-11店到店需 7 天以上
             const limitDays = method === 'delivery' ? 7 : 2; 
             const minAllowedTime = todayMidnight.getTime() + (limitDays * 24 * 60 * 60 * 1000);
             
@@ -436,7 +440,7 @@
             }
 
             if (!hasValidDate) {
-                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 (需 ${limitDays} 天前預購) --</option>`;
+                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 (店到店需 ${limitDays} 天前預購) --</option>`;
             } else {
                 optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
             }
@@ -448,6 +452,7 @@
             const CACHE_KEY = "lilou_shop_fast_cache"; const TIME_KEY = "lilou_shop_cache_time";
             const cached = localStorage.getItem(CACHE_KEY); const cachedTime = localStorage.getItem(TIME_KEY);
             const now = new Date().getTime();
+            
             if (cached) { try { renderUIWithData(JSON.parse(cached)); } catch(e) {} }
             if (cached && cachedTime && (now - parseInt(cachedTime) < 30000)) { return; }
             try {
@@ -461,13 +466,21 @@
 
         function renderUIWithData(data) {
             localProducts = data.products; localPackaging = data.packaging; localCoupons = data.coupons || []; 
+            
+            // 🛡️ 模糊查找屬性機制：防止後台因為換行符或不可見空白字元造成讀取失敗
             if(data.settings) {
-                if(data.settings.pickup_available_dates) {
-                    localPickupDates = data.settings.pickup_available_dates.toString().replace(/^["\s]+|["\s]+$/g, '').split(',');
-                }
-                if(data.settings.delivery_available_dates) {
-                    localDeliveryDates = data.settings.delivery_available_dates.toString().replace(/^["\s]+|["\s]+$/g, '').split(',');
-                }
+                localPickupDates = [];
+                localDeliveryDates = [];
+                
+                Object.keys(data.settings).forEach(key => {
+                    const cleanKey = key.toString().replace(/\s+/g, '').trim();
+                    if(cleanKey.includes("pickup_available_dates")) {
+                        localPickupDates = data.settings[key].toString().replace(/^["\s]+|["\s]+$/g, '').split(',');
+                    }
+                    if(cleanKey.includes("delivery_available_dates")) {
+                        localDeliveryDates = data.settings[key].toString().replace(/^["\s]+|["\s]+$/g, '').split(',');
+                    }
+                });
             }
 
             const boxSelect = document.getElementById('boxSelect'); const savedVal = boxSelect.value;
@@ -912,7 +925,7 @@
                     document.getElementById('formContainer').classList.add('hidden');
                     
                     let cartDetailsHtml = cart.map((box, idx) => { const flavorsStr = box.flavors.map(f => `${f.name} x ${f.quantity}個`).join('、'); return `<div>組合 ${idx + 1} [${box.boxName}]：${flavorsStr}</div>`; }).join('');
-                    const methodText = shipMethodVal === 'delivery' ? '7-11 店到店取貨' : '門市自取付款';
+                    const methodText = shipMethodVal === 'delivery' ? '7-11 店到店取貨' : '門市自店付款';
                     const dateLabelText = shipMethodVal === 'delivery' ? '希望到貨日期' : '自取日期';
 
                     document.getElementById('receiptContent').innerHTML = `
@@ -956,7 +969,7 @@
                                      (shipMethodVal === 'delivery' ? `▪️ 取貨門市：${finalDatabaseAddress}\n` : `▪️ 取貨地址：${finalDatabaseAddress}\n`) +
                                      `▪️ ${dateLabelText}：${shipDate}\n\n` +
                                      `【購物明細】\n${shareCartText}\n\n` +
-                                     `💰 總金額：$${finalTotal} 元\n\n` +
+                                     `CNY 總金額：$${finalTotal} 元\n\n` +
                                      `如有任何調整需求，請私訊官方 LINE 或 Instagram，謝謝您的支持！`;
 
                     cart = []; appliedCoupon = null; 
@@ -983,6 +996,10 @@
                 });
             } 
         }
+        
+        // 🚀 初始化時，立刻強制清空可能被鎖死的 30 秒瀏覽器舊快取
+        localStorage.removeItem("lilou_shop_fast_cache");
+        localStorage.removeItem("lilou_shop_cache_time");
         
         fetchOptions();
     </script>
