@@ -37,7 +37,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* 防止手機端快速點擊 ＋ — 時被瀏覽器誤判為雙擊放大 */
         .no-zoom-area {
             touch-action: manipulation;
         }
@@ -229,7 +228,7 @@
     <footer class="bg-stone-900 text-stone-400 py-8 px-4 mt-12 border-t border-stone-800 font-sans">
         <div class="max-w-3xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
             <div class="space-y-1.5">
-                <div class="text-white font-black text-base md:text-lg tracking-widest">粒露 Lilou｜迷你可麗露專賣</div>
+                <div class="text-white font-black text-base md:text-lg tracking-widest">粒露 Lilou｜迷你可麗露專專賣</div>
                 <div class="text-xs md:text-sm text-stone-400 font-medium tracking-wide">高雄市前鎮區景德路72巷12號<br>營業時間 14:00-18:00，不定期公休</div>
                 <div class="text-[11px] text-stone-500 pt-1">© 2026 Lilou Dessert. All rights reserved.</div>
             </div>
@@ -353,7 +352,7 @@
 
         function getWeekdayStr(dateStr) {
             try {
-                const parsedDate = new Date(dateStr.trim());
+                const parsedDate = new Date(dateStr.trim().replace(/-/g, '/'));
                 if (!isNaN(parsedDate)) {
                     const weekday = ["日", "一", "二", "三", "四", "五", "六"][parsedDate.getDay()];
                     return ` (週${weekday})`;
@@ -362,15 +361,21 @@
             return "";
         }
 
+        // ==========================================
+        // 🚀 核心修改：全新日期篩選與顯示邏輯
+        // ==========================================
         window.renderAvailableDates = function(method) {
             const dateSelect = document.getElementById('shipDate');
             const textPrompt = method === 'delivery' ? '希望到貨日期' : '自取日期';
             const targetDates = method === 'delivery' ? localDeliveryDates : localPickupDates;
-    
+            
             const now = new Date();
-            // 取得今天凌晨 00:00:00 的時間基準
             const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    
+            
+            // 門市自取限制 2 天 (今天+2)，7-11 限制 7 天 (今天+7)
+            const limitDays = method === 'delivery' ? 7 : 2;
+            const minAllowedTime = todayMidnight.getTime() + (limitDays * 24 * 60 * 60 * 1000);
+            
             let optionsHtml = "";
             let hasValidDate = false;
 
@@ -378,23 +383,21 @@
                 targetDates.forEach(dateStr => {
                     if (!dateStr) return;
                     
-                    // 【終極清洗】徹底拔除所有前後多餘的空格、單雙引號、或怪異換行符
                     let cleanDate = dateStr.toString().replace(/["'\s\r\n]/g, '').trim();
                     
                     if(cleanDate !== "") {
                         let isDateValid = true;
                         let wStr = "";
                         try {
-                            // 為了防止 iOS 手機 (Safari) 或者是特定瀏覽器看不懂「橫線 -」，一律強制轉成「斜線 /」最安全
                             const safeDateStr = cleanDate.replace(/-/g, '/');
                             const parsedDate = new Date(safeDateStr);
                             
                             if(!isNaN(parsedDate.getTime())) {
                                 const checkDateMidnight = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate(), 0, 0, 0, 0);
                                 
-                                // 【安全過濾】只要大於或等於今天凌晨的日期，一律過關可以選！
-                                if (checkDateMidnight < todayMidnight) { 
-                                    isDateValid = false; // 過去的日期才不給選
+                                // 限制大於等於特定天數，小於此時間的一律隱藏不給選
+                                if (checkDateMidnight.getTime() < minAllowedTime) { 
+                                    isDateValid = false; 
                                 }
                                 
                                 const weekday = ["日", "一", "二", "三", "四", "五", "六"][checkDateMidnight.getDay()];
@@ -414,16 +417,14 @@
                 });
             }
 
-    // 依據有沒有成功產出有效日期，動態調整最上方的提示
-    if (!hasValidDate) {
-        optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt}（關閉中） --</option>` + optionsHtml;
-    } else {
-        optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
-    }
-    
-    dateSelect.innerHTML = optionsHtml;
-}
-        
+            if (!hasValidDate) {
+                optionsHtml = `<option value="" disabled selected>-- 目前無可選的${textPrompt} --</option>` + optionsHtml;
+            } else {
+                optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
+            }
+            
+            dateSelect.innerHTML = optionsHtml;
+        }
 
         async function fetchOptions() {
             const CACHE_KEY = "lilou_shop_fast_cache"; const TIME_KEY = "lilou_shop_cache_time";
@@ -440,17 +441,54 @@
             } catch (err) { console.error("同步失敗", err); }
         }
 
+        // ==========================================
+        // 🚀 核心修改：動態掃描日期並過濾配送選單
+        // ==========================================
         function renderUIWithData(data) {
             localProducts = data.products; localPackaging = data.packaging; localCoupons = data.coupons || []; 
             if(data.settings) {
                 if(data.settings.pickup_available_dates) {
-                // 修正正規表達式，並加上 trim() 確保沒有前後多餘的空格與引號
                     localPickupDates = data.settings.pickup_available_dates.toString().replace(/^["\s]+|["\s]+$/g, '').split(',');
                 }
-            if(data.settings.delivery_available_dates) {
-                localDeliveryDates = data.settings.delivery_available_dates.toString().replace(/^["\s]+|["\s]+$/g, '').split(',');
+                if(data.settings.delivery_available_dates) {
+                    localDeliveryDates = data.settings.delivery_available_dates.toString().replace(/^["\s]+|["\s]+$/g, '').split(',');
                 }
             }
+
+            // 動態檢測是否有符合天數規則的可用日期
+            const now = new Date();
+            const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+            
+            const checkHasValidDates = (dateArray, limitDays) => {
+                if (!dateArray || dateArray.length === 0) return false;
+                const minTime = todayMidnight.getTime() + (limitDays * 24 * 60 * 60 * 1000);
+                return dateArray.some(dateStr => {
+                    let clean = dateStr.toString().replace(/["'\s\r\n]/g, '').trim();
+                    if (!clean) return false;
+                    const parsed = new Date(clean.replace(/-/g, '/'));
+                    if (isNaN(parsed.getTime())) return false;
+                    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 0, 0, 0, 0).getTime() >= minTime;
+                });
+            };
+
+            const hasStoreDates = checkHasValidDates(localPickupDates, 2);      // 自取至少+2天
+            const hasDeliveryDates = checkHasValidDates(localDeliveryDates, 7);  // 7-11至少+7天
+
+            const shipMethodSelect = document.getElementById('shipMethod');
+            let methodOptionsHtml = "";
+            
+            if (hasStoreDates) {
+                methodOptionsHtml += `<option value="store">門市自取付款</option>`;
+            }
+            if (hasDeliveryDates) {
+                methodOptionsHtml += `<option value="delivery">7-11 店到店取貨（運費另計）</option>`;
+            }
+            if (methodOptionsHtml === "") {
+                methodOptionsHtml = `<option value="" disabled selected>⚠️ 目前所有配送皆暫停服務</option>`;
+            }
+            
+            shipMethodSelect.innerHTML = methodOptionsHtml;
+
             const boxSelect = document.getElementById('boxSelect'); const savedVal = boxSelect.value;
             boxSelect.innerHTML = `<option value="" disabled selected>-- 請選擇包裝樣式 --</option>` + localPackaging.map(p => `<option value="${p.name}" data-extra="${p.extra_price}">${p.name} (+$${p.extra_price})</option>`).join('');
             if(savedVal) boxSelect.value = savedVal;
@@ -720,7 +758,40 @@
             calculateTotal(); 
         }
 
-        function calculateTotal() { let subtotal = 0; cart.forEach(box => { subtotal += box.boxTotalCost; }); document.getElementById('subtotalDisplay').innerText = `$${subtotal}`; const shipMethod = document.getElementById('shipMethod').value; let finalTotal = subtotal; if(shipMethod === 'delivery') finalTotal += shippingFee; if (appliedCoupon) { const minSpendRequirement = Number(appliedCoupon.min_spend) || 0; if (subtotal < minSpendRequirement) { appliedCoupon = null; const msgElement = document.getElementById('couponMessage'); msgElement.innerText = `✕ 組合變動，金額未達門檻 ${minSpendRequirement} 元，已自動取消折抵。`; msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-orange-500"; } } let discountAmount = 0; const couponDisplay = document.getElementById('couponDiscountDisplay'); if (appliedCoupon && subtotal > 0) { if (appliedCoupon.type === 'minus') { discountAmount = Number(appliedCoupon.value) || 0; } else if (appliedCoupon.type === 'discount') { discountAmount = Math.round(subtotal * (1 - Number(appliedCoupon.value))); } if (discountAmount > finalTotal) discountAmount = finalTotal; finalTotal -= discountAmount; couponDisplay.querySelector('span').innerText = `-$${discountAmount}`; couponDisplay.classList.remove('hidden'); } else { couponDisplay.classList.add('hidden'); } document.getElementById('totalDisplay').innerText = `$${finalTotal}`; return finalTotal; }
+        function calculateTotal() { 
+            let subtotal = 0; 
+            cart.forEach(box => { subtotal += box.boxTotalCost; }); 
+            document.getElementById('subtotalDisplay').innerText = `$${subtotal}`; 
+            const shipMethod = document.getElementById('shipMethod').value; 
+            let finalTotal = subtotal; 
+            if(shipMethod === 'delivery') finalTotal += shippingFee; 
+            if (appliedCoupon) { 
+                const minSpendRequirement = Number(appliedCoupon.min_spend) || 0; 
+                if (subtotal < minSpendRequirement) { 
+                    appliedCoupon = null; 
+                    const msgElement = document.getElementById('couponMessage'); 
+                    msgElement.innerText = `✕ 組合變動，金額未達門檻 ${minSpendRequirement} 元，已自動取消折抵。`; 
+                    msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-orange-500"; 
+                } 
+            } 
+            let discountAmount = 0; 
+            const couponDisplay = document.getElementById('couponDiscountDisplay'); 
+            if (appliedCoupon && subtotal > 0) { 
+                if (appliedCoupon.type === 'minus') { 
+                    discountAmount = Number(appliedCoupon.value) || 0; 
+                } else if (appliedCoupon.type === 'discount') { 
+                    discountAmount = Math.round(subtotal * (1 - Number(appliedCoupon.value))); 
+                } 
+                if (discountAmount > finalTotal) discountAmount = finalTotal; 
+                finalTotal -= discountAmount; 
+                couponDisplay.querySelector('span').innerText = `-$${discountAmount}`; 
+                couponDisplay.classList.remove('hidden'); 
+            } else { 
+                couponDisplay.classList.add('hidden'); 
+            } 
+            document.getElementById('totalDisplay').innerText = `$${finalTotal}`; 
+            return finalTotal; 
+        }
         
         window.applyCouponCode = function(isUserClick = false) { 
             const inputVal = document.getElementById('couponInput').value.trim().toUpperCase(); 
@@ -838,7 +909,7 @@
             const orderPackSummary = cart.map((box, i) => `[組${i+1}]${box.boxName}`).join('、');
             const totalQtyAll = cart.reduce((sum, box) => sum + box.totalQty, 0);
 
-            const finalDatabaseAddress = shipMethodVal === 'store' ? "高雄市前鎮區景德路72巷12號（營業時間14:00-18:00）" : rustAddress;
+            const finalDatabaseAddress = shipMethodVal === 'store' ? "高雄市前鎮區景德路72巷12號" : rustAddress;
 
             const orderData = { 
                 action: "submitOrder", name: custName, phone: custPhone, date: shipDate, 
@@ -890,7 +961,6 @@
                         behavior: 'smooth'
                     });
 
-                    // 2. 建立專屬於 LINE 分享的簡約純文字（排除提示、簡化多餘換行與縮排）
                     let shareCartText = cart.map((box, idx) => {
                         const flavorsStr = box.flavors.map(f => `${f.name}x${f.quantity}`).join(', ');
                         return `▫️ 組合 ${idx + 1} [${box.boxName}]\n   ${flavorsStr}`;
@@ -924,11 +994,10 @@
                     text: sharePlainText, 
                 }).then(() => console.log('分享成功')).catch((error) => console.log('使用者取消分享', error)); 
             } else { 
-                // 桌機或不支援環境，點擊按鈕改為直接複製該簡約文字到剪貼簿，並提示使用者
                 navigator.clipboard.writeText(sharePlainText).then(() => {
                     alert("📋 簡約版明細已複製到您的剪貼簿！可以至 LINE 直接黏貼傳送囉。");
                 }).catch(() => {
-                    window.print(); // 防禦機制：不支援複製則呼叫列印
+                    window.print(); 
                 });
             } 
         }
