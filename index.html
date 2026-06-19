@@ -64,7 +64,6 @@
         let countdownSeconds = 20;
 
         let pendingOrderSnapshot = null;
-
         let sharePlainText = "";
     </script>
 
@@ -73,7 +72,7 @@
             <h1 class="text-xl md:text-2xl font-black tracking-widest cursor-pointer" onclick="window.location.reload()">Lilou</h1>
             <div class="flex items-center gap-6 font-bold tracking-widest text-xs md:text-sm">
                 <button type="button" id="navShopBtn" onclick="switchMode('shop')" class="cursor-pointer transition-all duration-200 border-b-2 border-white pb-0.5 text-white">
-                    我要購物
+                    我預購甜點
                 </button>
             </div>
         </div>
@@ -248,7 +247,7 @@
                 </a>
             </div>
         </div>
-    </nav>
+    </footer>
 
     <div id="countdownOverlay" class="fixed inset-0 bg-stone-950/70 backdrop-blur-xs flex items-center justify-center z-50 hidden">
         <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl max-w-sm w-full text-center space-y-5 mx-4 border border-stone-100">
@@ -373,60 +372,44 @@
             return "";
         }
 
-
-        window.renderAvailableDates = function(method) { 
+        window.renderAvailableDates = function(method) {
             const dateSelect = document.getElementById('shipDate');
-            const textPrompt = method === 'delivery' ? '希望到貨日期' : '自取日期'; 
+            const textPrompt = method === 'delivery' ? '希望到貨日期' : '自取日期';
             const targetDates = method === 'delivery' ? localDeliveryDates : localPickupDates;
             
-            let optionsHtml = ""; 
+            let optionsHtml = "";
             let hasValidDate = false;
-        
-            // 🛡️ 安全防護：先判斷後端傳過來的是不是已經是「目前無可選擇日期」的提示純文字，或是根本沒資料
-            if (targetDates && targetDates.length > 0 && targetDates[0] !== "目前無可選擇日期" && targetDates[0] !== "") { 
-                targetDates.forEach(dateStr => { 
-                    if (!dateStr) return; 
+
+            // 🛡️ 徹底信任後端：移除所有前端毫秒限制，只負責優雅渲染
+            if(targetDates && targetDates.length > 0 && targetDates[0] !== "目前無可選擇日期" && targetDates[0] !== "") {
+                targetDates.forEach(dateStr => {
+                    if (!dateStr) return;
                     
-                    // 清洗字串，並強制把所有可能存在的橫線（-）洗成漂亮的斜線（/）
-                    let cleanDate = dateStr.toString().replace(/["'\r\n]/g, '').replace(/\s+/g, '').trim().replace(/-/g, '/'); 
+                    let cleanDate = dateStr.toString().replace(/["'\r\n]/g, '').replace(/\s+/g, '').trim().replace(/-/g, '/');
                     
-                    if (cleanDate !== "") { 
-                        let wStr = ""; 
-                        try { 
-                            const parts = cleanDate.split('/'); 
-                            if (parts.length === 3) { 
-                                const year = parseInt(parts[0], 10); 
-                                const month = parseInt(parts[1], 10) - 1; 
-                                const day = parseInt(parts[2], 10); 
-                                const parsedDate = new Date(year, month, day); 
-                                if (!isNaN(parsedDate.getTime())) { 
-                                    const weekday = ["日", "一", "二", "三", "四", "五", "六"][parsedDate.getDay()]; 
-                                    wStr = ` (週${weekday})`; 
-                                } 
-                            } 
-                        } catch(e) {} 
-                        
-                        // 這裡最重要：不再在前端卡 +2、+7 天的毫秒計算，完全信任後端濾好的結果
-                        optionsHtml += `<option value="${cleanDate}">${cleanDate}${wStr}</option>`; 
-                        hasValidDate = true; 
-                    } 
-                }); 
+                    if(cleanDate !== "") {
+                        let wStr = getWeekdayStr(cleanDate);
+                        optionsHtml += `<option value="${cleanDate}">${cleanDate}${wStr}</option>`;
+                        hasValidDate = true;
+                    }
+                });
             }
-        
-            // 呈現最終的下拉選單介面
-            if (!hasValidDate) { 
-                const limitDays = method === 'delivery' ? 7 : 2; 
-                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 (${method === 'delivery' ? '店到店' : '門市'}需 ${limitDays} 天前預購) --</option>`; 
-            } else { 
-                optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml; 
-            } 
+
+            if (!hasValidDate) {
+                const limitDays = method === 'delivery' ? 7 : 2;
+                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 (${method === 'delivery' ? '店到店' : '門市'}需 ${limitDays} 天前預購) --</option>`;
+            } else {
+                optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
+            }
             
-            dateSelect.innerHTML = optionsHtml; 
+            dateSelect.innerHTML = optionsHtml;
         }
 
         async function fetchOptions() {
-            const CACHE_KEY = "lilou_shop_fast_cache"; const TIME_KEY = "lilou_shop_cache_time";
-            const cached = localStorage.getItem(CACHE_KEY); const cachedTime = localStorage.getItem(TIME_KEY);
+            const CACHE_KEY = "lilou_shop_fast_cache"; 
+            const TIME_KEY = "lilou_shop_cache_time";
+            const cached = localStorage.getItem(CACHE_KEY); 
+            const cachedTime = localStorage.getItem(TIME_KEY);
             const now = new Date().getTime();
             
             if (cached) { try { renderUIWithData(JSON.parse(cached)); } catch(e) {} }
@@ -435,36 +418,44 @@
                 const cacheBuster = `&_=${now}`;
                 const res = await fetch(`${API_URL}?action=getFormOptions${cacheBuster}`);
                 const data = await res.json();
-                localStorage.setItem(CACHE_KEY, JSON.stringify(data)); localStorage.setItem(TIME_KEY, now.toString());
+                localStorage.setItem(CACHE_KEY, JSON.stringify(data)); 
+                localStorage.setItem(TIME_KEY, now.toString());
                 renderUIWithData(data);
             } catch (err) { console.error("同步失敗", err); }
         }
 
         function renderUIWithData(data) {
-            localProducts = data.products; localPackaging = data.packaging; localCoupons = data.coupons || []; 
+            localProducts = data.products; 
+            localPackaging = data.packaging; 
+            localCoupons = data.coupons || []; 
             
-            // 🛡️ 模糊查找屬性機制：防止後台因為換行符或不可見空白字元造成讀取失敗
             if(data.settings) {
                 localPickupDates = [];
                 localDeliveryDates = [];
                 
                 Object.keys(data.settings).forEach(key => {
                     const cleanKey = key.toString().replace(/\s+/g, '').trim();
+                    // 🛡️ 修復點：修正原本結尾多餘空格的錯誤，完美解析陣列
                     if(cleanKey.includes("pickup_available_dates")) {
-                        localPickupDates = data.settings[key].toString().replace(/^["\s]+|["\s]+$/g, '').split(',');
+                        let rawStr = data.settings[key].toString().replace(/^["\s]+|["\s]+$/g, '').trim();
+                        localPickupDates = rawStr !== "" ? rawStr.split(',') : [];
                     }
                     if(cleanKey.includes("delivery_available_dates")) {
-                        localDeliveryDates = data.settings[key].toString().replace(/^["\s]+|["\s]+$/g, '').split(',');
+                        let rawStr = data.settings[key].toString().replace(/^["\s]+|["\s]+$/g, '').trim();
+                        localDeliveryDates = rawStr !== "" ? rawStr.split(',') : [];
                     }
                 });
             }
 
-            const boxSelect = document.getElementById('boxSelect'); const savedVal = boxSelect.value;
+            const boxSelect = document.getElementById('boxSelect'); 
+            const savedVal = boxSelect.value;
             boxSelect.innerHTML = `<option value="" disabled selected>-- 請選擇包裝樣式 --</option>` + localPackaging.map(p => `<option value="${p.name}" data-extra="${p.extra_price}">${p.name} (+$${p.extra_price})</option>`).join('');
             if(savedVal) boxSelect.value = savedVal;
+            
             const packBtn = document.getElementById('packBtn');
             packBtn.className = "w-full bg-[#5B7290] text-white font-extrabold tracking-widest h-12 rounded-xl hover:bg-[#3E4F66] transition-colors text-sm md:text-base uppercase shadow-xs cursor-pointer";
-            packBtn.innerText = "確定組合，打包放入購物車"; packBtn.disabled = false;
+            packBtn.innerText = "確定組合，打包放入購物車"; 
+            packBtn.disabled = false;
             
             handleShippingMethodChange(); 
             renderFlavorMenu(); 
@@ -472,23 +463,22 @@
         }
 
         function renderFlavorMenu() {
-            const fMenu = document.getElementById('flavorMenu'); const boxSelect = document.getElementById('boxSelect');
-            const isBoxNotSelected = (boxSelect.value === ""); const bName = boxSelect.value;
+            const fMenu = document.getElementById('flavorMenu'); 
+            const boxSelect = document.getElementById('boxSelect');
+            const isBoxNotSelected = (boxSelect.value === ""); 
+            const bName = boxSelect.value;
             
             fMenu.innerHTML = localProducts.map((p, idx) => {
-                let occupiedInCart = 0; cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === p.name); if (matchFlavor) occupiedInCart += matchFlavor.quantity; });
+                let occupiedInCart = 0; 
+                cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === p.name); if (matchFlavor) occupiedInCart += matchFlavor.quantity; });
                 const virtualStock = p.stock - occupiedInCart; 
                 let isHidden = false;
                 
                 if (!isBoxNotSelected) {
                     if (bName.includes("限")) {
-                        if (!p.name.includes("限")) {
-                            isHidden = true;
-                        }
+                        if (!p.name.includes("限")) isHidden = true;
                     } else {
-                        if (p.name.includes("限")) {
-                            isHidden = true;
-                        }
+                        if (p.name.includes("限")) isHidden = true;
                     }
                 }
                 
@@ -567,7 +557,6 @@
                     currentBoxLimit = null; 
                 } else { 
                     const match = bVal.match(/\d+/); 
-                    currentBoxLimit = null; 
                     currentBoxLimit = match ? parseInt(match[0]) : null; 
                 } 
             } else { 
@@ -945,7 +934,7 @@
                                      (shipMethodVal === 'delivery' ? `▪️ 取貨門市：${finalDatabaseAddress}\n` : `▪️ 取貨地址：${finalDatabaseAddress}\n`) +
                                      `▪️ ${dateLabelText}：${shipDate}\n\n` +
                                      `【購物明細】\n${shareCartText}\n\n` +
-                                     `CNY 總金額：$${finalTotal} 元\n\n` +
+                                     `總金額：$${finalTotal} 元\n\n` +
                                      `如有任何調整需求，請私訊官方 LINE 或 Instagram，謝謝您的支持！`;
 
                     cart = []; appliedCoupon = null; 
@@ -973,7 +962,7 @@
             } 
         }
         
-        // 🚀 初始化時，立刻強制清空可能被鎖死的 30 秒瀏覽器舊快取
+        // 🚀 強制排空舊快取殘留
         localStorage.removeItem("lilou_shop_fast_cache");
         localStorage.removeItem("lilou_shop_cache_time");
         
