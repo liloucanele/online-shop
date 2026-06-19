@@ -363,63 +363,58 @@
         }
 
         window.renderAvailableDates = function(method) {
-    const dateSelect = document.getElementById('shipDate');
-    const textPrompt = method === 'delivery' ? '希望到貨日期' : '自取日期';
-    const targetDates = method === 'delivery' ? localDeliveryDates : localPickupDates;
+            const dateSelect = document.getElementById('shipDate');
+            const textPrompt = method === 'delivery' ? '希望到貨日期' : '自取日期';
+            const targetDates = method === 'delivery' ? localDeliveryDates : localPickupDates;
     
-    const now = new Date();
-    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+            const now = new Date();
+            // 取得今天凌晨 00:00:00 的時間基準
+            const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
     
-    // 計算最少需要幾天後（店到店 5 天，自取 2 天）
-    // 如果您想徹底解除這個限制，可以直接把下面的 5 和 2 都改成 0
-    let minAllowedDate = new Date(todayMidnight.getTime());
-    if (method === 'delivery') { 
-        minAllowedDate.setDate(todayMidnight.getDate() + 5); 
-    } else { 
-        minAllowedDate.setDate(todayMidnight.getDate() + 2); 
-    }
-    
-    let optionsHtml = "";
-    let hasValidDate = false;
+            let optionsHtml = "";
+            let hasValidDate = false;
 
-    if(targetDates && targetDates.length > 0) {
-        targetDates.forEach(dateStr => {
-            // 【強化清洗】徹底拔除可能夾帶的雙引號、單引號及前後空格
-            const cleanDate = dateStr.toString().replace(/["'\s]/g, '').trim();
-            
-            if(cleanDate !== "") {
-                let isDateValid = true;
-                let wStr = "";
-                try {
-                    // 將 YYYY-MM-DD 轉換為標準斜線格式，確保所有手機/瀏覽器（包含 iOS Safari）都能 100% 解析
-                    const safeDateStr = cleanDate.replace(/-/g, '/');
-                    const parsedDate = new Date(safeDateStr);
+            if(targetDates && targetDates.length > 0) {
+                targetDates.forEach(dateStr => {
+                    if (!dateStr) return;
                     
-                    if(!isNaN(parsedDate.getTime())) {
-                        const checkDateMidnight = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate(), 0, 0, 0, 0);
-                        
-                        // 檢查是否符合限制天數
-                        if (checkDateMidnight < minAllowedDate) { 
+                    // 【終極清洗】徹底拔除所有前後多餘的空格、單雙引號、或怪異換行符
+                    let cleanDate = dateStr.toString().replace(/["'\s\r\n]/g, '').trim();
+                    
+                    if(cleanDate !== "") {
+                        let isDateValid = true;
+                        let wStr = "";
+                        try {
+                            // 為了防止 iOS 手機 (Safari) 或者是特定瀏覽器看不懂「橫線 -」，一律強制轉成「斜線 /」最安全
+                            const safeDateStr = cleanDate.replace(/-/g, '/');
+                            const parsedDate = new Date(safeDateStr);
+                            
+                            if(!isNaN(parsedDate.getTime())) {
+                                const checkDateMidnight = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate(), 0, 0, 0, 0);
+                                
+                                // 【安全過濾】只要大於或等於今天凌晨的日期，一律過關可以選！
+                                if (checkDateMidnight < todayMidnight) { 
+                                    isDateValid = false; // 過去的日期才不給選
+                                }
+                                
+                                const weekday = ["日", "一", "二", "三", "四", "五", "六"][checkDateMidnight.getDay()];
+                                wStr = ` (週${weekday})`;
+                            } else { 
+                                isDateValid = false; 
+                            }
+                        } catch(e){ 
                             isDateValid = false; 
                         }
                         
-                        const weekday = ["日", "一", "二", "三", "四", "五", "六"][checkDateMidnight.getDay()];
-                        wStr = ` (週${weekday})`;
-                    } else { 
-                        isDateValid = false; 
+                        if (isDateValid) { 
+                            optionsHtml += `<option value="${cleanDate}">${cleanDate}${wStr}</option>`; 
+                            hasValidDate = true; 
+                        }
                     }
-                } catch(e){ 
-                    isDateValid = false; 
-                }
-                
-                if (isDateValid) { 
-                    optionsHtml += `<option value="${cleanDate}">${cleanDate}${wStr}</option>`; 
-                    hasValidDate = true; 
-                }
+                });
             }
-        });
-    }
 
+    // 依據有沒有成功產出有效日期，動態調整最上方的提示
     if (!hasValidDate) {
         optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt}（關閉中） --</option>` + optionsHtml;
     } else {
@@ -427,7 +422,7 @@
     }
     
     dateSelect.innerHTML = optionsHtml;
-    }
+}
         
 
         async function fetchOptions() {
