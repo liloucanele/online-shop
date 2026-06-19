@@ -436,8 +436,13 @@
         function renderUIWithData(data) {
             localProducts = data.products; localPackaging = data.packaging; localCoupons = data.coupons || []; 
             if(data.settings) {
-                if(data.settings.pickup_available_dates) localPickupDates = data.settings.pickup_available_dates.toString().replace(/^"|"/g, '').split(',');
-                if(data.settings.delivery_available_dates) localDeliveryDates = data.settings.delivery_available_dates.toString().replace(/^"|"$/g, '').split(',');
+                if(data.settings.pickup_available_dates) {
+                // 修正正規表達式，並加上 trim() 確保沒有前後多餘的空格與引號
+                    localPickupDates = data.settings.pickup_available_dates.toString().replace(/^["\s]+|["\s]+$/g, '').split(',');
+                }
+            if(data.settings.delivery_available_dates) {
+                localDeliveryDates = data.settings.delivery_available_dates.toString().replace(/^["\s]+|["\s]+$/g, '').split(',');
+                }
             }
             const boxSelect = document.getElementById('boxSelect'); const savedVal = boxSelect.value;
             boxSelect.innerHTML = `<option value="" disabled selected>-- 請選擇包裝樣式 --</option>` + localPackaging.map(p => `<option value="${p.name}" data-extra="${p.extra_price}">${p.name} (+$${p.extra_price})</option>`).join('');
