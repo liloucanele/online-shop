@@ -228,7 +228,7 @@
     <footer class="bg-stone-900 text-stone-400 py-8 px-4 mt-12 border-t border-stone-800 font-sans">
         <div class="max-w-3xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
             <div class="space-y-1.5">
-                <div class="text-white font-black text-base md:text-lg tracking-widest">粒露 Lilou｜迷你可麗露專專賣</div>
+                <div class="text-white font-black text-base md:text-lg tracking-widest">粒露 Lilou｜迷你可麗露專賣</div>
                 <div class="text-xs md:text-sm text-stone-400 font-medium tracking-wide">高雄市前鎮區景德路72巷12號<br>營業時間 14:00-18:00，不定期公休</div>
                 <div class="text-[11px] text-stone-500 pt-1">© 2026 Lilou Dessert. All rights reserved.</div>
             </div>
@@ -352,7 +352,9 @@
 
         function getWeekdayStr(dateStr) {
             try {
-                const parsedDate = new Date(dateStr.trim().replace(/-/g, '/'));
+                // 強制補上 00:00:00 本地時間以解析精確星期幾
+                const clean = dateStr.trim().replace(/-/g, '/');
+                const parsedDate = new Date(clean + " 00:00:00");
                 if (!isNaN(parsedDate)) {
                     const weekday = ["日", "一", "二", "三", "四", "五", "六"][parsedDate.getDay()];
                     return ` (週${weekday})`;
@@ -362,7 +364,7 @@
         }
 
         // ==========================================
-        // 🚀 核心修改：全新日期篩選與顯示邏輯
+        // 🚀 核心優化：日期篩選與顯示邏輯 (已解決橫線時區 Bug)
         // ==========================================
         window.renderAvailableDates = function(method) {
             const dateSelect = document.getElementById('shipDate');
@@ -390,7 +392,8 @@
                         let wStr = "";
                         try {
                             const safeDateStr = cleanDate.replace(/-/g, '/');
-                            const parsedDate = new Date(safeDateStr);
+                            // 🔥 核心修正：強制補上 " 00:00:00" 避開時區被當作格林威治時間
+                            const parsedDate = new Date(safeDateStr + " 00:00:00");
                             
                             if(!isNaN(parsedDate.getTime())) {
                                 const checkDateMidnight = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate(), 0, 0, 0, 0);
@@ -442,7 +445,7 @@
         }
 
         // ==========================================
-        // 🚀 核心修改：動態掃描日期並過濾配送選單
+        // 🚀 核心優化：動態掃描日期並過濾配送選單 (已解決橫線時區 Bug)
         // ==========================================
         function renderUIWithData(data) {
             localProducts = data.products; localPackaging = data.packaging; localCoupons = data.coupons || []; 
@@ -465,7 +468,8 @@
                 return dateArray.some(dateStr => {
                     let clean = dateStr.toString().replace(/["'\s\r\n]/g, '').trim();
                     if (!clean) return false;
-                    const parsed = new Date(clean.replace(/-/g, '/'));
+                    // 🔥 核心修正：強制補上 " 00:00:00" 防止特定系統時區誤判成 GMT+0
+                    const parsed = new Date(clean.replace(/-/g, '/') + " 00:00:00");
                     if (isNaN(parsed.getTime())) return false;
                     return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 0, 0, 0, 0).getTime() >= minTime;
                 });
