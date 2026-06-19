@@ -429,7 +429,7 @@
             }
 
             if (!hasValidDate) {
-                optionsHtml = `<option value="" disabled selected>-- ⚠️ 目前無大於 ${limitDays} 天限制的可用日期 --</option>`;
+                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 --</option>`;
             } else {
                 optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
             }
