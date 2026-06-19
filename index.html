@@ -374,53 +374,54 @@
         }
 
 
-        window.renderAvailableDates = function(method) {
+        window.renderAvailableDates = function(method) { 
             const dateSelect = document.getElementById('shipDate');
-            const textPrompt = method === 'delivery' ? '希望到貨日期' : '自取日期';
+            const textPrompt = method === 'delivery' ? '希望到貨日期' : '自取日期'; 
             const targetDates = method === 'delivery' ? localDeliveryDates : localPickupDates;
             
-            let optionsHtml = "";
+            let optionsHtml = ""; 
             let hasValidDate = false;
-
-            if(targetDates && targetDates.length > 0 && targetDates[0] !== "目前無可選擇日期") {
-                targetDates.forEach(dateStr => {
-                    if (!dateStr) return;
+        
+            // 🛡️ 安全防護：先判斷後端傳過來的是不是已經是「目前無可選擇日期」的提示純文字，或是根本沒資料
+            if (targetDates && targetDates.length > 0 && targetDates[0] !== "目前無可選擇日期" && targetDates[0] !== "") { 
+                targetDates.forEach(dateStr => { 
+                    if (!dateStr) return; 
                     
-                    let cleanDate = dateStr.toString().replace(/["'\r\n]/g, '').replace(/\s+/g, '').trim();
+                    // 清洗字串，並強制把所有可能存在的橫線（-）洗成漂亮的斜線（/）
+                    let cleanDate = dateStr.toString().replace(/["'\r\n]/g, '').replace(/\s+/g, '').trim().replace(/-/g, '/'); 
                     
-                    if(cleanDate !== "") {
-                        cleanDate = cleanDate.replace(/-/g, '/');
+                    if (cleanDate !== "") { 
+                        let wStr = ""; 
+                        try { 
+                            const parts = cleanDate.split('/'); 
+                            if (parts.length === 3) { 
+                                const year = parseInt(parts[0], 10); 
+                                const month = parseInt(parts[1], 10) - 1; 
+                                const day = parseInt(parts[2], 10); 
+                                const parsedDate = new Date(year, month, day); 
+                                if (!isNaN(parsedDate.getTime())) { 
+                                    const weekday = ["日", "一", "二", "三", "四", "五", "六"][parsedDate.getDay()]; 
+                                    wStr = ` (週${weekday})`; 
+                                } 
+                            } 
+                        } catch(e) {} 
                         
-                        let wStr = "";
-                        try {
-                            let safeDateStr = cleanDate;
-                            const parts = safeDateStr.split('/');
-                            if (parts.length === 3) {
-                                const year = parseInt(parts[0], 10);
-                                const month = parseInt(parts[1], 10) - 1;
-                                const day = parseInt(parts[2], 10);
-                                const parsedDate = new Date(year, month, day);
-                                if(!isNaN(parsedDate.getTime())) {
-                                    const weekday = ["日", "一", "二", "三", "四", "五", "六"][parsedDate.getDay()];
-                                    wStr = ` (週${weekday})`;
-                                }
-                            }
-                        } catch(e){}
-                        
-                        optionsHtml += `<option value="${cleanDate}">${cleanDate}${wStr}</option>`;
-                        hasValidDate = true;
-                    }
-                });
+                        // 這裡最重要：不再在前端卡 +2、+7 天的毫秒計算，完全信任後端濾好的結果
+                        optionsHtml += `<option value="${cleanDate}">${cleanDate}${wStr}</option>`; 
+                        hasValidDate = true; 
+                    } 
+                }); 
             }
-
-            if (!hasValidDate || (targetDates && targetDates[0] === "目前無可選擇日期")) {
-                const limitDays = method === 'delivery' ? 7 : 2;
-                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 (${method === 'delivery' ? '店到店' : '門市'}需 ${limitDays} 天前預購) --</option>`;
-            } else {
-                optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
-            }
+        
+            // 呈現最終的下拉選單介面
+            if (!hasValidDate) { 
+                const limitDays = method === 'delivery' ? 7 : 2; 
+                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 (${method === 'delivery' ? '店到店' : '門市'}需 ${limitDays} 天前預購) --</option>`; 
+            } else { 
+                optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml; 
+            } 
             
-            dateSelect.innerHTML = optionsHtml;
+            dateSelect.innerHTML = optionsHtml; 
         }
 
         async function fetchOptions() {
