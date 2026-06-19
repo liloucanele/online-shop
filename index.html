@@ -422,13 +422,19 @@
                 
                 Object.keys(data.settings).forEach(key => {
                     const cleanKey = key.toString().replace(/\s+/g, '').trim().toLowerCase();
-                    if(cleanKey.includes("pickup_available_dates")) {
+                    
+                    // 🌟 超級全自動雷達：不管你是叫 711_date 還是 delivery_date，只要有這兩個字眼全部解鎖接收
+                    if(cleanKey.includes("pickup") || cleanKey.includes("store") || cleanKey.includes("自取")) {
                         let rawStr = data.settings[key].toString().replace(/^["\s]+|["\s]+$/g, '').trim();
-                        localPickupDates = (rawStr !== "" && rawStr !== "目前無可選擇日期") ? rawStr.split(',') : [];
+                        if (rawStr !== "" && rawStr !== "目前無可選擇日期") {
+                            localPickupDates = rawStr.split(',');
+                        }
                     }
-                    if(cleanKey.includes("delivery_available_dates")) {
+                    if(cleanKey.includes("delivery") || cleanKey.includes("711") || cleanKey.includes("店到店")) {
                         let rawStr = data.settings[key].toString().replace(/^["\s]+|["\s]+$/g, '').trim();
-                        localDeliveryDates = (rawStr !== "" && rawStr !== "目前無可選擇日期") ? rawStr.split(',') : [];
+                        if (rawStr !== "" && rawStr !== "目前無可選擇日期") {
+                            localDeliveryDates = rawStr.split(',');
+                        }
                     }
                 });
             }
@@ -800,7 +806,7 @@
             if (submissionInterval) clearInterval(submissionInterval);
             switchToLoadingState();
             const s = pendingOrderSnapshot;
-            executeBackendPost(s.orderId, s.custName, s.custPhone, s.shipDate, s.shipMethodVal, s.custAddress, s.finalTotal);
+            executeBackendPost(s.orderId, s.custName, s.custPhone, s.shipDate, s.shipMethodVal, s.custAddress, finalTotal);
             pendingOrderSnapshot = null;
         }
 
