@@ -826,7 +826,7 @@
             const orderPackSummary = cart.map((box, i) => `[組${i+1}]${box.boxName}`).join('、');
             const totalQtyAll = cart.reduce((sum, box) => sum + box.totalQty, 0);
 
-            const finalDatabaseAddress = shipMethodVal === 'store' ? "高雄市前鎮區景德路72巷12號" : rustAddress;
+            const finalDatabaseAddress = shipMethodVal === 'store' ? "高雄市前鎮區景德路72巷12號（營業時間14:00-18:00）" : rustAddress;
 
             const orderData = { 
                 action: "submitOrder", name: custName, phone: custPhone, date: shipDate, 
