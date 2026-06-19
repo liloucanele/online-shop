@@ -236,7 +236,7 @@
             <div class="flex items-center gap-4">
                 <a href="https://lin.ee/ane79Cw" target="_blank" class="w-10 h-10 rounded-xl bg-stone-800 hover:bg-[#06C755] flex items-center justify-center transition-all duration-200 text-stone-300 hover:text-white shadow-xs shrink-0" title="官方 LINE">
                     <svg class="w-5 h-5 fill-current shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path d="M24 10.304c0-5.369-5.383-9.738-12-9.738S0 4.935 0 10.304c0 4.814 4.269 8.846 10.036 9.564l-.64 2.42c-.074.284.18.528.455.353l2.844-1.815c.427.051.865.079 1.305.079 6.617 0 12-4.369 12-9.591zm-15.932 2.766h-1.635c-.244 0-.44-.197-.44-.44v-3.766c0-.244.196-.44.44-.44s.44.196.44.44v3.326h1.195c.244 0 .44.196.44.44s-.196.44-.44.44zm2.457-.44c0 .244-.196.44-.44.44s-.44-.196-.44-.44v-3.766c0-.244.196-.44.44-.44s.44.196.44.44v3.766zm4.27 0c0 .193-.122.361-.303.418-.045.014-.092.022-.137.022-.142 0-.275-.068-.358-.188l-1.657-2.392v2.14c0 .244-.196.44-.44.44s-.44-.196-.44-.44v-3.766c0-.192.122-.361.302-.417.046-.015.093-.023.138-.023.142 0 .275.068.358.188l1.657 2.392v-2.14c0-.244.196-.44.44-.44s.44.196.44.44v3.766zm3.326-1.195c0 .244-.196.44-.44.44h-1.195v.755h1.195c.244 0 .44.196.44.44s-.196.44-.44.44h-1.635c-.244 0-.44-.197-.44-.44v-3.766c0-.244.196-.44.44-.44h1.635c.244 0 .44.196.44.44s-.196.44-.44.44h-1.195v.733h1.195c.244 0 .44.196.44.44z"/>
+                        <path d="M24 10.304c0-5.369-5.383-9.738-12-9.738S0 4.935 0 10.304c0 4.814 4.269 8.846 10.036 9.564l-.64 2.42c-.074.284.18.528.455.353l2.844-1.815c.427.051.865.079(營業時間 14:00-18:00)1.305.079 6.617 0 12-4.369 12-9.591zm-15.932 2.766h-1.635c-.244 0-.44-.197-.44-.44v-3.766c0-.244.196-.44.44-.44s.44.196.44.44v3.326h1.195c.244 0 .44.196.44.44s-.196.44-.44.44zm2.457-.44c0 .244-.196.44-.44.44s-.44-.196-.44-.44v-3.766c0-.244.196-.44.44-.44s.44.196.44.44v3.766zm4.27 0c0 .193-.122.361-.303.418-.045.014-.092.022-.137.022-.142 0-.275-.068-.358-.188l-1.657-2.392v2.14c0 .244-.196.44-.44.44s-.44-.196-.44-.44v-3.766c0-.192.122-.361.302-.417.046-.015.093-.023.138-.023.142 0 .275.068.358.188l1.657 2.392v-2.14c0-.244.196-.44.44-.44s.44.196.44.44v3.766zm3.326-1.195c0 .244-.196.44-.44.44h-1.195v.755h1.195c.244 0 .44.196.44.44s-.196.44-.44.44h-1.635c-.244 0-.44-.197-.44-.44v-3.766c0-.244.196-.44.44-.44h1.635c.244 0 .44.196.44.44s-.196.44-.44.44h-1.195v.733h1.195c.244 0 .44.196.44.44z"/>
                     </svg>
                 </a>
                 <a href="https://www.instagram.com/lilou.official_/" target="_blank" class="w-10 h-10 rounded-xl bg-stone-800 hover:bg-[#E1306C] flex items-center justify-center transition-all duration-200 text-stone-300 hover:text-white shadow-xs shrink-0" title="官方 Instagram">
@@ -352,7 +352,6 @@
 
         function getWeekdayStr(dateStr) {
             try {
-                // 強效拔除字串所有空格再進行解析
                 const clean = dateStr.toString().replace(/\s+/g, '').replace(/-/g, '/');
                 const parsedDate = new Date(clean + " 00:00:00");
                 if (!isNaN(parsedDate)) {
@@ -364,7 +363,7 @@
         }
 
         // ==========================================
-        // 🚀 強效升級版：日期篩選顯示與字串深度清洗邏輯
+        // 🚀 核心優化：絕對不隱藏配送選單，直接進行日期清洗比對
         // ==========================================
         window.renderAvailableDates = function(method) {
             const dateSelect = document.getElementById('shipDate');
@@ -384,7 +383,6 @@
                 targetDates.forEach(dateStr => {
                     if (!dateStr) return;
                     
-                    // 🔥 強效清洗：用 \s+ 移除包含單雙引號、隱藏換行以及所有內嵌的英文空格
                     let cleanDate = dateStr.toString().replace(/["'\r\n]/g, '').replace(/\s+/g, '').trim();
                     
                     if(cleanDate !== "") {
@@ -419,7 +417,7 @@
             }
 
             if (!hasValidDate) {
-                optionsHtml = `<option value="" disabled selected>-- 目前無可選的${textPrompt} --</option>` + optionsHtml;
+                optionsHtml = `<option value="" disabled selected>-- ⚠️ 目前無大於${limitDays}天限制的可用日期 --</option>`;
             } else {
                 optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
             }
@@ -443,7 +441,7 @@
         }
 
         // ==========================================
-        // 🚀 強效升級版：動態掃描日期並過濾配送選單
+        // 🚀 核心優化：保留全部配送選項，防止任何前端報錯導致元件消失
         // ==========================================
         function renderUIWithData(data) {
             localProducts = data.products; localPackaging = data.packaging; localCoupons = data.coupons || []; 
@@ -456,39 +454,12 @@
                 }
             }
 
-            const now = new Date();
-            const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-            
-            const checkHasValidDates = (dateArray, limitDays) => {
-                if (!dateArray || dateArray.length === 0) return false;
-                const minTime = todayMidnight.getTime() + (limitDays * 24 * 60 * 60 * 1000);
-                return dateArray.some(dateStr => {
-                    // 🔥 同步深度清洗所有潛在的髒空格，避免 7-11 判定死掉
-                    let clean = dateStr.toString().replace(/["'\r\n]/g, '').replace(/\s+/g, '').trim();
-                    if (!clean) return false;
-                    const parsed = new Date(clean.replace(/-/g, '/') + " 00:00:00");
-                    if (isNaN(parsed.getTime())) return false;
-                    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 0, 0, 0, 0).getTime() >= minTime;
-                });
-            };
-
-            const hasStoreDates = checkHasValidDates(localPickupDates, 2);      
-            const hasDeliveryDates = checkHasValidDates(localDeliveryDates, 7);  
-
+            // 100% 強制保留基本兩個配送選項，不再透過程式碼自動拔除，避開陣列解析 NaN 卡死陷阱
             const shipMethodSelect = document.getElementById('shipMethod');
-            let methodOptionsHtml = "";
-            
-            if (hasStoreDates) {
-                methodOptionsHtml += `<option value="store">門市自取付款</option>`;
-            }
-            if (hasDeliveryDates) {
-                methodOptionsHtml += `<option value="delivery">7-11 店到店取貨（運費另計）</option>`;
-            }
-            if (methodOptionsHtml === "") {
-                methodOptionsHtml = `<option value="" disabled selected>⚠️ 目前所有配送皆暫停服務</option>`;
-            }
-            
-            shipMethodSelect.innerHTML = methodOptionsHtml;
+            shipMethodSelect.innerHTML = `
+                <option value="store">門市自取付款</option>
+                <option value="delivery">7-11 店到店取貨（運費另計）</option>
+            `;
 
             const boxSelect = document.getElementById('boxSelect'); const savedVal = boxSelect.value;
             boxSelect.innerHTML = `<option value="" disabled selected>-- 請選擇包裝樣式 --</option>` + localPackaging.map(p => `<option value="${p.name}" data-extra="${p.extra_price}">${p.name} (+$${p.extra_price})</option>`).join('');
@@ -786,6 +757,7 @@
                 if (discountAmount > finalTotal) discountAmount = finalTotal; 
                 finalTotal -= discountAmount; 
                 couponDisplay.querySelector('span').innerText = `-$${discountAmount}`; 
+                couponDisplay.querySelector('span').innerText = `-$${discountAmount}`; 
                 couponDisplay.classList.remove('hidden'); 
             } else { 
                 couponDisplay.classList.add('hidden'); 
@@ -837,6 +809,7 @@
             const shipMethodVal = document.getElementById('shipMethod').value;
             const rawShipDate = document.getElementById('shipDate').value;
             
+            if (!rawShipDate) { alert("請選擇預購取貨日期！"); return; }
             const shipDateWithWeekday = rawShipDate + getWeekdayStr(rawShipDate);
             const custAddress = document.getElementById('custAddress').value.trim();
             const finalTotal = calculateTotal();
