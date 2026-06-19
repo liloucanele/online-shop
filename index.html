@@ -352,8 +352,8 @@
 
         function getWeekdayStr(dateStr) {
             try {
-                // 強制補上 00:00:00 本地時間以解析精確星期幾
-                const clean = dateStr.trim().replace(/-/g, '/');
+                // 強效拔除字串所有空格再進行解析
+                const clean = dateStr.toString().replace(/\s+/g, '').replace(/-/g, '/');
                 const parsedDate = new Date(clean + " 00:00:00");
                 if (!isNaN(parsedDate)) {
                     const weekday = ["日", "一", "二", "三", "四", "五", "六"][parsedDate.getDay()];
@@ -364,7 +364,7 @@
         }
 
         // ==========================================
-        // 🚀 核心優化：日期篩選與顯示邏輯 (已解決橫線時區 Bug)
+        // 🚀 強效升級版：日期篩選顯示與字串深度清洗邏輯
         // ==========================================
         window.renderAvailableDates = function(method) {
             const dateSelect = document.getElementById('shipDate');
@@ -374,7 +374,6 @@
             const now = new Date();
             const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
             
-            // 門市自取限制 2 天 (今天+2)，7-11 限制 7 天 (今天+7)
             const limitDays = method === 'delivery' ? 7 : 2;
             const minAllowedTime = todayMidnight.getTime() + (limitDays * 24 * 60 * 60 * 1000);
             
@@ -385,20 +384,19 @@
                 targetDates.forEach(dateStr => {
                     if (!dateStr) return;
                     
-                    let cleanDate = dateStr.toString().replace(/["'\s\r\n]/g, '').trim();
+                    // 🔥 強效清洗：用 \s+ 移除包含單雙引號、隱藏換行以及所有內嵌的英文空格
+                    let cleanDate = dateStr.toString().replace(/["'\r\n]/g, '').replace(/\s+/g, '').trim();
                     
                     if(cleanDate !== "") {
                         let isDateValid = true;
                         let wStr = "";
                         try {
                             const safeDateStr = cleanDate.replace(/-/g, '/');
-                            // 🔥 核心修正：強制補上 " 00:00:00" 避開時區被當作格林威治時間
                             const parsedDate = new Date(safeDateStr + " 00:00:00");
                             
                             if(!isNaN(parsedDate.getTime())) {
                                 const checkDateMidnight = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate(), 0, 0, 0, 0);
                                 
-                                // 限制大於等於特定天數，小於此時間的一律隱藏不給選
                                 if (checkDateMidnight.getTime() < minAllowedTime) { 
                                     isDateValid = false; 
                                 }
@@ -445,7 +443,7 @@
         }
 
         // ==========================================
-        // 🚀 核心優化：動態掃描日期並過濾配送選單 (已解決橫線時區 Bug)
+        // 🚀 強效升級版：動態掃描日期並過濾配送選單
         // ==========================================
         function renderUIWithData(data) {
             localProducts = data.products; localPackaging = data.packaging; localCoupons = data.coupons || []; 
@@ -458,7 +456,6 @@
                 }
             }
 
-            // 動態檢測是否有符合天數規則的可用日期
             const now = new Date();
             const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
             
@@ -466,17 +463,17 @@
                 if (!dateArray || dateArray.length === 0) return false;
                 const minTime = todayMidnight.getTime() + (limitDays * 24 * 60 * 60 * 1000);
                 return dateArray.some(dateStr => {
-                    let clean = dateStr.toString().replace(/["'\s\r\n]/g, '').trim();
+                    // 🔥 同步深度清洗所有潛在的髒空格，避免 7-11 判定死掉
+                    let clean = dateStr.toString().replace(/["'\r\n]/g, '').replace(/\s+/g, '').trim();
                     if (!clean) return false;
-                    // 🔥 核心修正：強制補上 " 00:00:00" 防止特定系統時區誤判成 GMT+0
                     const parsed = new Date(clean.replace(/-/g, '/') + " 00:00:00");
                     if (isNaN(parsed.getTime())) return false;
                     return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 0, 0, 0, 0).getTime() >= minTime;
                 });
             };
 
-            const hasStoreDates = checkHasValidDates(localPickupDates, 2);      // 自取至少+2天
-            const hasDeliveryDates = checkHasValidDates(localDeliveryDates, 7);  // 7-11至少+7天
+            const hasStoreDates = checkHasValidDates(localPickupDates, 2);      
+            const hasDeliveryDates = checkHasValidDates(localDeliveryDates, 7);  
 
             const shipMethodSelect = document.getElementById('shipMethod');
             let methodOptionsHtml = "";
