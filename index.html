@@ -236,7 +236,7 @@
             <div class="flex items-center gap-4">
                 <a href="https://lin.ee/ane79Cw" target="_blank" class="w-10 h-10 rounded-xl bg-stone-800 hover:bg-[#06C755] flex items-center justify-center transition-all duration-200 text-stone-300 hover:text-white shadow-xs shrink-0" title="官方 LINE">
                     <svg class="w-5 h-5 fill-current shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path d="M24 10.304c0-5.369-5.383-9.738-12-9.738S0 4.935 0 10.304c0 4.814 4.269 8.846 10.036 9.564l-.64 2.42c-.074.284.18.528.455.353l2.844-1.815c.427.051.865.079(營業時間 14:00-18:00)1.305.079 6.617 0 12-4.369 12-9.591zm-15.932 2.766h-1.635c-.244 0-.44-.197-.44-.44v-3.766c0-.244.196-.44.44-.44s.44.196.44.44v3.326h1.195c.244 0 .44.196.44.44s-.196.44-.44.44zm2.457-.44c0 .244-.196.44-.44.44s-.44-.196-.44-.44v-3.766c0-.244.196-.44.44-.44s.44.196.44.44v3.766zm4.27 0c0 .193-.122.361-.303.418-.045.014-.092.022-.137.022-.142 0-.275-.068-.358-.188l-1.657-2.392v2.14c0 .244-.196.44-.44.44s-.44-.196-.44-.44v-3.766c0-.192.122-.361.302-.417.046-.015.093-.023.138-.023.142 0 .275.068.358.188l1.657 2.392v-2.14c0-.244.196-.44.44-.44s.44.196.44.44v3.766zm3.326-1.195c0 .244-.196.44-.44.44h-1.195v.755h1.195c.244 0 .44.196.44.44s-.196.44-.44.44h-1.635c-.244 0-.44-.197-.44-.44v-3.766c0-.244.196-.44.44-.44h1.635c.244 0 .44.196.44.44s-.196.44-.44.44h-1.195v.733h1.195c.244 0 .44.196.44.44z"/>
+                        <path d="M24 10.304c0-5.369-5.383-9.738-12-9.738S0 4.935 0 10.304c0 4.814 4.269 8.846 10.036 9.564l-.64 2.42c-.074.284.18.528.455.353l2.844-1.815c.427.051.865.079 1.305.079 6.617 0 12-4.369 12-9.591zm-15.932 2.766h-1.635c-.244 0-.44-.197-.44-.44v-3.766c0-.244.196-.44.44-.44s.44.196.44.44v3.326h1.195c.244 0 .44.196.44.44s-.196.44-.44.44zm2.457-.44c0 .244-.196.44-.44.44s-.44-.196-.44-.44v-3.766c0-.244.196-.44.44-.44s.44.196.44.44v3.766zm4.27 0c0 .193-.122.361-.303.418-.045.014-.092.022-.137.022-.142 0-.275-.068-.358-.188l-1.657-2.392v2.14c0 .244-.196.44-.44.44s-.44-.196-.44-.44v-3.766c0-.192.122-.361.302-.417.046-.015.093-.023.138-.023.142 0 .275.068.358.188l1.657 2.392v-2.14c0-.244.196-.44.44-.44s.44.196.44.44v3.766zm3.326-1.195c0 .244-.196.44-.44.44h-1.195v.755h1.195c.244 0 .44.196.44.44s-.196.44-.44.44h-1.635c-.244 0-.44-.197-.44-.44v-3.766c0-.244.196-.44.44-.44h1.635c.244 0 .44.196.44.44s-.196.44-.44.44h-1.195v.733h1.195c.244 0 .44.196.44.44z"/>
                     </svg>
                 </a>
                 <a href="https://www.instagram.com/lilou.official_/" target="_blank" class="w-10 h-10 rounded-xl bg-stone-800 hover:bg-[#E1306C] flex items-center justify-center transition-all duration-200 text-stone-300 hover:text-white shadow-xs shrink-0" title="官方 Instagram">
@@ -352,7 +352,10 @@
 
         function getWeekdayStr(dateStr) {
             try {
-                const clean = dateStr.toString().replace(/\s+/g, '').replace(/-/g, '/');
+                let clean = dateStr.toString().replace(/\s+/g, '').replace(/-/g, '/');
+                if (clean.split('/').length === 2) {
+                    clean = new Date().getFullYear() + '/' + clean;
+                }
                 const parsedDate = new Date(clean + " 00:00:00");
                 if (!isNaN(parsedDate)) {
                     const weekday = ["日", "一", "二", "三", "四", "五", "六"][parsedDate.getDay()];
@@ -363,7 +366,7 @@
         }
 
         // ==========================================
-        // 🚀 核心優化：絕對不隱藏配送選單，直接進行日期清洗比對
+        // 🚀 核心優化：保留天數限制，並新增「年份格式自適應清洗機制」
         // ==========================================
         window.renderAvailableDates = function(method) {
             const dateSelect = document.getElementById('shipDate');
@@ -371,9 +374,11 @@
             const targetDates = method === 'delivery' ? localDeliveryDates : localPickupDates;
             
             const now = new Date();
+            // 抓到今天的午夜（00:00:00）作為比對基準點
             const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
             
-            const limitDays = method === 'delivery' ? 7 : 2;
+            // 完美保留您的出貨限制：自取需 2 天以上，7-11店到店需 7 天以上
+            const limitDays = method === 'delivery' ? 7 : 2; 
             const minAllowedTime = todayMidnight.getTime() + (limitDays * 24 * 60 * 60 * 1000);
             
             let optionsHtml = "";
@@ -389,12 +394,19 @@
                         let isDateValid = true;
                         let wStr = "";
                         try {
-                            const safeDateStr = cleanDate.replace(/-/g, '/');
+                            let safeDateStr = cleanDate.replace(/-/g, '/');
+                            
+                            // 【關鍵導正】：若後台只填月日（如 07/15），主動補上年份，防止瀏覽器（特別是 iOS Safari）解析失敗變成 NaN
+                            if (safeDateStr.split('/').length === 2) {
+                                safeDateStr = now.getFullYear() + '/' + safeDateStr;
+                            }
+                            
                             const parsedDate = new Date(safeDateStr + " 00:00:00");
                             
                             if(!isNaN(parsedDate.getTime())) {
                                 const checkDateMidnight = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate(), 0, 0, 0, 0);
                                 
+                                // 比對時間：若小於指定的限制天數，則判定為無效不顯示
                                 if (checkDateMidnight.getTime() < minAllowedTime) { 
                                     isDateValid = false; 
                                 }
@@ -417,7 +429,7 @@
             }
 
             if (!hasValidDate) {
-                optionsHtml = `<option value="" disabled selected>-- ⚠️ 目前無大於${limitDays}天限制的可用日期 --</option>`;
+                optionsHtml = `<option value="" disabled selected>-- ⚠️ 目前無大於 ${limitDays} 天限制的可用日期 --</option>`;
             } else {
                 optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
             }
@@ -440,9 +452,6 @@
             } catch (err) { console.error("同步失敗", err); }
         }
 
-        // ==========================================
-        // 🚀 核心優化：保留全部配送選項，防止任何前端報錯導致元件消失
-        // ==========================================
         function renderUIWithData(data) {
             localProducts = data.products; localPackaging = data.packaging; localCoupons = data.coupons || []; 
             if(data.settings) {
@@ -454,7 +463,6 @@
                 }
             }
 
-            // 100% 強制保留基本兩個配送選項，不再透過程式碼自動拔除，避開陣列解析 NaN 卡死陷阱
             const shipMethodSelect = document.getElementById('shipMethod');
             shipMethodSelect.innerHTML = `
                 <option value="store">門市自取付款</option>
@@ -757,7 +765,6 @@
                 if (discountAmount > finalTotal) discountAmount = finalTotal; 
                 finalTotal -= discountAmount; 
                 couponDisplay.querySelector('span').innerText = `-$${discountAmount}`; 
-                couponDisplay.querySelector('span').innerText = `-$${discountAmount}`; 
                 couponDisplay.classList.remove('hidden'); 
             } else { 
                 couponDisplay.classList.add('hidden'); 
@@ -915,8 +922,8 @@
                             <div><strong>預購編號：</strong>${orderId}</div>
                             <div><strong>顧客姓名：</strong>${custName}</div>
                             <div><strong>聯絡電話：</strong>${custPhone}</div>
+                            ` + (shipMethodVal === 'delivery' ? `<div><strong>取貨門市：</strong>${finalDatabaseAddress}</div>` : `<div><strong>取貨地址：</strong>${finalDatabaseAddress}</div>`) + `
                             <div><strong>配送方式：</strong>${methodText}</div>
-                            <div><strong>取貨地址：</strong>${finalDatabaseAddress}</div>
                             <div><strong>${dateLabelText}：</strong>${shipDate}</div>
                         </div>
                         <div class="border-t border-dashed border-stone-200 my-4 pt-4 text-sm font-mono text-stone-600 space-y-1">
@@ -945,7 +952,7 @@
                                      `▪️ 顧客姓名：${custName}\n` +
                                      `▪️ 聯絡電話：${custPhone}\n` +
                                      `▪️ 配送方式：${methodText}\n` +
-                                     `▪️ 取貨地址：${finalDatabaseAddress}\n` +
+                                     (shipMethodVal === 'delivery' ? `▪️ 取貨門市：${finalDatabaseAddress}\n` : `▪️ 取貨地址：${finalDatabaseAddress}\n`) +
                                      `▪️ ${dateLabelText}：${shipDate}\n\n` +
                                      `【購物明細】\n${shareCartText}\n\n` +
                                      `💰 總金額：$${finalTotal} 元\n\n` +
