@@ -248,7 +248,7 @@
                 </a>
             </div>
         </div>
-    </footer>
+    </nav>
 
     <div id="countdownOverlay" class="fixed inset-0 bg-stone-950/70 backdrop-blur-xs flex items-center justify-center z-50 hidden">
         <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl max-w-sm w-full text-center space-y-5 mx-4 border border-stone-100">
@@ -356,75 +356,68 @@
                 if (clean.split('/').length === 2) {
                     clean = new Date().getFullYear() + '/' + clean;
                 }
-                const parsedDate = new Date(clean + " 00:00:00");
-                if (!isNaN(parsedDate)) {
-                    const weekday = ["日", "一", "二", "三", "四", "五", "六"][parsedDate.getDay()];
-                    return ` (週${weekday})`;
+                const parts = clean.split('/');
+                if (parts.length === 3) {
+                    const year = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10) - 1;
+                    const day = parseInt(parts[2], 10);
+                    const parsedDate = new Date(year, month, day);
+                    if (!isNaN(parsedDate.getTime())) {
+                        const weekday = ["日", "一", "二", "三", "四", "五", "六"][parsedDate.getDay()];
+                        return ` (週${weekday})`;
+                    }
                 }
             } catch (e) {}
             return "";
         }
 
-        // ==========================================
-        // 🚀 終極修復版：徹底根除跨瀏覽器與橫線格式的解析過濾 Bug
-        // ==========================================
         window.renderAvailableDates = function(method) {
             const dateSelect = document.getElementById('shipDate');
             const textPrompt = method === 'delivery' ? '希望到貨日期' : '自取日期';
             const targetDates = method === 'delivery' ? localDeliveryDates : localPickupDates;
             
             const now = new Date();
-            // 抓到今天的午夜（00:00:00）作為安全比對起點
             const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
             
-            // 嚴格保留您的防呆規則：店到店需 7 天以上，自取需 2 天以上
+            // 出貨限制天數：自取需 2 天以上，7-11店到店需 7 天以上
             const limitDays = method === 'delivery' ? 7 : 2; 
             const minAllowedTime = todayMidnight.getTime() + (limitDays * 24 * 60 * 60 * 1000);
             
             let optionsHtml = "";
             let hasValidDate = false;
-        
+
             if(targetDates && targetDates.length > 0) {
                 targetDates.forEach(dateStr => {
                     if (!dateStr) return;
                     
-                    // 1. 全面深度清洗字串，拔除多餘引號、空白、換行
                     let cleanDate = dateStr.toString().replace(/["'\r\n]/g, '').replace(/\s+/g, '').trim();
                     
                     if(cleanDate !== "") {
                         let isDateValid = true;
                         let wStr = "";
                         try {
-                            // 將所有可能出現的減號（-）一律轉換成斜線（/）
                             let safeDateStr = cleanDate.replace(/-/g, '/');
                             
-                            // 導正：如果後台漏填年份（如 06/29），主動幫忙補上今年年份
                             if (safeDateStr.split('/').length === 2) {
                                 safeDateStr = now.getFullYear() + '/' + safeDateStr;
                             }
                             
-                            // 2. 【核心大改版】不再直接將字串丟給 new Date() 避免瀏覽器出錯，改用純數字拆解法
                             const parts = safeDateStr.split('/');
                             let parsedDate = null;
-                            
                             if (parts.length === 3) {
                                 const year = parseInt(parts[0], 10);
-                                const month = parseInt(parts[1], 10) - 1; // JavaScript 月份從 0 開始計算 (0 = 一月)
+                                const month = parseInt(parts[1], 10) - 1;
                                 const day = parseInt(parts[2], 10);
-                                
-                                // 用純數字精準建立時間物件，這在不論 iPhone、Android、桌機都百分之百相容
                                 parsedDate = new Date(year, month, day, 0, 0, 0, 0);
                             }
                             
                             if(parsedDate && !isNaN(parsedDate.getTime())) {
                                 const checkDateMidnight = parsedDate.getTime();
                                 
-                                // 安全比對：如果設定的日期小於限制天數（店到店7天/自取2天），才過濾不顯示
                                 if (checkDateMidnight < minAllowedTime) { 
                                     isDateValid = false; 
                                 }
                                 
-                                // 自動補上星期
                                 const weekday = ["日", "一", "二", "三", "四", "五", "六"][parsedDate.getDay()];
                                 wStr = ` (週${weekday})`;
                             } else { 
@@ -441,9 +434,9 @@
                     }
                 });
             }
-        
+
             if (!hasValidDate) {
-                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期--</option>`;
+                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 (需 ${limitDays} 天前預購) --</option>`;
             } else {
                 optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
             }
@@ -476,12 +469,6 @@
                     localDeliveryDates = data.settings.delivery_available_dates.toString().replace(/^["\s]+|["\s]+$/g, '').split(',');
                 }
             }
-
-            const shipMethodSelect = document.getElementById('shipMethod');
-            shipMethodSelect.innerHTML = `
-                <option value="store">門市自取付款</option>
-                <option value="delivery">7-11 店到店取貨（運費另計）</option>
-            `;
 
             const boxSelect = document.getElementById('boxSelect'); const savedVal = boxSelect.value;
             boxSelect.innerHTML = `<option value="" disabled selected>-- 請選擇包裝樣式 --</option>` + localPackaging.map(p => `<option value="${p.name}" data-extra="${p.extra_price}">${p.name} (+$${p.extra_price})</option>`).join('');
