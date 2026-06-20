@@ -974,20 +974,6 @@
             return "您的訂單已收到，正在確認中。";
         }
 
-            if (status === "付款已確認") {
-                if (isStorePickup) {
-                    return "您的訂單已確認，請依預約日期至門市取貨並現場付款。";
-                }
-                return "您的付款已確認，商品將安排出貨。";
-            }
-
-            if (status === "已出貨") {
-                return "您的訂單已出貨，請留意到貨通知。";
-            }
-
-            return "您的訂單已收到，正在確認中。";
-        }
-
         async function queryCustomerOrders() {
             const phoneInput = document.getElementById('queryPhone');
             const resultArea = document.getElementById('queryResultArea');
