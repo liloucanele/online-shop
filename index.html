@@ -226,8 +226,8 @@
                     <div class="space-y-2">
                         <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">手機號碼 *</label>
                         <div class="flex flex-col md:flex-row gap-2">
-                            <input type="tel" id="queryPhone" class="flex-1 px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="例如：0912345678">
-                            <button type="button" onclick="queryCustomerOrders()" class="bg-[#5B7290] text-white font-bold px-5 md:px-8 rounded-xl hover:bg-[#3E4F66] transition-all text-sm md:text-base cursor-pointer h-12 md:h-14">
+                            <input type="tel" id="queryPhone" class="flex-1 w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="請輸入手機號碼">
+                            <button type="button" onclick="queryCustomerOrders()" class="bg-[#5B7290] text-white font-bold px-4 md:px-6 rounded-xl hover:bg-[#3E4F66] transition-all text-sm md:text-base shrink-0 cursor-pointer h-12 md:h-14">
                                 查詢
                             </button>
                         </div>
@@ -1084,7 +1084,19 @@
             }).join('');
         }
 
-                localStorage.removeItem("lilou_shop_fast_cache");
+                document.addEventListener('DOMContentLoaded', function queryPhoneEnterBind() {
+            const queryPhone = document.getElementById('queryPhone');
+            if (queryPhone) {
+                queryPhone.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        queryCustomerOrders();
+                    }
+                });
+            }
+        });
+
+        localStorage.removeItem("lilou_shop_fast_cache");
         localStorage.removeItem("lilou_shop_cache_time");
         fetchOptions();
     </script>
