@@ -144,6 +144,10 @@
                                 <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">聯絡電話 *</label>
                                 <input type="tel" id="custPhone" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="請輸入手機號碼" required>
                             </div>
+                            <div>
+                                <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">Email *</label>
+                                <input type="email" id="custEmail" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="請輸入 Email，接收訂單通知" required>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
@@ -792,8 +796,10 @@
             if(cart.length === 0) { alert("購物車目前空空的喔！"); return; }
             const custName = document.getElementById('custName').value.trim();
             const custPhone = document.getElementById('custPhone').value.trim();
+            const custEmail = document.getElementById('custEmail').value.trim();
             const shipMethodVal = document.getElementById('shipMethod').value;
             const rawShipDate = document.getElementById('shipDate').value;
+            if (!custEmail) { alert("請輸入 Email，方便接收訂單通知。"); return; }
             if (!rawShipDate) { alert("請選擇預購取貨日期！"); return; }
             
             const shipDateWithWeekday = rawShipDate + getWeekdayStr(rawShipDate);
@@ -813,7 +819,7 @@
             document.getElementById('overlayDate').innerText = shipDateWithWeekday;
             document.getElementById('overlayTotal').innerText = `$${finalTotal} 元`;
 
-            pendingOrderSnapshot = { orderId, custName, custPhone, shipDate: shipDateWithWeekday, shipMethodVal, custAddress, finalTotal };
+            pendingOrderSnapshot = { orderId, custName, custPhone, custEmail, shipDate: shipDateWithWeekday, shipMethodVal, custAddress, finalTotal };
             countdownSeconds = 20; 
             document.getElementById('countdownTimer').innerText = countdownSeconds;
             document.getElementById('countdownOverlay').classList.remove('hidden');
@@ -827,7 +833,7 @@
             submissionTimeout = setTimeout(async () => {
                 clearInterval(submissionInterval);
                 switchToLoadingState();
-                await executeBackendPost(orderId, custName, custPhone, shipDateWithWeekday, shipMethodVal, custAddress, finalTotal);
+                await executeBackendPost(orderId, custName, custPhone, custEmail, shipDateWithWeekday, shipMethodVal, custAddress, finalTotal);
             }, 20000); 
         }
 
@@ -846,18 +852,18 @@
             if (submissionInterval) clearInterval(submissionInterval);
             switchToLoadingState();
             const s = pendingOrderSnapshot;
-            executeBackendPost(s.orderId, s.custName, s.custPhone, s.shipDate, s.shipMethodVal, s.custAddress, s.finalTotal);
+            executeBackendPost(s.orderId, s.custName, s.custPhone, s.custEmail, s.shipDate, s.shipMethodVal, s.custAddress, s.finalTotal);
             pendingOrderSnapshot = null;
         }
 
-        async function executeBackendPost(orderId, custName, custPhone, shipDate, shipMethodVal, custAddress, finalTotal) {
+        async function executeBackendPost(orderId, custName, custPhone, custEmail, shipDate, shipMethodVal, custAddress, finalTotal) {
             const orderProductSummary = cart.map((box, i) => { const flavorsStr = box.flavors.map(f => `${f.name}(${f.quantity}個)`).join('、'); return `【第${i+1}組: ${box.boxName}】${flavorsStr}`; }).join(' ｜ ');
             const orderPackSummary = cart.map((box, i) => `[組${i+1}]${box.boxName}`).join('、');
             const totalQtyAll = cart.reduce((sum, box) => sum + box.totalQty, 0);
             const finalDatabaseAddress = shipMethodVal === 'store' ? "高雄市前鎮區景德路72巷12號" : custAddress;
 
             const orderData = { 
-                action: "submitOrder", name: custName, phone: custPhone, date: shipDate, 
+                action: "submitOrder", name: custName, phone: custPhone, email: custEmail, date: shipDate, 
                 shipping_method: shipMethodVal === 'store' ? "Store Pickup" : "7-11 Pickup",
                 address: finalDatabaseAddress, product_name: orderProductSummary, quantity: totalQtyAll, 
                 packaging_name: orderPackSummary, total_price: finalTotal, 
@@ -879,6 +885,7 @@
                             <div><strong>預購編號：</strong>${orderId}</div>
                             <div><strong>顧客姓名：</strong>${custName}</div>
                             <div><strong>聯絡電話：</strong>${custPhone}</div>
+                            <div><strong>Email：</strong>${custEmail}</div>
                             <div><strong>取貨門市：</strong>${finalDatabaseAddress}</div>
                             <div><strong>配送方式：</strong>${shipMethodVal === 'delivery' ? '7-11 店到店取貨' : '門市自取付款'}</div>
                             <div><strong>預定日期：</strong>${shipDate}</div>
@@ -890,7 +897,7 @@
                     document.getElementById('receiptContainer').classList.remove('hidden');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-                    sharePlainText = `✨ Lilou 預購成功確認單 ✨\n\n預購編號：${orderId}\n顧客姓名：${custName}\n聯絡電話：${custPhone}\n配送方式：${shipMethodVal === 'delivery' ? '7-11 店到店' : '門市自取'}\n預定日期：${shipDate}\n總金額：$${finalTotal} 元\n\n如有調整需求，請私訊官方官方，謝謝您的支持！`;
+                    sharePlainText = `✨ Lilou 預購成功確認單 ✨\n\n預購編號：${orderId}\n顧客姓名：${custName}\n聯絡電話：${custPhone}\nEmail：${custEmail}\n配送方式：${shipMethodVal === 'delivery' ? '7-11 店到店' : '門市自取'}\n預定日期：${shipDate}\n總金額：$${finalTotal} 元\n\n如有調整需求，請私訊官方官方，謝謝您的支持！`;
                     cart = []; appliedCoupon = null; 
                 } else if (result.status === "error") { alert(result.message); }
             } catch(err) { 
