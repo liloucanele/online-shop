@@ -82,6 +82,44 @@
 </head>
 <body class="bg-[#F4F6F9] text-[#222222] min-h-screen flex flex-col font-sans antialiased selection:bg-[#5B7290]/20">
 
+    <!-- LINE 內建瀏覽器提醒 -->
+    <div id="lineBrowserNotice" class="fixed inset-0 z-[9999] hidden items-center justify-center px-5 bg-stone-950/55 backdrop-blur-sm">
+        <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-stone-100 overflow-hidden">
+            <div class="bg-[#5B7290] px-6 py-5 text-white">
+                <div class="text-xs font-black tracking-[0.25em] opacity-80 mb-1">LILOU NOTICE</div>
+                <h2 class="text-xl font-black tracking-wide">請使用手機瀏覽器開啟</h2>
+            </div>
+
+            <div class="px-6 py-6 space-y-4">
+                <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0 text-lg">
+                        ⚠️
+                    </div>
+                    <div class="space-y-2">
+                        <p class="text-sm font-bold text-stone-700 leading-relaxed">
+                            您目前使用的是 LINE 內建瀏覽器，可能會造成下單、付款或查詢訂單無法正常運作。
+                        </p>
+                        <div class="bg-stone-50 border border-stone-100 rounded-2xl p-4 text-sm text-stone-600 leading-relaxed space-y-2">
+                            <p class="font-black text-stone-800">建議操作方式：</p>
+                            <p>1. 點擊右上角「⋯」或分享圖示</p>
+                            <p>2. 選擇「在 <span id="recommendedBrowserName">Safari</span> 中開啟」</p>
+                            <p>3. 再重新進行下單或查詢</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" onclick="closeLineBrowserNotice()" class="w-full h-12 rounded-xl bg-[#5B7290] text-white font-black tracking-widest hover:bg-[#3E4F66] transition-colors">
+                    我知道了
+                </button>
+
+                <p class="text-[11px] text-center text-stone-400 font-bold leading-relaxed">
+                    若仍要繼續使用 LINE 瀏覽器，部分功能可能無法正常執行。
+                </p>
+            </div>
+        </div>
+    </div>
+
+
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyA3ovLtC-hDYGL-_9CMNKk9A--TcrU-W-mN6Hc0GaZ8eDrvAsew3ZdtYBLSyimuiU/exec";
         
@@ -1295,6 +1333,50 @@
                 }
             });
         });
+
+        
+        function isLineInAppBrowser() {
+            const ua = navigator.userAgent || "";
+            return /Line|LINE/i.test(ua);
+        }
+
+        function getRecommendedBrowserName() {
+            const ua = navigator.userAgent || "";
+            if (/iPhone|iPad|iPod/i.test(ua)) return "Safari";
+            return "Chrome";
+        }
+
+        window.closeLineBrowserNotice = function() {
+            const notice = document.getElementById("lineBrowserNotice");
+            if (notice) {
+                notice.classList.add("hidden");
+                notice.classList.remove("flex");
+            }
+            try {
+                sessionStorage.setItem("lilou_line_browser_notice_closed", "1");
+            } catch (e) {}
+        }
+
+        document.addEventListener("DOMContentLoaded", function showLineBrowserNotice() {
+            if (!isLineInAppBrowser()) return;
+
+            let alreadyClosed = false;
+            try {
+                alreadyClosed = sessionStorage.getItem("lilou_line_browser_notice_closed") === "1";
+            } catch (e) {}
+
+            if (alreadyClosed) return;
+
+            const browserName = document.getElementById("recommendedBrowserName");
+            if (browserName) browserName.textContent = getRecommendedBrowserName();
+
+            const notice = document.getElementById("lineBrowserNotice");
+            if (notice) {
+                notice.classList.remove("hidden");
+                notice.classList.add("flex");
+            }
+        });
+
 
         localStorage.removeItem("lilou_shop_fast_cache");
         localStorage.removeItem("lilou_shop_cache_time");
