@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lilou｜迷你可麗露專賣</title>
+    <title>Lilou｜高雄迷你可麗露專賣</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         :root {
@@ -124,7 +124,19 @@
                             </div>
                         </div>
                         
-                        <div class="pt-2">
+                        <div class="pt-2 space-y-3">
+                            <div class="bg-stone-50 border border-stone-100 rounded-xl p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                <div class="space-y-0.5">
+                                    <div class="text-xs md:text-sm font-black text-stone-700 tracking-wider">重複此組合</div>
+                                    <div class="text-[11px] md:text-xs text-stone-400 font-bold">大量訂購可調整，一般訂購維持 1 組即可</div>
+                                </div>
+                                <div class="no-zoom-area flex items-center bg-white rounded-xl p-1 border border-stone-200 gap-1 w-fit">
+                                    <button type="button" onclick="changeRepeatBoxQty(-1)" style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer text-sm">—</button>
+                                    <input type="number" id="repeatBoxQty" min="1" max="99" value="1" inputmode="numeric" oninput="handleRepeatBoxInput(this)" onblur="handleRepeatBoxBlur(this)" style="width: 52px; height: 34px;" class="text-center text-base font-black bg-transparent border-0 focus:outline-none text-stone-800">
+                                    <button type="button" onclick="changeRepeatBoxQty(1)" style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer text-sm">＋</button>
+                                </div>
+                            </div>
+
                             <button type="button" onclick="packBoxToCart()" class="w-full bg-stone-300 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed transition-all duration-200" id="packBtn" disabled>
                                 正在同步最新庫存中...
                             </button>
@@ -669,11 +681,42 @@
             return currentTotal; 
         }
         
+
+        window.changeRepeatBoxQty = function(change) {
+            const input = document.getElementById('repeatBoxQty');
+            if (!input) return;
+            let value = parseInt(input.value) || 1;
+            value += change;
+            if (value < 1) value = 1;
+            if (value > 99) value = 99;
+            input.value = value;
+        }
+
+        window.handleRepeatBoxInput = function(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value === '') {
+                input.value = '';
+                return;
+            }
+            let parsed = parseInt(value) || 1;
+            if (parsed < 1) parsed = 1;
+            if (parsed > 99) parsed = 99;
+            input.value = parsed;
+        }
+
+        window.handleRepeatBoxBlur = function(input) {
+            let parsed = parseInt(input.value) || 1;
+            if (parsed < 1) parsed = 1;
+            if (parsed > 99) parsed = 99;
+            input.value = parsed;
+        }
+
         window.packBoxToCart = function() { 
             const boxSelect = document.getElementById('boxSelect'); 
             if(boxSelect.value === "") { alert("請先挑選要使用的包裝類型！"); return; } 
             const boxName = boxSelect.value; 
             const boxExtra = parseInt(boxSelect.selectedOptions[0].getAttribute('data-extra')) || 0; 
+            const repeatQty = Math.max(1, Math.min(99, parseInt(document.getElementById('repeatBoxQty')?.value) || 1));
             const inputs = document.querySelectorAll('.flavor-input'); 
             let boxFlavors = []; 
             let totalFlavorsCountInBox = 0; 
@@ -687,7 +730,7 @@
                     let occupiedInCart = 0; 
                     cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === product.name); if (matchFlavor) occupiedInCart += matchFlavor.quantity; }); 
                     const virtualStock = product.stock - occupiedInCart; 
-                    if (qty > virtualStock) { alert(`庫存不足！「${product.name}」最多只能再填入 ${virtualStock >= 0 ? virtualStock : 0} 個。`); hasError = true; break; } 
+                    if ((qty * repeatQty) > virtualStock) { alert(`庫存不足！「${product.name}」重複 ${repeatQty} 組後需要 ${qty * repeatQty} 個，目前最多只能再填入 ${virtualStock >= 0 ? virtualStock : 0} 個。`); hasError = true; break; } 
                     boxFlavors.push({ name: product.name, price: product.price, quantity: qty }); 
                     totalFlavorsCountInBox += qty; 
                     boxFlavorsCost += (product.price * qty); 
@@ -703,12 +746,24 @@
             packBtn.className = "w-full bg-[#3E4F66] text-white font-extrabold tracking-widest h-12 rounded-xl transition-all text-sm md:text-base uppercase shadow-inner animate-pulse scale-98";
 
             setTimeout(() => {
-                cart.push({ boxName: boxName, boxExtra: boxExtra, flavors: boxFlavors, flavorsCost: boxFlavorsCost, totalQty: totalFlavorsCountInBox, boxTotalCost: boxFlavorsCost + boxExtra }); 
+                cart.push({ 
+                    boxName: boxName, 
+                    boxExtra: boxExtra, 
+                    repeatQty: repeatQty,
+                    flavors: boxFlavors, 
+                    flavorsCost: boxFlavorsCost, 
+                    totalQty: totalFlavorsCountInBox * repeatQty, 
+                    singleBoxQty: totalFlavorsCountInBox,
+                    boxTotalCost: (boxFlavorsCost + boxExtra) * repeatQty,
+                    singleBoxCost: boxFlavorsCost + boxExtra
+                }); 
                 boxSelect.value = ""; 
+                const repeatInput = document.getElementById('repeatBoxQty');
+                if (repeatInput) repeatInput.value = "1";
                 currentBoxLimit = null; 
                 renderFlavorMenu(); 
                 renderCart(); 
-                showToastNotification(`🛍️ 已成功打包 1 組【${boxName}】放入明細！`);
+                showToastNotification(`🛍️ 已成功打包 ${repeatQty} 組【${boxName}】放入明細！`);
                 packBtn.disabled = false;
                 packBtn.className = "w-full bg-[#5B7290] text-white font-extrabold tracking-widest h-12 rounded-xl hover:bg-[#3E4F66] transition-colors text-sm md:text-base uppercase shadow-xs cursor-pointer";
                 packBtn.innerText = "確定組合，打包放入購物車";
@@ -737,15 +792,21 @@
                 return; 
             } 
             container.innerHTML = cart.map((box, i) => { 
-                const flavorDetailHtml = box.flavors.map(f => `${f.name} x ${f.quantity}個`).join('、'); 
+                const repeatQty = box.repeatQty || 1;
+                const flavorDetailHtml = box.flavors.map(f => {
+                    const displayQty = f.quantity * repeatQty;
+                    return repeatQty > 1 ? `${f.name} x ${displayQty}個（${f.quantity}個 × ${repeatQty}組）` : `${f.name} x ${f.quantity}個`;
+                }).join('、'); 
+                const repeatLabel = repeatQty > 1 ? ` × ${repeatQty}組` : "";
+                const priceHint = repeatQty > 1 && box.singleBoxCost ? `<div class="text-[11px] text-stone-400 font-bold mt-0.5">$${box.singleBoxCost} / 組</div>` : "";
                 return `
                 <div class="border border-stone-200 rounded-xl p-3 md:p-4 flex items-center justify-between gap-3 bg-stone-50/50">
                     <div class="flex-1 min-w-0 space-y-0.5">
-                        <div class="font-extrabold text-sm md:text-base text-stone-900 tracking-wide">組合 ${i+1}：${box.boxName}</div>
+                        <div class="font-extrabold text-sm md:text-base text-stone-900 tracking-wide">組合 ${i+1}：${box.boxName}${repeatLabel}</div>
                         <div class="text-xs md:text-sm text-[#5B7290] font-bold leading-relaxed break-words">內含：${flavorDetailHtml}</div>
                     </div>
                     <div class="flex items-center gap-4 shrink-0">
-                        <div class="text-right"><span class="font-black text-sm md:text-base text-stone-950">$${box.boxTotalCost}</span></div>
+                        <div class="text-right"><span class="font-black text-sm md:text-base text-stone-950">$${box.boxTotalCost}</span>${priceHint}</div>
                         <button type="button" onclick="removeFromCart(${i})" class="bg-stone-100 text-stone-400 p-1.5 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center font-bold text-xs md:text-sm cursor-pointer">✕</button>
                     </div>
                 </div>`; 
@@ -876,8 +937,19 @@
         }
 
         async function executeBackendPost(orderId, custName, custPhone, custEmail, shipDate, shipMethodVal, custAddress, finalTotal) {
-            const orderProductSummary = cart.map((box, i) => { const flavorsStr = box.flavors.map(f => `${f.name}(${f.quantity}個)`).join('、'); return `【第${i+1}組: ${box.boxName}】${flavorsStr}`; }).join(' ｜ ');
-            const orderPackSummary = cart.map((box, i) => `[組${i+1}]${box.boxName}`).join('、');
+            const orderProductSummary = cart.map((box, i) => { 
+                const repeatQty = box.repeatQty || 1;
+                const repeatLabel = repeatQty > 1 ? ` ×${repeatQty}組` : "";
+                const flavorsStr = box.flavors.map(f => {
+                    const displayQty = f.quantity * repeatQty;
+                    return repeatQty > 1 ? `${f.name}(${displayQty}個：${f.quantity}個×${repeatQty}組)` : `${f.name}(${f.quantity}個)`;
+                }).join('、'); 
+                return `【第${i+1}組: ${box.boxName}${repeatLabel}】${flavorsStr}`; 
+            }).join(' ｜ ');
+            const orderPackSummary = cart.map((box, i) => {
+                const repeatQty = box.repeatQty || 1;
+                return `[組${i+1}]${box.boxName}${repeatQty > 1 ? `×${repeatQty}組` : ""}`;
+            }).join('、');
             const totalQtyAll = cart.reduce((sum, box) => sum + box.totalQty, 0);
             const finalDatabaseAddress = shipMethodVal === 'store' ? "高雄市前鎮區景德路72巷12號" : custAddress;
 
@@ -896,7 +968,15 @@
                 
                 if(result.status === "success") {
                     document.getElementById('formContainer').classList.add('hidden');
-                    let cartDetailsHtml = cart.map((box, idx) => `<div>組合 ${idx + 1} [${box.boxName}]：${box.flavors.map(f => `${f.name} x ${f.quantity}個`).join('、')}</div>`).join('');
+                    let cartDetailsHtml = cart.map((box, idx) => {
+                        const repeatQty = box.repeatQty || 1;
+                        const repeatLabel = repeatQty > 1 ? ` ×${repeatQty}組` : "";
+                        const flavorText = box.flavors.map(f => {
+                            const displayQty = f.quantity * repeatQty;
+                            return repeatQty > 1 ? `${f.name} x ${displayQty}個（${f.quantity}個 × ${repeatQty}組）` : `${f.name} x ${f.quantity}個`;
+                        }).join('、');
+                        return `<div>組合 ${idx + 1} [${box.boxName}${repeatLabel}]：${flavorText}</div>`;
+                    }).join('');
                     
                     document.getElementById('receiptContent').innerHTML = `
                         <div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">重要提醒：請務必留存或截圖此訂購明細！方便您取貨時確認內容。</div>
