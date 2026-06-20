@@ -156,7 +156,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">聯絡電話 *</label>
-                                <input type="tel" id="custPhone" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="請輸入手機號碼" required>
+                                <input type="tel" id="custPhone" maxlength="10" pattern="09[0-9]{8}" inputmode="numeric" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="請輸入10碼手機號碼" required>
                             </div>
                             <div>
                                 <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">Email *</label>
@@ -240,7 +240,7 @@
                     <div class="space-y-2">
                         <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">手機號碼 *</label>
                         <div class="space-y-2">
-                            <input type="tel" id="queryPhone" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="請輸入手機號碼">
+                            <input type="tel" id="queryPhone" maxlength="10" pattern="09[0-9]{8}" inputmode="numeric" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="請輸入10碼手機號碼">
                             <button type="button" onclick="queryCustomerOrders()" class="w-full bg-[#5B7290] text-white font-bold px-4 md:px-6 rounded-xl hover:bg-[#3E4F66] transition-all text-sm md:text-base shrink-0 cursor-pointer h-12 md:h-14">
                                 查詢
                             </button>
@@ -810,6 +810,11 @@
             if(cart.length === 0) { alert("購物車目前空空的喔！"); return; }
             const custName = document.getElementById('custName').value.trim();
             const custPhone = document.getElementById('custPhone').value.trim();
+            if (!/^09\d{8}$/.test(custPhone)) {
+                alert("請輸入正確的手機號碼（10碼，例如：0912345678）");
+                document.getElementById('custPhone').focus();
+                return;
+            }
             const custEmail = document.getElementById('custEmail').value.trim();
             const shipMethodVal = document.getElementById('shipMethod').value;
             const rawShipDate = document.getElementById('shipDate').value;
@@ -975,6 +980,12 @@
                 return;
             }
 
+            if (!/^09\d{8}$/.test(phone)) {
+                alert("請輸入正確的手機號碼（10碼，例如：0912345678）");
+                phoneInput.focus();
+                return;
+            }
+
             resultArea.innerHTML = `
                 <div class="bg-white p-6 rounded-2xl border border-stone-100 text-center space-y-3">
                     <div class="spinner"></div>
@@ -1117,6 +1128,17 @@
                     }
                 });
             }
+        });
+
+        document.addEventListener('DOMContentLoaded', function phoneDigitOnlyBind() {
+            ['custPhone', 'queryPhone'].forEach(function(id) {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.addEventListener('input', function() {
+                        this.value = this.value.replace(/\D/g, '').slice(0, 10);
+                    });
+                }
+            });
         });
 
         localStorage.removeItem("lilou_shop_fast_cache");
