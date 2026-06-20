@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lilou｜高雄迷你可麗露專賣</title>
+    <title>Lilou｜迷你可麗露專賣</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         :root {
@@ -1102,6 +1102,39 @@
             }
         }
 
+
+        function formatOrderDetails(details) {
+            const raw = (details || "").toString().trim();
+            if (!raw) return "";
+
+            return raw
+                .split(" ｜ ")
+                .map(group => group.trim())
+                .filter(Boolean)
+                .map(group => {
+                    const match = group.match(/^【([^】]+)】(.+)$/);
+                    if (!match) {
+                        return `<div class="break-words">${escapeHtml(group)}</div>`;
+                    }
+
+                    const groupTitle = match[1];
+                    const items = match[2]
+                        .split("、")
+                        .map(item => item.trim())
+                        .filter(Boolean);
+
+                    return `
+                        <div class="bg-white border border-stone-100 rounded-xl p-3 space-y-2">
+                            <div class="font-black text-[#5B7290] text-xs md:text-sm">${escapeHtml(groupTitle)}</div>
+                            <div class="space-y-1">
+                                ${items.map(item => `<div class="text-xs md:text-sm font-bold text-stone-700 leading-relaxed">・${escapeHtml(item)}</div>`).join("")}
+                            </div>
+                        </div>
+                    `;
+                })
+                .join("");
+        }
+
         function renderOrderResults(orders) {
             const resultArea = document.getElementById('queryResultArea');
 
@@ -1190,7 +1223,10 @@
 
                         <div class="space-y-2 text-sm text-stone-700">
                             <div><strong>配送方式：</strong>${isStorePickup ? "門市自取付款" : "7-11 店到店取貨"}</div>
-                            <div><strong>商品明細：</strong><span class="break-words">${escapeHtml(order.details)}</span></div>
+                            <div class="space-y-2">
+                                <strong>商品明細：</strong>
+                                <div class="space-y-2">${formatOrderDetails(order.details)}</div>
+                            </div>
                             <div><strong>總金額：</strong><span class="font-black text-[#5B7290]">$${escapeHtml(order.total)}</span></div>
                             ${order.lastUpdate ? `<div><strong>最後更新：</strong>${escapeHtml(order.lastUpdate)}</div>` : ""}
                             ${order.statusNote ? `<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-2"><strong>狀態備註：</strong>${escapeHtml(order.statusNote)}</div>` : ""}
