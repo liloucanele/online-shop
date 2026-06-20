@@ -943,7 +943,8 @@
 
         function getOrderStatusClass(status) {
             if (status === "待付款") return "bg-orange-50 text-orange-700 border-orange-200";
-            if (status === "已確認") return "bg-blue-50 text-blue-700 border-blue-200";
+            if (status === "可取貨") return "bg-green-50 text-green-700 border-green-200";
+            if (status === "付款已確認") return "bg-blue-50 text-blue-700 border-blue-200";
             if (status === "已出貨") return "bg-emerald-50 text-emerald-700 border-emerald-200";
             return "bg-stone-50 text-stone-700 border-stone-200";
         }
@@ -951,11 +952,29 @@
         function getOrderStatusMessage(order, isStorePickup) {
             const status = (order.status || "訂單確認中").toString().trim();
 
+            if (isStorePickup) {
+                if (status === "可取貨") {
+                    return "您的商品已可取貨，請依預約日期至門市取貨並現場付款。";
+                }
+                return "您的訂單已收到，正在確認中。";
+            }
+
             if (status === "待付款") {
                 return "您的訂單已成立，請完成付款以保留商品。";
             }
 
-            if (status === "已確認") {
+            if (status === "付款已確認") {
+                return "您的付款已確認，商品將安排出貨。";
+            }
+
+            if (status === "已出貨") {
+                return "您的訂單已出貨，請留意到貨通知。";
+            }
+
+            return "您的訂單已收到，正在確認中。";
+        }
+
+            if (status === "付款已確認") {
                 if (isStorePickup) {
                     return "您的訂單已確認，請依預約日期至門市取貨並現場付款。";
                 }
