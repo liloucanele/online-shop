@@ -50,6 +50,34 @@
             flex-shrink: 0;
             object-fit: contain;
         }
+    
+        html {
+            background: #1C1715;
+        }
+        body {
+            min-height: 100dvh;
+            background: #F5F7FB;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        footer {
+            padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
+            margin-bottom: calc(-1 * env(safe-area-inset-bottom));
+            background-color: #1C1715;
+        }
+        @supports (-webkit-touch-callout: none) {
+            body::after {
+                content: "";
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                height: env(safe-area-inset-bottom);
+                background: #1C1715;
+                z-index: 0;
+                pointer-events: none;
+            }
+        }
+
     </style>
 </head>
 <body class="bg-[#F4F6F9] text-[#222222] min-h-screen flex flex-col font-sans antialiased selection:bg-[#5B7290]/20">
@@ -78,7 +106,12 @@
 
     <nav class="bg-[#5B7290] text-white p-4 md:p-5 shadow-sm sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
         <div class="max-w-3xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl md:text-2xl font-black tracking-widest cursor-pointer" onclick="window.location.reload()">Lilou</h1>
+            <a href="#" class="flex items-center shrink-0" aria-label="Lilou 首頁">
+                <img
+                    src="images/lilou-logo.svg"
+                    alt="Lilou"
+                    class="h-9 md:h-11 w-auto object-contain block">
+            </a>
             <div class="flex items-center gap-6 font-bold tracking-widest text-xs md:text-sm">
                 <button type="button" id="navShopBtn" onclick="switchMode('shop')" class="cursor-pointer transition-all duration-200 border-b-2 border-white pb-0.5 text-white">
                     我要購物
