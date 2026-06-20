@@ -447,6 +447,8 @@
             }
         }
 
+        window.switchMode = switchMode;
+
         function preventEnterSubmit(e) {
             const keyCode = e.keyCode || e.which;
             if (keyCode === 13 && e.target.tagName !== 'TEXTAREA') {
@@ -1106,43 +1108,17 @@
 
             if (isStorePickup) {
                 if (status === "可取貨") {
-                    return "您的商品已可取貨。
-
-請於營業時間 14:00－18:00 至 Lilou 門市取貨並完成付款。
-
-門市地址：
-高雄市前鎮區景德路72巷12號";
+                    return "您的商品已可取貨。\\n\\n請於營業時間 14:00－18:00 至 Lilou 門市取貨並完成付款。\\n\\n門市地址：\\n高雄市前鎮區景德路72巷12號";
                 }
                 return "您的訂單已收到，正在確認中。";
             }
 
             if (status === "待付款") {
-                return "您的訂單已成立，請至 Lilou 預購網站點選「查詢訂單」。
-
-輸入下單手機號碼後，即可查看訂單進度與付款連結。
-
-請於 3 天內完成付款，逾期系統將自動取消訂單。";
+                return "您的訂單已成立，請至 Lilou 預購網站點選「查詢訂單」。\\n\\n輸入下單手機號碼後，即可查看訂單進度與付款連結。\\n\\n請於 3 天內完成付款，逾期系統將自動取消訂單。";
             }
 
             if (status === "付款已確認") {
                 return "已確認收到您的款項，訂單已進入製作／出貨安排流程，請留意後續通知。";
-            }
-
-            if (status === "已出貨") {
-                return "您的訂單已出貨，請留意到貨通知。";
-            }
-
-            return "您的訂單已收到，正在確認中。";
-        }
-                return "您的訂單已收到，正在確認中。";
-            }
-
-            if (status === "待付款") {
-                return "您的訂單已成立，請完成付款以保留商品。";
-            }
-
-            if (status === "付款已確認") {
-                return "您的付款已確認，商品將安排出貨。";
             }
 
             if (status === "已出貨") {
