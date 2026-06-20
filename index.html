@@ -885,7 +885,7 @@
             const shipDateWithWeekday = rawShipDate + getWeekdayStr(rawShipDate);
             const custAddress = document.getElementById('custAddress').value.trim();
             const finalTotal = calculateTotal();
-            const orderId = "ORD" + new Date().getTime();
+            const orderId = "TEMP-" + new Date().getTime();
             const methodText = shipMethodVal === 'delivery' ? `7-11 店到店 (${custAddress})` : `門市自取付款 (高雄市前鎮區景德路72巷12號)`;
             
             document.getElementById('overlayDateLabel').innerText = shipMethodVal === 'delivery' ? "希望到貨日期：" : "門市自取日期：";
@@ -967,6 +967,7 @@
                 document.getElementById('countdownOverlay').classList.add('hidden');
                 
                 if(result.status === "success") {
+                    const officialOrderId = result.orderId || orderId;
                     document.getElementById('formContainer').classList.add('hidden');
                     let cartDetailsHtml = cart.map((box, idx) => {
                         const repeatQty = box.repeatQty || 1;
@@ -981,7 +982,7 @@
                     document.getElementById('receiptContent').innerHTML = `
                         <div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">重要提醒：請務必留存或截圖此訂購明細！方便您取貨時確認內容。</div>
                         <div class="space-y-3 text-stone-700 text-sm font-mono">
-                            <div><strong>預購編號：</strong>${orderId}</div>
+                            <div><strong>訂單編號：</strong>${officialOrderId}</div>
                             <div><strong>顧客姓名：</strong>${custName}</div>
                             <div><strong>聯絡電話：</strong>${custPhone}</div>
                             <div><strong>Email：</strong>${custEmail}</div>
@@ -996,7 +997,7 @@
                     document.getElementById('receiptContainer').classList.remove('hidden');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-                    sharePlainText = `✨ Lilou 預購成功確認單 ✨\n\n預購編號：${orderId}\n顧客姓名：${custName}\n聯絡電話：${custPhone}\nEmail：${custEmail}\n配送方式：${shipMethodVal === 'delivery' ? '7-11 店到店' : '門市自取'}\n預定日期：${shipDate}\n總金額：$${finalTotal} 元\n\n如有調整需求，請私訊官方官方，謝謝您的支持！`;
+                    sharePlainText = `✨ Lilou 預購成功確認單 ✨\n\n訂單編號：${officialOrderId}\n顧客姓名：${custName}\n聯絡電話：${custPhone}\nEmail：${custEmail}\n配送方式：${shipMethodVal === 'delivery' ? '7-11 店到店' : '門市自取'}\n預定日期：${shipDate}\n總金額：$${finalTotal} 元\n\n如有調整需求，請私訊官方官方，謝謝您的支持！`;
                     cart = []; appliedCoupon = null; 
                 } else if (result.status === "error") { alert(result.message); }
             } catch(err) { 
