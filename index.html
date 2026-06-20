@@ -69,6 +69,9 @@
                 <button type="button" id="navShopBtn" onclick="switchMode('shop')" class="cursor-pointer transition-all duration-200 border-b-2 border-white pb-0.5 text-white">
                     我要購物
                 </button>
+                <button type="button" id="navQueryBtn" onclick="switchMode('query')" class="cursor-pointer transition-all duration-200 pb-0.5 text-white/70">
+                    查詢訂單
+                </button>
             </div>
         </div>
     </nav>
@@ -201,6 +204,37 @@
                     </button>
                 </form>
             </div>
+
+            <div id="queryContentWrapper" class="hidden space-y-6 md:space-y-8">
+                <div class="text-center py-2 space-y-2">
+                    <h2 class="text-2xl md:text-4xl font-black text-[#222222] tracking-wider">查詢訂單</h2>
+                    <p class="text-stone-500 text-xs md:text-base tracking-wide max-w-sm md:max-w-xl mx-auto leading-relaxed">
+                        請輸入下單時填寫的手機號碼，即可查詢訂單狀態。
+                    </p>
+                </div>
+
+                <section class="bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-5">
+                    <div class="flex items-center gap-2 border-b border-stone-100 pb-3 mb-1">
+                        <span class="bg-[#5B7290] text-white text-xs md:text-sm font-black px-2 py-0.5 rounded">ORDER</span>
+                        <h3 class="text-sm md:text-base font-black text-[#5B7290] tracking-widest uppercase">訂單進度查詢</h3>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">手機號碼 *</label>
+                        <div class="flex flex-col md:flex-row gap-2">
+                            <input type="tel" id="queryPhone" class="flex-1 px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="例如：0912345678">
+                            <button type="button" onclick="queryCustomerOrders()" class="bg-[#5B7290] text-white font-bold px-5 md:px-8 rounded-xl hover:bg-[#3E4F66] transition-all text-sm md:text-base cursor-pointer h-12 md:h-14">
+                                查詢
+                            </button>
+                        </div>
+                        <p class="text-[11px] md:text-xs text-stone-400 font-medium leading-relaxed">
+                            僅會顯示與此手機號碼相符的訂單資料。
+                        </p>
+                    </div>
+                </section>
+
+                <section id="queryResultArea" class="space-y-4"></section>
+            </div>
         </main>
 
         <section id="receiptContainer" class="hidden bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-stone-100 space-y-6">
@@ -290,15 +324,25 @@
         function switchMode(targetMode) {
             const formContainer = document.getElementById('formContainer');
             const shopWrapper = document.getElementById('shopContentWrapper');
+            const queryWrapper = document.getElementById('queryContentWrapper');
             const receiptContainer = document.getElementById('receiptContainer');
             const shopBtn = document.getElementById('navShopBtn');
+            const queryBtn = document.getElementById('navQueryBtn');
 
             formContainer.classList.remove('hidden');
             receiptContainer.classList.add('hidden');
 
             if (targetMode === 'shop') {
                 shopWrapper.classList.remove('hidden');
+                queryWrapper.classList.add('hidden');
                 shopBtn.className = "cursor-pointer transition-all duration-200 border-b-2 border-white pb-0.5 text-white";
+                queryBtn.className = "cursor-pointer transition-all duration-200 pb-0.5 text-white/70";
+            } else if (targetMode === 'query') {
+                shopWrapper.classList.add('hidden');
+                queryWrapper.classList.remove('hidden');
+                shopBtn.className = "cursor-pointer transition-all duration-200 pb-0.5 text-white/70";
+                queryBtn.className = "cursor-pointer transition-all duration-200 border-b-2 border-white pb-0.5 text-white";
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 
@@ -802,15 +846,15 @@
             if (submissionInterval) clearInterval(submissionInterval);
             switchToLoadingState();
             const s = pendingOrderSnapshot;
-            executeBackendPost(s.orderId, s.custName, s.custPhone, s.shipDate, s.shipMethodVal, s.custAddress, finalTotal);
+            executeBackendPost(s.orderId, s.custName, s.custPhone, s.shipDate, s.shipMethodVal, s.custAddress, s.finalTotal);
             pendingOrderSnapshot = null;
         }
 
-        async function executeBackendPost(orderId, custName, custPhone, shipDate, shipMethodVal, rustAddress, finalTotal) {
+        async function executeBackendPost(orderId, custName, custPhone, shipDate, shipMethodVal, custAddress, finalTotal) {
             const orderProductSummary = cart.map((box, i) => { const flavorsStr = box.flavors.map(f => `${f.name}(${f.quantity}個)`).join('、'); return `【第${i+1}組: ${box.boxName}】${flavorsStr}`; }).join(' ｜ ');
             const orderPackSummary = cart.map((box, i) => `[組${i+1}]${box.boxName}`).join('、');
             const totalQtyAll = cart.reduce((sum, box) => sum + box.totalQty, 0);
-            const finalDatabaseAddress = shipMethodVal === 'store' ? "高雄市前鎮區景德路72巷12號" : rustAddress;
+            const finalDatabaseAddress = shipMethodVal === 'store' ? "高雄市前鎮區景德路72巷12號" : custAddress;
 
             const orderData = { 
                 action: "submitOrder", name: custName, phone: custPhone, date: shipDate, 
@@ -861,7 +905,179 @@
             else { navigator.clipboard.writeText(sharePlainText).then(() => alert("📋 明細已複製到您的剪貼簿！")).catch(() => window.print()); } 
         }
         
-        localStorage.removeItem("lilou_shop_fast_cache");
+
+        function escapeHtml(value) {
+            return (value || "").toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function getOrderStatusClass(status) {
+            if (status === "待付款") return "bg-orange-50 text-orange-700 border-orange-200";
+            if (status === "已確認") return "bg-blue-50 text-blue-700 border-blue-200";
+            if (status === "已出貨") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+            return "bg-stone-50 text-stone-700 border-stone-200";
+        }
+
+        function getOrderStatusMessage(order, isStorePickup) {
+            const status = order.status || "訂單確認中";
+            if (isStorePickup) {
+                if (status === "已確認") return "您的訂單已確認保留，請依預約日期至門市取貨並現場付款。";
+                return "您的訂單已收到，正在確認中。";
+            }
+
+            if (status === "待付款") return "您的訂單已成立，請依付款連結完成付款。";
+            if (status === "已確認") return "已確認您的付款，訂單將安排出貨。";
+            if (status === "已出貨") return "商品已出貨，請留意到貨通知。";
+            return "您的訂單已收到，正在確認中。";
+        }
+
+        async function queryCustomerOrders() {
+            const phoneInput = document.getElementById('queryPhone');
+            const resultArea = document.getElementById('queryResultArea');
+            const phone = phoneInput.value.trim();
+
+            if (!phone) {
+                alert("請輸入手機號碼");
+                phoneInput.focus();
+                return;
+            }
+
+            resultArea.innerHTML = `
+                <div class="bg-white p-6 rounded-2xl border border-stone-100 text-center space-y-3">
+                    <div class="spinner"></div>
+                    <p class="text-sm font-bold text-[#5B7290] tracking-wider">正在查詢訂單...</p>
+                </div>
+            `;
+
+            try {
+                const res = await fetch(`${API_URL}?action=queryOrders&phone=${encodeURIComponent(phone)}&_=${Date.now()}`);
+                const result = await res.json();
+
+                if (result.status !== "success") {
+                    resultArea.innerHTML = `
+                        <div class="bg-red-50 border border-red-200 text-red-700 p-5 rounded-2xl text-sm font-bold">
+                            ${escapeHtml(result.message || "查詢失敗，請稍後再試。")}
+                        </div>
+                    `;
+                    return;
+                }
+
+                renderOrderResults(result.data || []);
+
+            } catch (err) {
+                resultArea.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 text-red-700 p-5 rounded-2xl text-sm font-bold">
+                        查詢時發生錯誤，請稍後再試。
+                    </div>
+                `;
+            }
+        }
+
+        function renderOrderResults(orders) {
+            const resultArea = document.getElementById('queryResultArea');
+
+            if (!orders.length) {
+                resultArea.innerHTML = `
+                    <div class="bg-white p-6 rounded-2xl border border-stone-100 text-center space-y-2">
+                        <div class="text-lg font-black text-stone-700">查無訂單資料</div>
+                        <p class="text-xs md:text-sm text-stone-400 font-medium">
+                            請確認手機號碼是否與下單時填寫一致。
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            resultArea.innerHTML = orders.map(order => {
+                const method = order.method || "";
+                const isStorePickup = method.toLowerCase().includes("store");
+                const status = order.status || "訂單確認中";
+                const statusClass = getOrderStatusClass(status);
+                const statusMessage = getOrderStatusMessage(order, isStorePickup);
+
+                let actionHtml = "";
+
+                if (!isStorePickup && status === "待付款" && order.paymentLink) {
+                    actionHtml += `
+                        <a href="${escapeHtml(order.paymentLink)}" target="_blank" rel="noopener"
+                           class="block w-full text-center bg-[#3E2D20] text-white font-black rounded-xl h-12 leading-[3rem] hover:bg-[#2B1F16] transition-colors">
+                            前往付款
+                        </a>
+                    `;
+                }
+
+                if (!isStorePickup && status === "已出貨" && order.trackingNo) {
+                    actionHtml += `
+                        <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                            <div class="text-xs font-black text-emerald-700 tracking-widest mb-1">貨運編號</div>
+                            <div class="text-base md:text-lg font-black text-emerald-900 break-all">${escapeHtml(order.trackingNo)}</div>
+                        </div>
+                    `;
+                }
+
+                const pickupInfo = isStorePickup ? `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div class="bg-stone-50 p-3 rounded-xl border border-stone-100">
+                            <div class="text-[11px] font-black text-stone-400 tracking-widest mb-1">取貨日期</div>
+                            <div class="font-bold text-stone-800">${escapeHtml(order.date)}</div>
+                        </div>
+                        <div class="bg-stone-50 p-3 rounded-xl border border-stone-100">
+                            <div class="text-[11px] font-black text-stone-400 tracking-widest mb-1">取貨地點</div>
+                            <div class="font-bold text-stone-800">${escapeHtml(order.address || "高雄市前鎮區景德路72巷12號")}</div>
+                            <div class="text-xs text-stone-500 mt-1">營業時間 14:00-18:00</div>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div class="bg-stone-50 p-3 rounded-xl border border-stone-100">
+                            <div class="text-[11px] font-black text-stone-400 tracking-widest mb-1">希望到貨日期</div>
+                            <div class="font-bold text-stone-800">${escapeHtml(order.date)}</div>
+                        </div>
+                        <div class="bg-stone-50 p-3 rounded-xl border border-stone-100">
+                            <div class="text-[11px] font-black text-stone-400 tracking-widest mb-1">取貨門市</div>
+                            <div class="font-bold text-stone-800">${escapeHtml(order.address)}</div>
+                        </div>
+                    </div>
+                `;
+
+                return `
+                    <article class="bg-white p-5 md:p-6 rounded-2xl border border-stone-100 shadow-xs space-y-4">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border-b border-stone-100 pb-3">
+                            <div>
+                                <div class="text-[11px] font-black text-stone-400 tracking-widest">訂單編號</div>
+                                <div class="text-base md:text-lg font-black text-stone-900">${escapeHtml(order.id)}</div>
+                            </div>
+                            <span class="inline-flex w-fit px-3 py-1 rounded-full border text-xs md:text-sm font-black ${statusClass}">
+                                ${escapeHtml(status)}
+                            </span>
+                        </div>
+
+                        <div class="bg-[#F4F6F9] border border-stone-100 p-4 rounded-xl text-sm font-bold text-stone-700 leading-relaxed">
+                            ${escapeHtml(statusMessage)}
+                        </div>
+
+                        ${pickupInfo}
+
+                        <div class="space-y-2 text-sm text-stone-700">
+                            <div><strong>配送方式：</strong>${isStorePickup ? "門市自取付款" : "7-11 店到店取貨"}</div>
+                            <div><strong>商品明細：</strong><span class="break-words">${escapeHtml(order.details)}</span></div>
+                            <div><strong>總金額：</strong><span class="font-black text-[#5B7290]">$${escapeHtml(order.total)}</span></div>
+                            ${order.lastUpdate ? `<div><strong>最後更新：</strong>${escapeHtml(order.lastUpdate)}</div>` : ""}
+                            ${order.statusNote ? `<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-2"><strong>狀態備註：</strong>${escapeHtml(order.statusNote)}</div>` : ""}
+                            ${order.note ? `<div><strong>訂單備註：</strong>${escapeHtml(order.note)}</div>` : ""}
+                        </div>
+
+                        ${actionHtml ? `<div class="space-y-3 pt-2">${actionHtml}</div>` : ""}
+                    </article>
+                `;
+            }).join('');
+        }
+
+                localStorage.removeItem("lilou_shop_fast_cache");
         localStorage.removeItem("lilou_shop_cache_time");
         fetchOptions();
     </script>
