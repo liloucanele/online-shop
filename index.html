@@ -276,7 +276,7 @@
                         <div>
                             <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">折扣碼</label>
                             <div class="flex gap-2">
-                                <input type="text" id="couponInput" class="flex-1 px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50 uppercase" placeholder="請輸入折扣碼">
+                                <input type="text" id="couponInput" class="flex-1 px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="請輸入折扣碼">
                                 <button type="button" onclick="applyCouponCode(true)" class="bg-[#5B7290] text-white font-bold px-4 md:px-6 rounded-xl hover:bg-[#3E4F66] transition-all text-sm md:text-base shrink-0 cursor-pointer h-12 md:h-14">
                                     套用
                                 </button>
@@ -917,15 +917,71 @@
             return finalTotal; 
         }
         
+
+        function parseCouponDate(dateStr) {
+            if (!dateStr) return null;
+            const clean = dateStr.toString().trim().replace(/-/g, '/');
+            const parts = clean.split('/');
+            if (parts.length !== 3) return null;
+
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            const parsed = new Date(year, month, day);
+
+            if (isNaN(parsed.getTime())) return null;
+            parsed.setHours(0, 0, 0, 0);
+            return parsed;
+        }
+
+        function getCouponDateStatus(coupon) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const startDate = parseCouponDate(coupon.start_date);
+            const endDate = parseCouponDate(coupon.end_date);
+
+            if (startDate && today < startDate) {
+                return { valid: false, message: "✕ 折扣碼尚未開始。" };
+            }
+
+            if (endDate && today > endDate) {
+                return { valid: false, message: "✕ 折扣碼已過期。" };
+            }
+
+            return { valid: true, message: "" };
+        }
+
         window.applyCouponCode = function(isUserClick = false) { 
-            const inputVal = document.getElementById('couponInput').value.trim().toUpperCase(); 
+            const inputVal = document.getElementById('couponInput').value.trim().toLowerCase(); 
             const msgElement = document.getElementById('couponMessage'); 
-            if (inputVal === "") { appliedCoupon = null; msgElement.classList.add('hidden'); calculateTotal(); return; } 
-            let subtotal = 0; cart.forEach(box => subtotal += box.boxTotalCost); 
-            const match = localCoupons.find(c => c.code === inputVal); 
+
+            if (inputVal === "") { 
+                appliedCoupon = null; 
+                msgElement.classList.add('hidden'); 
+                calculateTotal(); 
+                return; 
+            } 
+
+            let subtotal = 0; 
+            cart.forEach(box => subtotal += box.boxTotalCost); 
+
+            const match = localCoupons.find(c => (c.code || "").toString().trim().toLowerCase() === inputVal); 
             msgElement.classList.remove('hidden'); 
+
             if (match) { 
+                const dateStatus = getCouponDateStatus(match);
+
+                if (!dateStatus.valid) {
+                    appliedCoupon = null;
+                    msgElement.innerText = dateStatus.message;
+                    msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-red-500";
+                    calculateTotal();
+                    return;
+                }
+
                 const minSpendRequirement = Number(match.min_spend) || 0; 
+
                 if (subtotal < minSpendRequirement) { 
                     appliedCoupon = null; 
                     msgElement.innerText = `✕ 最低消費需滿 ${minSpendRequirement} 元。`; 
@@ -935,7 +991,12 @@
                     msgElement.innerText = `✓ 成功套用！(${match.type === 'minus' ? '現折 ' + match.value + ' 元' : '享 ' + (match.value * 10) + ' 折'})`; 
                     msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-emerald-600"; 
                 } 
-            } else { appliedCoupon = null; msgElement.innerText = "✕ 折扣碼無效或已過期。"; msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-red-500"; } 
+            } else { 
+                appliedCoupon = null; 
+                msgElement.innerText = "✕ 折扣碼無效。"; 
+                msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-red-500"; 
+            } 
+
             calculateTotal(); 
         }
 
@@ -1108,7 +1169,7 @@
 
             if (isStorePickup) {
                 if (status === "可取貨") {
-                    return "您的商品已可取貨。\n\n請依您選定的取貨日期，於營業時間 14:00－18:00 至 Lilou 門市取貨並完成付款。\n\n門市地址：\n高雄市前鎮區景德路72巷12號";
+                    return "您的商品已可取貨。\n\n請依您選定的取貨日期，於營業時間 14:00－18:00 至 Lilou 門市取貨並完成付款。";
                 }
                 return "您的訂單已收到，正在確認中。";
             }
