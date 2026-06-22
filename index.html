@@ -273,6 +273,12 @@
                             <input type="text" id="custAddress" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none h-12 md:h-14 bg-stone-100 font-bold text-stone-700 select-all" value="高雄市前鎮區景德路72巷12號" readonly>
                         </div>
 
+
+                        <div id="deliveryPaymentNotice" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs md:text-sm text-amber-900 font-bold leading-relaxed">
+                            <div class="font-black mb-1">7-11 店到店付款提醒</div>
+                            <div>若您選擇 7-11 店到店取貨，付款連結將由 PChomePay 另行寄送至您的 Email，請留意收件並於期限內完成付款。若沒有收到信件，也可以至「訂單查詢」輸入您的手機號碼後，找到「前往付款」的按鈕，並點擊進行付款。</div>
+                        </div>
+
                         <div>
                             <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">折扣碼</label>
                             <div class="flex gap-2">
@@ -408,6 +414,11 @@
                 <p class="text-xs text-[#5B7290] font-black tracking-wider animate-pulse">訂單同步中...</p>
             </div>
 
+
+            <div id="overlayPaymentNotice" class="hidden bg-amber-50 border border-amber-200 p-4 rounded-xl text-left text-xs md:text-sm text-amber-900 font-bold leading-relaxed">
+                若您選擇 7-11 店到店取貨，付款連結將由 PChomePay 另行寄送至您的 Email，請留意收件並於期限內完成付款。若沒有收到信件，也可以至「訂單查詢」輸入您的手機號碼後，找到「前往付款」的按鈕，並點擊進行付款。
+            </div>
+
             <p id="overlayBottomPrompt" class="text-[11px] text-stone-400 leading-relaxed font-medium">正確認商品庫存。</p>
             
             <div id="overlayActionButtons" class="flex gap-2.5 pt-1">
@@ -465,6 +476,7 @@
             const dateLabel = document.getElementById('dateLabel');
             const mapLink = document.getElementById('mapLink');
             const addressLabel = document.getElementById('addressLabel');
+            const deliveryNotice = document.getElementById('deliveryPaymentNotice');
             
             if(method === 'delivery') {
                 addressLabel.innerText = "7-11 取貨門市名稱 *";
@@ -479,6 +491,7 @@
                 shipFeeDisplay.querySelector('span').innerText = `+$${shippingFee}`;
                 shipFeeDisplay.classList.remove('hidden');
                 dateLabel.innerText = "希望到貨日期 *";
+                if (deliveryNotice) deliveryNotice.classList.remove("hidden");
             } else {
                 addressLabel.innerText = "自取門市地址";
                 mapLink.style.display = 'none'; 
@@ -488,6 +501,7 @@
                 addrInput.className = "w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none h-12 md:h-14 bg-stone-100 font-bold text-stone-700 select-all";
                 shipFeeDisplay.classList.add('hidden');
                 dateLabel.innerText = "門市自取日期 *";
+                if (deliveryNotice) deliveryNotice.classList.add("hidden");
             }
             renderAvailableDates(method);
             calculateTotal();
@@ -1032,6 +1046,11 @@
             document.getElementById('overlayMethod').innerText = methodText;
             document.getElementById('overlayDate').innerText = shipDateWithWeekday;
             document.getElementById('overlayTotal').innerText = `$${finalTotal} 元`;
+            const overlayPaymentNotice = document.getElementById('overlayPaymentNotice');
+            if (overlayPaymentNotice) {
+                if (shipMethodVal === 'delivery') overlayPaymentNotice.classList.remove('hidden');
+                else overlayPaymentNotice.classList.add('hidden');
+            }
 
             pendingOrderSnapshot = { orderId, custName, custPhone, custEmail, shipDate: shipDateWithWeekday, shipMethodVal, custAddress, finalTotal };
             countdownSeconds = 20; 
@@ -1115,6 +1134,7 @@
                     
                     document.getElementById('receiptContent').innerHTML = `
                         <div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">重要提醒：請務必留存或截圖此訂購明細！方便您取貨時確認內容。</div>
+                        ${shipMethodVal === 'delivery' ? `<div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">提醒您：7-11 店到店訂單的付款連結將由 PChomePay 另行寄送至您的 Email，請留意收件並於期限內完成付款。若未收到付款通知信件，也可以至網站左上角「查詢訂單」，輸入訂購時填寫的手機號碼後，點選「前往付款」完成付款。</div>` : ``}
                         <div class="space-y-3 text-stone-700 text-sm font-mono">
                             <div><strong>訂單編號：</strong>${officialOrderId}</div>
                             <div><strong>顧客姓名：</strong>${custName}</div>
