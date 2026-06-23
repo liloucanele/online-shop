@@ -162,6 +162,16 @@
 
         let pendingOrderSnapshot = null;
         let sharePlainText = "";
+
+        function trackLilouEvent(eventName, params = {}) {
+            try {
+                if (typeof gtag === "function") {
+                    gtag('event', eventName, params);
+                }
+            } catch (e) {
+                console.warn("GA event skipped:", eventName, e);
+            }
+        }
     </script>
 
     <nav class="bg-[#5B7290] text-white p-4 md:p-5 shadow-sm sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
@@ -1076,6 +1086,12 @@
                 else overlayPaymentNotice.classList.add('hidden');
             }
 
+            trackLilouEvent('begin_checkout', {
+                value: finalTotal,
+                currency: 'TWD',
+                shipping_method: shipMethodVal === 'delivery' ? '7-11 Pickup' : 'Store Pickup'
+            });
+
             pendingOrderSnapshot = { orderId, custName, custPhone, custEmail, shipDate: shipDateWithWeekday, shipMethodVal, custAddress, finalTotal };
             countdownSeconds = 20; 
             document.getElementById('countdownTimer').innerText = countdownSeconds;
@@ -1145,6 +1161,14 @@
                 
                 if(result.status === "success") {
                     const officialOrderId = result.orderId || orderId;
+                    const officialOrderDate = result.orderDate || "";
+
+                    trackLilouEvent('purchase', {
+                        transaction_id: officialOrderId,
+                        value: finalTotal,
+                        currency: 'TWD',
+                        shipping_method: shipMethodVal === 'delivery' ? '7-11 Pickup' : 'Store Pickup'
+                    });
                     document.getElementById('formContainer').classList.add('hidden');
                     let cartDetailsHtml = cart.map((box, idx) => {
                         const repeatQty = box.repeatQty || 1;
@@ -1161,6 +1185,7 @@
                         ${shipMethodVal === 'delivery' ? `<div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">提醒您：7-11 店到店訂單的付款連結將由 PChomePay 另行寄送至您的 Email，請留意收件並於期限內完成付款。若未收到付款通知信件，也可以至網站左上角「查詢訂單」，輸入訂購時填寫的手機號碼後，點選「前往PChomePay付款」完成付款。</div>` : ``}
                         <div class="space-y-3 text-stone-700 text-sm font-mono">
                             <div><strong>訂單編號：</strong>${officialOrderId}</div>
+                            ${officialOrderDate ? `<div><strong>下單日期：</strong>${officialOrderDate}</div>` : ``}
                             <div><strong>顧客姓名：</strong>${custName}</div>
                             <div><strong>聯絡電話：</strong>${custPhone}</div>
                             <div><strong>Email：</strong>${custEmail}</div>
@@ -1269,6 +1294,10 @@
                     `;
                     return;
                 }
+
+                trackLilouEvent('query_order', {
+                    result_count: (result.data || []).length
+                });
 
                 renderOrderResults(result.data || []);
 
@@ -1407,6 +1436,12 @@
                             <div>
                                 <div class="text-[11px] font-black text-stone-400 tracking-widest">訂單編號</div>
                                 <div class="text-base md:text-lg font-black text-stone-900">${escapeHtml(order.id)}</div>
+                                ${order.orderDate ? `
+                                <div class="mt-2">
+                                    <div class="text-[11px] font-black text-stone-400 tracking-widest">下單日期</div>
+                                    <div class="text-sm font-bold text-stone-700">${escapeHtml(order.orderDate)}</div>
+                                </div>
+                                ` : ""}
                             </div>
                             <span class="inline-flex w-fit px-3 py-1 rounded-full border text-xs md:text-sm font-black ${statusClass}">
                                 ${escapeHtml(status)}
