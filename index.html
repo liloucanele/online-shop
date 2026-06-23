@@ -276,7 +276,7 @@
 
                         <div id="deliveryPaymentNotice" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs md:text-sm text-amber-900 font-bold leading-relaxed">
                             <div class="font-black mb-1">7-11 店到店付款提醒</div>
-                            <div>若您選擇 7-11 店到店取貨，付款連結將由 PChomePay 寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的「前往付款」按鈕完成付款。
+                            <div>若您選擇 7-11 店到店取貨，付款連結將由 PChomePay 寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的「前往PChomePay付款」按鈕完成付款。
 </div>
                         </div>
 
@@ -417,7 +417,7 @@
 
 
             <div id="overlayPaymentNotice" class="hidden bg-amber-50 border border-amber-200 p-4 rounded-xl text-left text-xs md:text-sm text-amber-900 font-bold leading-relaxed">
-                若您選擇 7-11 店到店取貨，付款連結將由 PChomePay 寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的「前往付款」按鈕完成付款。
+                若您選擇 7-11 店到店取貨，付款連結將由 PChomePay 寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的「前往PChomePay付款」按鈕完成付款。
 
             </div>
 
@@ -1136,7 +1136,7 @@
                     
                     document.getElementById('receiptContent').innerHTML = `
                         <div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">重要提醒：請務必留存或截圖此訂購明細！方便您取貨時確認內容。</div>
-                        ${shipMethodVal === 'delivery' ? `<div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">提醒您：7-11 店到店訂單的付款連結將由 PChomePay 另行寄送至您的 Email，請留意收件並於期限內完成付款。若未收到付款通知信件，也可以至網站左上角「查詢訂單」，輸入訂購時填寫的手機號碼後，點選「前往付款」完成付款。</div>` : ``}
+                        ${shipMethodVal === 'delivery' ? `<div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">提醒您：7-11 店到店訂單的付款連結將由 PChomePay 另行寄送至您的 Email，請留意收件並於期限內完成付款。若未收到付款通知信件，也可以至網站左上角「查詢訂單」，輸入訂購時填寫的手機號碼後，點選「前往PChomePay付款」完成付款。</div>` : ``}
                         <div class="space-y-3 text-stone-700 text-sm font-mono">
                             <div><strong>訂單編號：</strong>${officialOrderId}</div>
                             <div><strong>顧客姓名：</strong>${custName}</div>
@@ -1324,7 +1324,7 @@
                             </div>
                             <a href="${escapeHtml(order.paymentLink)}" target="_blank" rel="noopener"
                                class="block w-full text-center bg-[#3E2D20] text-white font-black rounded-xl h-12 leading-[3rem] hover:bg-[#2B1F16] transition-colors">
-                                前往付款
+                                前往 PChomePay 付款
                             </a>
                         </div>
                     `;
