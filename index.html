@@ -1391,9 +1391,14 @@
                             </span>
                         </div>
 
-                        <div class="bg-[#F4F6F9] border border-stone-100 p-4 rounded-xl text-sm font-bold text-stone-700 leading-relaxed whitespace-pre-line">
-                            <div class="text-[11px] font-black text-stone-400 tracking-widest mb-1">目前進度說明</div>
-                            ${escapeHtml(statusMessage)}
+                        <div class="bg-[#F4F6F9] border border-stone-100 p-4 rounded-xl">
+                            <div class="text-[11px] font-black text-stone-400 tracking-widest mb-2">
+                                目前進度說明
+                            </div>
+                        
+                            <div class="text-stone-700 font-bold leading-relaxed whitespace-pre-line">
+                                ${escapeHtml(statusMessage)}
+                            </div>
                         </div>
 
                         ${pickupInfo}
