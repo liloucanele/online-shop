@@ -502,8 +502,36 @@
             return true;
         }
 
+
+        function hasPickupOnlyProduct() {
+            return cart.some(box =>
+                box.flavors && box.flavors.some(f =>
+                    (f.name || "").includes("限自取")
+                )
+            );
+        }
+
+        function enforcePickupOnlyShipping(showAlert = true) {
+            const shipSelect = document.getElementById('shipMethod');
+            if (!shipSelect) return false;
+
+            if (shipSelect.value === 'delivery' && hasPickupOnlyProduct()) {
+                if (showAlert) {
+                    alert("您的購物車包含「限自取」商品，無法選擇 7-11 店到店配送，請改為門市自取付款。");
+                }
+                shipSelect.value = 'store';
+                return true;
+            }
+
+            return false;
+        }
+
         function handleShippingMethodChange() {
-            const method = document.getElementById('shipMethod').value;
+            let method = document.getElementById('shipMethod').value;
+
+            if (method === 'delivery' && enforcePickupOnlyShipping(true)) {
+                method = 'store';
+            }
             const addrInput = document.getElementById('custAddress');
             const shipFeeDisplay = document.getElementById('shipFeeDisplay');
             const dateLabel = document.getElementById('dateLabel');
@@ -911,6 +939,8 @@
                 calculateTotal(); 
                 return; 
             } 
+            enforcePickupOnlyShipping(false);
+
             container.innerHTML = cart.map((box, i) => { 
                 const repeatQty = box.repeatQty || 1;
                 const flavorDetailHtml = box.flavors.map(f => {
@@ -1059,6 +1089,13 @@
             }
             const custEmail = document.getElementById('custEmail').value.trim();
             const shipMethodVal = document.getElementById('shipMethod').value;
+
+            if (shipMethodVal === 'delivery' && hasPickupOnlyProduct()) {
+                alert("您的購物車包含「限自取」商品，無法選擇 7-11 店到店配送，請改為門市自取付款。");
+                document.getElementById('shipMethod').value = 'store';
+                handleShippingMethodChange();
+                return;
+            }
             const rawShipDate = document.getElementById('shipDate').value;
             if (!custEmail) { alert("請輸入 Email，方便接收訂單通知。"); return; }
             if (!rawShipDate) { alert("請選擇預購取貨日期！"); return; }
@@ -1124,6 +1161,13 @@
             if (submissionInterval) clearInterval(submissionInterval);
             switchToLoadingState();
             const s = pendingOrderSnapshot;
+            if (s.shipMethodVal === 'delivery' && hasPickupOnlyProduct()) {
+                alert("您的購物車包含「限自取」商品，無法選擇 7-11 店到店配送，請改為門市自取付款。");
+                document.getElementById('shipMethod').value = 'store';
+                handleShippingMethodChange();
+                pendingOrderSnapshot = null;
+                return;
+            }
             executeBackendPost(s.orderId, s.custName, s.custPhone, s.custEmail, s.shipDate, s.shipMethodVal, s.custAddress, s.finalTotal);
             pendingOrderSnapshot = null;
         }
