@@ -13,31 +13,6 @@
     .tab-active { background:#5B7290; color:#fff; }
     .tab-idle { background:#fff; color:#57534e; }
     .mono { font-variant-numeric: tabular-nums; }
-    @keyframes adminToastIn {
-      from { opacity: 0; transform: translateY(12px) scale(0.98); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    @keyframes adminToastOut {
-      from { opacity: 1; transform: translateY(0) scale(1); }
-      to { opacity: 0; transform: translateY(10px) scale(0.98); }
-    }
-    @keyframes adminSpin {
-      to { transform: rotate(360deg); }
-    }
-    @keyframes adminPop {
-      0% { transform: scale(0.92); }
-      60% { transform: scale(1.04); }
-      100% { transform: scale(1); }
-    }
-    .admin-toast { animation: adminToastIn .22s ease-out both; }
-    .admin-toast.toast-hide { animation: adminToastOut .2s ease-in both; }
-    .admin-spinner {
-      width: 16px; height: 16px; border-radius: 9999px;
-      border: 2px solid rgba(91,114,144,.25); border-top-color: #5B7290;
-      animation: adminSpin .75s linear infinite;
-    }
-    .admin-success-pop { animation: adminPop .3s ease-out both; }
-    button.admin-loading { opacity: .78; cursor: wait; pointer-events: none; }
   </style>
 </head>
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
@@ -78,7 +53,7 @@
 
       <div class="flex flex-col md:flex-row md:items-center gap-3 justify-between">
         <p id="adminMessage" class="hidden text-sm font-bold"></p>
-        <button onclick="loadAll(this)" class="h-11 rounded-xl bg-[#5B7290] text-white px-5 font-black hover:bg-[#3E4F66]">重新載入</button>
+        <button onclick="loadAll()" class="h-11 rounded-xl bg-[#5B7290] text-white px-5 font-black hover:bg-[#3E4F66]">重新載入</button>
       </div>
 
       <section id="tab-dashboard" class="tab-page space-y-5"></section>
@@ -89,8 +64,6 @@
       <section id="tab-settings" class="tab-page hidden space-y-5"></section>
     </section>
   </main>
-
-  <div id="adminToastContainer" class="fixed right-4 bottom-4 z-[9999] space-y-2 w-[calc(100%-2rem)] max-w-sm pointer-events-none"></div>
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyA3ovLtC-hDYGL-_9CMNKk9A--TcrU-W-mN6Hc0GaZ8eDrvAsew3ZdtYBLSyimuiU/exec";
@@ -123,57 +96,6 @@ function formatAdminNow() {
 
 function showSuccessMessage(id, text) {
   showMessage(id, `✅ ${text}（${formatAdminNow()}）`, "success");
-}
-
-function showAdminToast(message, type = "info", duration = 2200) {
-  const container = document.getElementById("adminToastContainer");
-  if (!container) return;
-
-  const toast = document.createElement("div");
-  const isLoading = type === "loading";
-  const isError = type === "error";
-  const isSuccess = type === "success";
-  const icon = isLoading
-    ? `<span class="admin-spinner shrink-0"></span>`
-    : isSuccess
-      ? `<span class="admin-success-pop shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-black">✓</span>`
-      : isError
-        ? `<span class="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full bg-red-100 text-red-700 font-black">!</span>`
-        : `<span class="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-black">i</span>`;
-
-  toast.className = "admin-toast pointer-events-auto bg-white border border-stone-100 shadow-xl rounded-2xl px-4 py-3 flex items-center gap-3 text-sm font-black text-stone-700";
-  toast.innerHTML = `${icon}<div class="leading-relaxed">${escapeHtml(message)}</div>`;
-  container.appendChild(toast);
-
-  if (!isLoading) {
-    setTimeout(() => {
-      toast.classList.add("toast-hide");
-      setTimeout(() => toast.remove(), 220);
-    }, duration);
-  }
-
-  return toast;
-}
-
-function hideAdminToast(toast) {
-  if (!toast) return;
-  toast.classList.add("toast-hide");
-  setTimeout(() => toast.remove(), 220);
-}
-
-function setButtonLoading(button, isLoading, loadingText = "處理中...") {
-  if (!button) return;
-  if (isLoading) {
-    if (!button.dataset.originalText) button.dataset.originalText = button.textContent.trim();
-    button.textContent = loadingText;
-    button.disabled = true;
-    button.classList.add("admin-loading");
-  } else {
-    button.textContent = button.dataset.originalText || button.textContent;
-    button.disabled = false;
-    button.classList.remove("admin-loading");
-    delete button.dataset.originalText;
-  }
 }
 
 function getToken() { return localStorage.getItem(TOKEN_KEY) || ""; }
@@ -217,37 +139,23 @@ function switchTab(tab) {
   document.getElementById("tab-" + tab).classList.remove("hidden");
 }
 
-async function loadAll(triggerButton = null, silent = false) {
+async function loadAll() {
   const token = getToken();
   if (!token) { setLoggedInState(false); return; }
-  if (!silent) showMessage("adminMessage", "載入中...", "info");
-  const toast = silent ? null : showAdminToast("同步資料中...", "loading");
-  setButtonLoading(triggerButton, true, "同步中...");
+  showMessage("adminMessage", "載入中...", "info");
   try {
     const res = await fetch(`${API_URL}?action=adminGetAll&token=${encodeURIComponent(token)}&_=${Date.now()}`);
     const data = await res.json();
     if (data.status !== "success") {
-      if (!silent) showMessage("adminMessage", data.message || "載入失敗。", "error");
-      hideAdminToast(toast);
-      if (!silent) showAdminToast(data.message || "載入失敗。", "error");
+      showMessage("adminMessage", data.message || "載入失敗。", "error");
       if ((data.message || "").includes("登入")) logoutAdmin();
       return;
     }
     adminData = data;
     renderAll();
-    hideAdminToast(toast);
-    if (!silent) {
-      showSuccessMessage("adminMessage", "資料已更新");
-      showAdminToast("資料已同步完成", "success");
-    }
+    showSuccessMessage("adminMessage", "資料已更新");
   } catch (err) {
-    hideAdminToast(toast);
-    if (!silent) {
-      showMessage("adminMessage", "載入失敗：" + err.message, "error");
-      showAdminToast("載入失敗：" + err.message, "error");
-    }
-  } finally {
-    setButtonLoading(triggerButton, false);
+    showMessage("adminMessage", "載入失敗：" + err.message, "error");
   }
 }
 
@@ -264,7 +172,7 @@ function renderAll() {
 
 function normalizePackageForSummary(packageName) {
   const raw = (packageName || "未命名包裝").toString().trim();
-  const match = raw.match(/^(.*?)(?:\s*[x×＊*]\s*(\d+)\s*(?:組)?)\s*$/i);
+  const match = raw.match(/^(.*?)(?:\s*[x×]\s*(\d+)\s*組)\s*$/i);
   if (match) {
     return {
       name: (match[1] || "未命名包裝").trim(),
@@ -322,8 +230,7 @@ function formatOrderDetailsAdmin(details) {
   });
 
   const packageLine = Object.entries(packageSummary)
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, qty]) => `${escapeHtml(name)} ${qty}`)
+    .map(([name, qty]) => `${escapeHtml(name)} ×${qty}`)
     .join("、");
 
   const itemChips = Object.entries(itemSummary)
@@ -363,6 +270,48 @@ function formatOrderDetailsAdmin(details) {
       </summary>
       <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">${fullDetails}</div>
     </details>
+  </div>`;
+}
+
+
+function renderCompactItemSummary(details) {
+  const text = (details || "").toString().trim();
+  if (!text) return `<p class="text-stone-400 font-bold text-sm">無品項資料</p>`;
+
+  const itemSummary = {};
+  const groupRegex = /【第\d+組:\s*[^】]+】([\s\S]*?)(?=\s*｜\s*【第\d+組:|$)/g;
+  let groupMatch;
+  let hasGroup = false;
+
+  while ((groupMatch = groupRegex.exec(text)) !== null) {
+    hasGroup = true;
+    const itemsText = groupMatch[1] || "";
+    const itemRegex = /([^、｜()（）]+)[(（](\d+)/g;
+    let itemMatch;
+    while ((itemMatch = itemRegex.exec(itemsText)) !== null) {
+      const name = itemMatch[1].trim();
+      const qty = Number(itemMatch[2]) || 0;
+      if (name && qty) itemSummary[name] = (itemSummary[name] || 0) + qty;
+    }
+  }
+
+  if (!hasGroup) {
+    const itemRegex = /([^、｜()（）]+)[(（](\d+)/g;
+    let itemMatch;
+    while ((itemMatch = itemRegex.exec(text)) !== null) {
+      const name = itemMatch[1].trim();
+      const qty = Number(itemMatch[2]) || 0;
+      if (name && qty) itemSummary[name] = (itemSummary[name] || 0) + qty;
+    }
+  }
+
+  const entries = Object.entries(itemSummary).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) {
+    return `<p class="text-stone-500 font-bold text-sm line-clamp-2">${escapeHtml(text)}</p>`;
+  }
+
+  return `<div class="flex flex-wrap gap-1.5">
+    ${entries.map(([name, qty]) => `<span class="inline-flex items-center rounded-full bg-white border border-stone-200 px-2.5 py-1 text-xs font-black text-stone-700">${escapeHtml(name)} × ${qty}</span>`).join("")}
   </div>`;
 }
 
@@ -856,63 +805,61 @@ function orderCard(order) {
     ${isDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">貨運編號</span><input class="admin-tracking mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.trackingNo || "")}" placeholder="貨運編號"></label>` : `<input type="hidden" class="admin-tracking" value="${escapeHtml(order.trackingNo || "")}">`}
     <label class="block ${isDelivery ? "" : "md:col-span-1"}"><span class="text-xs font-black text-stone-500 tracking-widest">訂單備註</span><input class="admin-note mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.statusNote || "")}" placeholder="給客人看的訂單備註"></label>`;
 
-  const customerNote = order.note
-    ? `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-sm"><strong>客人備註：</strong>${escapeHtml(order.note)}</div>`
-    : `<div class="text-sm text-stone-400 font-bold">無客人備註</div>`;
-
-  return `<article class="bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-4 space-y-3 ${methodCardClass(order)}" data-order-id="${escapeHtml(order.id)}">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-stone-100 pb-3">
-      <div class="min-w-0">
+  return `<article class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-3 ${methodCardClass(order)}" data-order-id="${escapeHtml(order.id)}">
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+      <div class="min-w-0 space-y-1">
         <div class="flex flex-wrap items-center gap-2">
-          <div class="text-base md:text-lg font-black text-stone-900 break-all">${escapeHtml(order.id)}</div>
+          <div class="text-lg font-black text-stone-900 break-all">${escapeHtml(order.id)}</div>
           <span class="inline-flex w-fit px-2.5 py-0.5 rounded-full border text-xs font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span>
           <span class="inline-flex w-fit px-2.5 py-0.5 rounded-full border text-xs font-black ${statusClass(order.orderStatus)}">${escapeHtml(order.orderStatus || "未設定")}</span>
         </div>
-        <div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-500 font-bold">
+        <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-500 font-bold">
           <span>預定：${escapeHtml(order.date || "-")}</span>
-          <span>姓名：${escapeHtml(order.name || "-")}</span>
-          <a href="tel:${escapeHtml(order.phone)}" class="text-[#5B7290] font-black">${escapeHtml(order.phone || "-")}</a>
+          <span>下單：${escapeHtml(order.timestamp || "-")}</span>
         </div>
       </div>
-      <div class="flex md:flex-col items-center md:items-end justify-between gap-2">
-        <div class="text-xs text-stone-400 font-black tracking-widest">總金額</div>
-        <div class="text-xl font-black text-[#5B7290] mono">$${escapeHtml(order.total)}</div>
+      <div class="text-left md:text-right shrink-0">
+        <div class="text-sm font-black text-stone-800">${escapeHtml(order.name || "-")}</div>
+        <a href="tel:${escapeHtml(order.phone)}" class="text-xs text-[#5B7290] font-black">${escapeHtml(order.phone || "-")}</a>
+        <div class="text-base font-black text-[#5B7290] mt-1">$${escapeHtml(order.total || 0)}</div>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      ${statusFields}
+    <div class="bg-stone-50 border border-stone-100 rounded-2xl p-3 text-sm leading-relaxed">
+      <div class="font-black text-stone-500 tracking-widest text-[11px] mb-2">品項總數量</div>
+      ${renderCompactItemSummary(order.details)}
     </div>
 
-    <details class="group rounded-2xl border border-stone-100 bg-stone-50/70 overflow-hidden">
-      <summary class="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between gap-3 text-sm font-black text-stone-600">
-        <span>完整訂單資料 / 商品明細</span>
-        <span class="text-xs text-[#5B7290] group-open:hidden">展開</span>
+    <details class="group">
+      <summary class="cursor-pointer list-none rounded-2xl bg-white border border-stone-200 px-3 py-2 font-black text-[#5B7290] flex items-center justify-between gap-3">
+        <span>展開完整資料／更新狀態</span>
+        <span class="text-xs group-open:hidden">展開</span>
         <span class="text-xs text-stone-400 hidden group-open:inline">收合</span>
       </summary>
-      <div class="border-t border-stone-100 p-3 space-y-3">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+      <div class="mt-3 space-y-4 border-t border-stone-100 pt-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
           <div><strong>Email：</strong>${escapeHtml(order.email || "-")}</div>
-          <div><strong>下單時間：</strong>${escapeHtml(order.timestamp || "-")}</div>
           <div><strong>配送方式：</strong><span class="inline-flex px-2 py-0.5 rounded-lg border text-xs font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span> <span class="text-stone-500">${escapeHtml(order.shippingMethod)}</span></div>
-          <div><strong>取貨／收件：</strong>${escapeHtml(order.address)}</div>
+          <div class="md:col-span-2"><strong>取貨／收件：</strong>${escapeHtml(order.address)}</div>
         </div>
-        <div class="bg-white border border-stone-100 rounded-2xl p-3 text-sm leading-relaxed">
-          <div class="font-black text-stone-500 tracking-widest text-[11px] mb-2">商品明細</div>
+        <div class="bg-stone-50 border border-stone-100 rounded-2xl p-3 text-sm leading-relaxed">
+          <div class="font-black text-stone-500 tracking-widest text-[11px] mb-2">完整商品明細</div>
           ${formatOrderDetailsAdmin(order.details)}
         </div>
-        ${customerNote}
+        ${order.note ? `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-sm"><strong>客人備註：</strong>${escapeHtml(order.note)}</div>` : ""}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+          ${statusFields}
+        </div>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
+          <div class="text-xs text-stone-400 font-bold">最後更新：${escapeHtml(order.lastUpdate || "-")}</div>
+          <button onclick="updateOrder('${escapeHtml(order.id)}')" class="h-11 rounded-xl bg-[#3E2D20] text-white px-5 font-black hover:bg-[#2B1F16]">儲存更新</button>
+        </div>
       </div>
     </details>
-
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
-      <div class="text-xs text-stone-400 font-bold">最後更新：${escapeHtml(order.lastUpdate || "-")}</div>
-      <button onclick="updateOrder('${escapeHtml(order.id)}', this)" class="h-10 rounded-xl bg-[#3E2D20] text-white px-5 font-black hover:bg-[#2B1F16]">儲存更新</button>
-    </div>
   </article>`;
 }
 
-async function updateOrder(orderId, triggerButton = null) {
+async function updateOrder(orderId) {
   const card = document.querySelector(`[data-order-id="${CSS.escape(orderId)}"]`);
   if (!card) return;
   const payload = {
@@ -924,7 +871,7 @@ async function updateOrder(orderId, triggerButton = null) {
     trackingNo: card.querySelector(".admin-tracking").value.trim(),
     statusNote: card.querySelector(".admin-note").value.trim()
   };
-  await postAdmin(payload, `${orderId} 已更新。`, triggerButton);
+  await postAdmin(payload, `${orderId} 已更新。`);
 }
 
 function renderProducts() {
@@ -1004,7 +951,7 @@ function renderSettings() {
           <h2 class="text-xl font-black text-stone-900">日期設定</h2>
           <p class="text-sm text-stone-500 mt-1">用區間新增可用日期。</p>
         </div>
-        <button onclick="saveSheet('settings','Settings', this)" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 日期設定</button>
+        <button onclick="saveSheet('settings','Settings')" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 日期設定</button>
       </div>
       <div data-edit-table="settings" data-keys="setting_name,value" class="space-y-5">
         ${settingsRows.map(row => settingDateBlock(row.setting_name, row.value)).join("")}
@@ -1067,7 +1014,7 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
       <p class="text-xs text-stone-500 font-bold leading-relaxed">
         📌 （限）＝限定品項，僅顯示在「期間限定商品」內｜（自取）＝限門市自取｜例：開心果可麗露（限）、巴斯克蛋糕（限自取）
       </p>` : "";
-  const couponNotice = tab === "coupons" ? `
+  const couponOperationNotice = tab === "coupons" ? `
       <p class="text-xs text-stone-500 font-bold leading-relaxed">
         📌 現折金額請直接輸入金額，例如 100；折扣比例請輸入小數，例如 0.9 代表 9 折。
       </p>` : "";
@@ -1081,11 +1028,11 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
         </div>
         <div class="flex gap-2">
           <button onclick="addRow('${tab}')" class="h-10 rounded-xl border border-stone-200 px-4 font-black text-stone-600 bg-white hover:bg-stone-50">新增一列</button>
-          <button onclick="saveSheet('${tab}','${sheetName}', this)" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 ${sheetName}</button>
+          <button onclick="saveSheet('${tab}','${sheetName}')" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 ${sheetName}</button>
         </div>
       </div>
       ${productNamingNotice}
-      ${couponNotice}
+      ${couponOperationNotice}
       <div class="overflow-x-auto">
         <table class="w-full text-sm min-w-[720px]" data-edit-table="${tab}" data-keys="${keys.join(",")}">
           <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2">${l}</th>`).join("")}<th class="px-2 py-2">操作</th></tr></thead>
@@ -1242,35 +1189,24 @@ function collectRows(tab) {
   });
 }
 
-async function saveSheet(tab, sheetName, triggerButton = null) {
+async function saveSheet(tab, sheetName) {
   const rows = collectRows(tab);
-  await postAdmin({ action:"adminReplaceSheetRows", token:getToken(), sheetName, rows }, `${sheetName} 已儲存。`, triggerButton);
+  await postAdmin({ action:"adminReplaceSheetRows", token:getToken(), sheetName, rows }, `${sheetName} 已儲存。`);
 }
 
-async function postAdmin(payload, successMessage, triggerButton = null) {
-  const actionText = successMessage ? successMessage.replace(/。$/, "") : "資料";
+async function postAdmin(payload, successMessage) {
   showMessage("adminMessage", "儲存中...", "info");
-  const toast = showAdminToast("儲存中...", "loading");
-  setButtonLoading(triggerButton, true, "儲存中...");
   try {
     const res = await fetch(API_URL, { method:"POST", body: JSON.stringify(payload) });
     const data = await res.json();
     if (data.status !== "success") {
-      hideAdminToast(toast);
       showMessage("adminMessage", data.message || "儲存失敗。", "error");
-      showAdminToast(data.message || "儲存失敗。", "error");
       return;
     }
-    await loadAll(null, true);
-    hideAdminToast(toast);
-    showSuccessMessage("adminMessage", actionText);
-    showAdminToast(actionText, "success");
+    showSuccessMessage("adminMessage", (successMessage || data.message || "已儲存。").replace(/。$/, ""));
+    await loadAll();
   } catch (err) {
-    hideAdminToast(toast);
     showMessage("adminMessage", "儲存失敗：" + err.message, "error");
-    showAdminToast("儲存失敗：" + err.message, "error");
-  } finally {
-    setButtonLoading(triggerButton, false);
   }
 }
 
