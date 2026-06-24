@@ -482,13 +482,40 @@ function renderSalesRankingChart(summary) {
   </div>`;
 }
 
-function getDailyRevenueSeries(orders) {
+function getDailyRevenueSeries(orders, startDate = "", endDate = "") {
+  const today = getTodayDateInputValue();
+  let start = startDate || "";
+  let end = endDate || "";
+
+  // Dashboard 沒有手動篩選時，營業額曲線預設顯示近 7 天，避免把所有月份混在同一張圖。
+  if (!start && !end) {
+    start = today;
+    end = addDaysToDateInput(today, 6);
+  } else if (start && !end) {
+    end = addDaysToDateInput(start, 6);
+  } else if (!start && end) {
+    start = addDaysToDateInput(end, -6);
+  }
+
   const map = {};
+  const cursor = new Date(start + "T00:00:00");
+  const endDateObj = new Date(end + "T00:00:00");
+
+  if (!isNaN(cursor.getTime()) && !isNaN(endDateObj.getTime()) && cursor <= endDateObj) {
+    while (cursor <= endDateObj) {
+      map[formatDateInputValue(cursor)] = 0;
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+
   (orders || []).forEach(order => {
     const date = normalizeOrderDateForCompare(order.date);
     if (!date) return;
+    if (start && date < start) return;
+    if (end && date > end) return;
     map[date] = (map[date] || 0) + parseMoneyNumber(order.total);
   });
+
   return Object.entries(map)
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([date, revenue]) => ({ date, revenue }));
@@ -501,8 +528,8 @@ function formatChartDateLabel(dateValue) {
   return m && d ? `${m}/${d}` : normalized;
 }
 
-function renderDailyRevenueLineChart(orders) {
-  const series = getDailyRevenueSeries(orders);
+function renderDailyRevenueLineChart(orders, startDate = "", endDate = "") {
+  const series = getDailyRevenueSeries(orders, startDate, endDate);
   if (!series.length) {
     return `<p class="text-stone-400 font-bold">目前沒有營業額資料。</p>`;
   }
@@ -547,7 +574,7 @@ function renderDailyRevenueLineChart(orders) {
 
   return `<div class="space-y-3">
     <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-bold text-stone-500">
-      <span>區間營業額 <strong class="text-stone-900 mono">${formatCurrencyShort(total)}</strong></span>
+      <span>近 7 天／篩選區間營業額 <strong class="text-stone-900 mono">${formatCurrencyShort(total)}</strong></span>
       <span>最近日期 <strong class="text-stone-900 mono">${formatChartDateLabel(latest.date)}｜${formatCurrencyShort(latest.revenue)}</strong></span>
     </div>
     <div class="overflow-x-auto">
@@ -836,7 +863,8 @@ function filterDashboard() {
       </div>
       <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
         <h3 class="font-black text-[#5B7290] tracking-widest mb-3">每日營業額</h3>
-        ${renderDailyRevenueLineChart(activeOrders)}
+        <p class="text-xs text-stone-400 font-bold mb-3">未手動篩選時，預設顯示近 7 天。</p>
+        ${renderDailyRevenueLineChart(activeOrders, startDate, endDate)}
       </div>
     </div>`;
 }
