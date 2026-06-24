@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Lilou｜後台管理</title>
+  <title>Lilou Admin｜後台管理</title>
   <meta name="robots" content="noindex,nofollow">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <style>
@@ -176,10 +176,40 @@ function formatOrderDetailsAdmin(details) {
   }
 
   if (!groups.length) {
-    return `<div class="whitespace-pre-wrap text-stone-700 font-bold leading-relaxed">${escapeHtml(text)}</div>`;
+    return `<details class="group">
+      <summary class="cursor-pointer list-none rounded-2xl bg-white border border-stone-200 px-3 py-2 font-black text-stone-700 flex items-center justify-between gap-3">
+        <span>查看商品明細</span>
+        <span class="text-xs text-[#5B7290] group-open:hidden">展開</span>
+        <span class="text-xs text-stone-400 hidden group-open:inline">收合</span>
+      </summary>
+      <div class="mt-3 whitespace-pre-wrap text-stone-700 font-bold leading-relaxed bg-white border border-stone-200 rounded-2xl p-3">${escapeHtml(text)}</div>
+    </details>`;
   }
 
-  return `<div class="space-y-3">${groups.map(group => `
+  const packageSummary = {};
+  const itemSummary = {};
+  groups.forEach(group => {
+    packageSummary[group.packageName] = (packageSummary[group.packageName] || 0) + 1;
+    group.items.forEach(item => {
+      const itemMatch = item.match(/^(.+?)[(（](\d+)/);
+      if (itemMatch) {
+        const itemName = itemMatch[1].trim();
+        const qty = parseInt(itemMatch[2], 10) || 0;
+        itemSummary[itemName] = (itemSummary[itemName] || 0) + qty;
+      }
+    });
+  });
+
+  const packageLine = Object.entries(packageSummary)
+    .map(([name, qty]) => `${escapeHtml(name)} × ${qty}`)
+    .join("、");
+
+  const itemChips = Object.entries(itemSummary)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, qty]) => `<span class="inline-flex items-center rounded-full bg-white border border-stone-200 px-2.5 py-1 text-xs font-black text-stone-700">${escapeHtml(name)} × ${qty}</span>`)
+    .join("");
+
+  const fullDetails = groups.map(group => `
     <div class="bg-white border border-stone-200 rounded-2xl p-3">
       <div class="flex flex-wrap items-center gap-2 mb-2">
         <span class="inline-flex items-center justify-center rounded-full bg-[#5B7290] text-white text-[11px] font-black px-2 py-0.5">
@@ -187,13 +217,31 @@ function formatOrderDetailsAdmin(details) {
         </span>
         <span class="font-black text-stone-800">${escapeHtml(group.packageName)}</span>
       </div>
-      <div class="space-y-1">
+      <div class="flex flex-wrap gap-1.5">
         ${group.items.length
-          ? group.items.map(item => `<div class="text-sm text-stone-700 font-bold leading-relaxed">・${escapeHtml(item)}</div>`).join("")
-          : `<div class="text-sm text-stone-400 font-bold">無品項資料</div>`}
+          ? group.items.map(item => `<span class="inline-flex rounded-lg bg-stone-50 border border-stone-100 px-2 py-1 text-xs text-stone-700 font-bold">${escapeHtml(item)}</span>`).join("")
+          : `<span class="text-sm text-stone-400 font-bold">無品項資料</span>`}
       </div>
     </div>
-  `).join("")}</div>`;
+  `).join("");
+
+  return `<div class="space-y-3">
+    <div class="bg-white border border-stone-200 rounded-2xl p-3 space-y-2">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div class="font-black text-stone-800">共 ${groups.length} 組</div>
+        <div class="text-xs text-stone-500 font-bold leading-relaxed">${packageLine}</div>
+      </div>
+      <div class="flex flex-wrap gap-1.5">${itemChips || `<span class="text-xs text-stone-400 font-bold">無品項統計</span>`}</div>
+    </div>
+    <details class="group">
+      <summary class="cursor-pointer list-none rounded-2xl bg-stone-100 border border-stone-200 px-3 py-2 font-black text-[#5B7290] flex items-center justify-between gap-3">
+        <span>查看每組完整明細</span>
+        <span class="text-xs group-open:hidden">展開</span>
+        <span class="text-xs text-stone-400 hidden group-open:inline">收合</span>
+      </summary>
+      <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">${fullDetails}</div>
+    </details>
+  </div>`;
 }
 
 function summaryList(summary) {
@@ -408,6 +456,18 @@ function getDefaultMonthRange() {
   };
 }
 
+function getTodayDateInputValue() {
+  return formatDateInputValue(new Date());
+}
+
+function setOrderDateFutureDefault() {
+  const startInput = document.getElementById("orderStartDate");
+  const endInput = document.getElementById("orderEndDate");
+  if (startInput) startInput.value = getTodayDateInputValue();
+  if (endInput) endInput.value = "";
+  filterOrders();
+}
+
 function normalizeOrderDateForCompare(value) {
   const raw = (value || "").toString().trim();
   if (!raw) return "";
@@ -462,6 +522,7 @@ function renderOrders() {
         <input id="orderEndDate" type="date" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
         <div class="flex gap-2 md:col-span-2">
           <button onclick="filterOrders()" class="flex-1 h-11 rounded-xl bg-[#5B7290] text-white px-3 font-black hover:bg-[#3E4F66] text-xs">篩選</button>
+          <button onclick="setOrderDateFutureDefault()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">未來</button>
           <button onclick="setOrderDateDefaultMonth()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">本月</button>
           <button onclick="clearOrderDateFilter()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">全部</button>
         </div>
@@ -469,7 +530,7 @@ function renderOrders() {
       <div id="orderCount" class="text-sm font-black text-stone-500"></div>
     </div>
     <div id="ordersArea" class="space-y-4"></div>`;
-  setOrderDateDefaultMonth();
+  setOrderDateFutureDefault();
 }
 
 function filterOrders() {
@@ -494,7 +555,8 @@ function filterOrders() {
   });
   const storeCount = orders.filter(o => getOrderMethodType(o) === "store").length;
   const deliveryCount = orders.filter(o => getOrderMethodType(o) === "delivery").length;
-  document.getElementById("orderCount").textContent = `${orders.length} 筆訂單｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}`;
+  const rangeText = startDate && !endDate ? `｜日期：${startDate} 之後` : startDate && endDate ? `｜日期：${startDate}～${endDate}` : !startDate && endDate ? `｜日期：${endDate} 以前` : "｜日期：全部";
+  document.getElementById("orderCount").textContent = `${orders.length} 筆訂單｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}${rangeText}`;
   const area = document.getElementById("ordersArea");
   if (!orders.length) {
     area.innerHTML = `<div class="bg-white rounded-3xl border border-stone-100 p-8 text-center text-stone-400 font-bold">目前沒有符合條件的訂單</div>`;
