@@ -244,12 +244,60 @@ function statusClass(status) {
   return "bg-stone-50 text-stone-700 border-stone-200";
 }
 
+
+function formatDateInputValue(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function getDefaultMonthRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return {
+    start: formatDateInputValue(start),
+    end: formatDateInputValue(end)
+  };
+}
+
+function normalizeOrderDateForCompare(value) {
+  const raw = (value || "").toString().trim();
+  if (!raw) return "";
+
+  const match = raw.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (!match) return "";
+
+  const y = match[1];
+  const m = String(match[2]).padStart(2, "0");
+  const d = String(match[3]).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function setOrderDateDefaultMonth() {
+  const range = getDefaultMonthRange();
+  const startInput = document.getElementById("orderStartDate");
+  const endInput = document.getElementById("orderEndDate");
+  if (startInput) startInput.value = range.start;
+  if (endInput) endInput.value = range.end;
+  setOrderDateDefaultMonth();
+}
+
+function clearOrderDateFilter() {
+  const startInput = document.getElementById("orderStartDate");
+  const endInput = document.getElementById("orderEndDate");
+  if (startInput) startInput.value = "";
+  if (endInput) endInput.value = "";
+  filterOrders();
+}
+
 function renderOrders() {
   const orders = adminData.orders || [];
   document.getElementById("tab-orders").innerHTML = `
     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-3">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <input id="orderSearch" oninput="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" placeholder="搜尋訂單編號、姓名、電話、日期">
+      <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+        <input id="orderSearch" oninput="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2" placeholder="搜尋訂單編號、姓名、電話、日期">
         <select id="orderStatusFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
           <option value="">全部狀態</option>
           <option value="訂單確認中">訂單確認中</option>
@@ -258,8 +306,14 @@ function renderOrders() {
           <option value="付款已確認">付款已確認</option>
           <option value="已出貨">已出貨</option>
         </select>
-        <div id="orderCount" class="flex items-center text-sm font-black text-stone-500"></div>
+        <input id="orderStartDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        <input id="orderEndDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        <div class="flex gap-2">
+          <button onclick="setOrderDateDefaultMonth()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">本月</button>
+          <button onclick="clearOrderDateFilter()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">全部</button>
+        </div>
       </div>
+      <div id="orderCount" class="text-sm font-black text-stone-500"></div>
     </div>
     <div id="ordersArea" class="space-y-4"></div>`;
   filterOrders();
@@ -268,9 +322,19 @@ function renderOrders() {
 function filterOrders() {
   const q = (document.getElementById("orderSearch")?.value || "").toLowerCase();
   const status = document.getElementById("orderStatusFilter")?.value || "";
+  const startDate = document.getElementById("orderStartDate")?.value || "";
+  const endDate = document.getElementById("orderEndDate")?.value || "";
+
   const orders = (adminData.orders || []).filter(o => {
     const text = [o.id,o.name,o.phone,o.date,o.email,o.shippingMethod,o.address].join(" ").toLowerCase();
-    return (!q || text.includes(q)) && (!status || o.orderStatus === status);
+    const orderDate = normalizeOrderDateForCompare(o.date);
+
+    const keywordOk = !q || text.includes(q);
+    const statusOk = !status || o.orderStatus === status;
+    const startOk = !startDate || (orderDate && orderDate >= startDate);
+    const endOk = !endDate || (orderDate && orderDate <= endDate);
+
+    return keywordOk && statusOk && startOk && endOk;
   });
   document.getElementById("orderCount").textContent = `${orders.length} 筆訂單`;
   const area = document.getElementById("ordersArea");
