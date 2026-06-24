@@ -345,7 +345,8 @@ function renderTodayPickupCard() {
   const orders = (adminData.orders || []).filter(o =>
     normalizeOrderDateForCompare(o.date) === today &&
     getOrderMethodType(o) === "store" &&
-    o.orderStatus !== "已取貨"
+    o.orderStatus !== "已取貨" &&
+    o.orderStatus !== "已作廢"
   );
 
   return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
@@ -369,7 +370,7 @@ function renderFutureSevenDayPreview() {
 
   for (let i = 0; i < 7; i++) {
     const date = addDaysToDateInput(today, i);
-    const dayOrders = (adminData.orders || []).filter(o => normalizeOrderDateForCompare(o.date) === date && o.orderStatus !== "已取貨");
+    const dayOrders = (adminData.orders || []).filter(o => normalizeOrderDateForCompare(o.date) === date && o.orderStatus !== "已取貨" && o.orderStatus !== "已作廢");
     rows.push({
       date,
       store: dayOrders.filter(o => getOrderMethodType(o) === "store").length,
@@ -494,16 +495,18 @@ function filterDashboard() {
   const startDate = document.getElementById("dashboardStartDate")?.value || "";
   const endDate = document.getElementById("dashboardEndDate")?.value || "";
   const orders = getOrdersByDateRange(startDate, endDate);
-  const revenue = orders.reduce((sum, o) => sum + parseMoneyNumber(o.total), 0);
-  const summary = summarizeDetailsFromOrders(orders);
+  const activeOrders = orders.filter(o => o.orderStatus !== "已作廢");
+  const revenue = activeOrders.reduce((sum, o) => sum + parseMoneyNumber(o.total), 0);
+  const summary = summarizeDetailsFromOrders(activeOrders);
 
   const d = {
-    totalOrders: orders.length,
-    pendingPayment: orders.filter(o => o.orderStatus === "待付款").length,
-    paid: orders.filter(o => o.orderStatus === "付款已確認").length,
-    readyPickup: orders.filter(o => o.orderStatus === "可取貨").length,
-    shipped: orders.filter(o => o.orderStatus === "已出貨").length,
-    pickedUp: orders.filter(o => o.orderStatus === "已取貨").length,
+    totalOrders: activeOrders.length,
+    pendingPayment: activeOrders.filter(o => o.orderStatus === "待付款").length,
+    paid: activeOrders.filter(o => o.orderStatus === "付款已確認").length,
+    readyPickup: activeOrders.filter(o => o.orderStatus === "可取貨").length,
+    shipped: activeOrders.filter(o => o.orderStatus === "已出貨").length,
+    pickedUp: activeOrders.filter(o => o.orderStatus === "已取貨").length,
+    voided: orders.filter(o => o.orderStatus === "已作廢").length,
     revenue
   };
 
@@ -515,13 +518,14 @@ function filterDashboard() {
 
   document.getElementById("dashboardStatsArea").innerHTML = `
     <div class="text-sm font-black text-stone-500">${label}</div>
-    <div class="grid grid-cols-2 md:grid-cols-7 gap-3">
-      ${kpi("全部訂單", d.totalOrders || 0)}
+    <div class="grid grid-cols-2 md:grid-cols-8 gap-3">
+      ${kpi("有效訂單", d.totalOrders || 0)}
       ${kpi("待付款", d.pendingPayment || 0)}
       ${kpi("付款已確認", d.paid || 0)}
       ${kpi("可取貨", d.readyPickup || 0)}
       ${kpi("已出貨", d.shipped || 0)}
       ${kpi("已取貨", d.pickedUp || 0)}
+      ${kpi("已作廢", d.voided || 0)}
       ${kpi("總金額", "$" + (d.revenue || 0))}
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -573,6 +577,7 @@ function methodCardClass(order) {
 }
 
 function statusClass(status) {
+  if (status === "已作廢") return "bg-red-50 text-red-700 border-red-200";
   if (status === "已取貨") return "bg-emerald-100 text-emerald-800 border-emerald-300";
   if (status === "已出貨") return "bg-emerald-50 text-emerald-700 border-emerald-200";
   if (status === "付款已確認" || status === "可取貨") return "bg-blue-50 text-blue-700 border-blue-200";
@@ -654,6 +659,7 @@ function renderOrders() {
           <option value="付款已確認">付款已確認</option>
           <option value="已出貨">已出貨</option>
           <option value="已取貨">已取貨</option>
+          <option value="已作廢">已作廢</option>
         </select>
         <select id="orderMethodFilter" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
           <option value="">全部配送</option>
@@ -708,7 +714,7 @@ function filterOrders() {
 }
 
 function orderCard(order) {
-  const statuses = ["訂單確認中", "可取貨", "待付款", "付款已確認", "已出貨", "已取貨"];
+  const statuses = ["訂單確認中", "可取貨", "待付款", "付款已確認", "已出貨", "已取貨", "已作廢"];
   const methodType = getOrderMethodType(order);
   const isDelivery = methodType === "delivery";
   const statusFields = `
