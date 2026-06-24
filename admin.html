@@ -584,35 +584,124 @@ function settingSaveName(name) {
   return name || "";
 }
 
-function renderSettings() {
-  const rows = (adminData.settings || []).map(row => ({
-    setting_name: settingSaveName(row.setting_name),
-    value: row.value || ""
-  }));
-  renderEditableTable("settings", "Settings", ["setting_name","value"], ["設定名稱","設定內容"], rows, true);
+function formatDateHyphenFromInput(value) {
+  const normalized = normalizeOrderDateForCompare(value);
+  return normalized || "";
 }
 
-function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = false) {
-  const id = "tab-" + tab;
-  document.getElementById(id).innerHTML = `
-    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4">
+function formatDateDisplaySlash(value) {
+  const normalized = formatDateHyphenFromInput(value);
+  return normalized ? normalized.replace(/-/g, "/") : "";
+}
+
+function parseDateList(value) {
+  return (value || "").toString()
+    .replace(/[\r\n、，]/g, ",")
+    .split(",")
+    .map(v => formatDateHyphenFromInput(v.trim()))
+    .filter(Boolean);
+}
+
+function uniqueSortedDateList(value) {
+  return Array.from(new Set(parseDateList(value))).sort();
+}
+
+function serializeDateList(dates) {
+  return Array.from(new Set((dates || []).map(formatDateHyphenFromInput).filter(Boolean))).sort().join(",");
+}
+
+function settingValueByLabel(label) {
+  const rows = adminData.settings || [];
+  const found = rows.find(row => settingDisplayName(row.setting_name) === label);
+  return found ? (found.value || "") : "";
+}
+
+function renderSettings() {
+  const settingsRows = [
+    { setting_name: "自取日期", value: settingValueByLabel("自取日期") },
+    { setting_name: "店到店出貨日期", value: settingValueByLabel("店到店出貨日期") }
+  ];
+
+  document.getElementById("tab-settings").innerHTML = `
+    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-5">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h2 class="text-xl font-black text-stone-900">${tab === "settings" ? "日期設定" : sheetName}</h2>
-          <p class="text-sm text-stone-500 mt-1">修改後請按「儲存 ${tab === "settings" ? "日期設定" : sheetName}」。</p>
+          <h2 class="text-xl font-black text-stone-900">日期設定</h2>
+          <p class="text-sm text-stone-500 mt-1">可單日新增、區間新增，或一次加入整個月；修改後請按「儲存 日期設定」。</p>
         </div>
-        <div class="flex gap-2">
-          ${tab === "settings" ? "" : `<button onclick="addRow('${tab}')" class="h-10 rounded-xl border border-stone-200 px-4 font-black text-stone-600 bg-white hover:bg-stone-50">新增一列</button>`}
-          <button onclick="saveSheet('${tab}','${sheetName}')" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 ${tab === "settings" ? "日期設定" : sheetName}</button>
-        </div>
+        <button onclick="saveSheet('settings','Settings')" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 日期設定</button>
       </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm min-w-[720px]" data-edit-table="${tab}" data-keys="${keys.join(",")}">
-          <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2">${l}</th>`).join("")}${tab === "settings" ? "" : `<th class="px-2 py-2">操作</th>`}</tr></thead>
-          <tbody>${rows.map(row => editRowHtml(tab, keys, row, textareaLong)).join("")}</tbody>
-        </table>
+      <div data-edit-table="settings" data-keys="setting_name,value" class="space-y-5">
+        ${settingsRows.map(row => settingDateBlock(row.setting_name, row.value)).join("")}
       </div>
     </div>`;
+}
+
+function settingDateBlock(label, value) {
+  const cleanDates = uniqueSortedDateList(value);
+  const cleanValue = cleanDates.join(",");
+  return `<section class="rounded-3xl border border-stone-100 bg-stone-50/60 p-4 md:p-5 space-y-4" data-setting-row>
+    <input type="hidden" data-key="setting_name" value="${escapeHtml(label)}">
+    <input type="hidden" data-key="value" class="setting-date-value" value="${escapeHtml(cleanValue)}">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+      <div>
+        <h3 class="text-lg font-black text-stone-900">${escapeHtml(label)}</h3>
+        <p class="text-xs text-stone-400 font-bold mt-1">畫面用標籤管理；儲存到 Google 試算表時會維持 YYYY-MM-DD。</p>
+      </div>
+      <div class="flex gap-2">
+        <button type="button" onclick="clearSettingDates(this)" class="h-10 rounded-xl border border-red-100 bg-red-50 px-4 font-black text-red-500 hover:bg-red-100 text-xs">清空日期</button>
+        <button type="button" onclick="sortSettingDates(this)" class="h-10 rounded-xl border border-stone-200 bg-white px-4 font-black text-stone-600 hover:bg-stone-50 text-xs">整理日期</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div class="bg-white rounded-2xl border border-stone-100 p-3 space-y-2">
+        <div class="text-xs font-black text-stone-500 tracking-widest">單日新增</div>
+        <div class="flex gap-2">
+          <input type="date" class="setting-date-picker flex-1 h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
+          <button type="button" onclick="appendSettingDate(this)" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66] text-xs">加入</button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-stone-100 p-3 space-y-2">
+        <div class="text-xs font-black text-stone-500 tracking-widest">區間新增</div>
+        <div class="grid grid-cols-2 gap-2">
+          <input type="date" class="setting-range-start h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
+          <input type="date" class="setting-range-end h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        </div>
+        <button type="button" onclick="appendSettingDateRange(this)" class="w-full h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66] text-xs">加入區間日期</button>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-stone-100 p-3 space-y-2">
+        <div class="text-xs font-black text-stone-500 tracking-widest">整月新增</div>
+        <div class="flex gap-2">
+          <input type="month" class="setting-month-picker flex-1 h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
+          <button type="button" onclick="appendSettingMonth(this)" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66] text-xs">加入整月</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-stone-100 p-3 space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <div class="text-xs font-black text-stone-500 tracking-widest">已設定日期</div>
+        <div class="text-xs font-black text-[#5B7290] mono"><span class="setting-date-count">${cleanDates.length}</span> 天</div>
+      </div>
+      <div class="setting-date-tags flex flex-wrap gap-2 min-h-[44px]">
+        ${renderSettingDateTags(cleanDates)}
+      </div>
+      <p class="text-[11px] text-stone-400 font-bold leading-relaxed">實際寫入格式：${escapeHtml(cleanValue || "尚未設定")}</p>
+    </div>
+  </section>`;
+}
+
+function renderSettingDateTags(dates) {
+  if (!dates || !dates.length) {
+    return `<div class="text-sm text-stone-400 font-bold py-2">尚未設定日期</div>`;
+  }
+  return dates.map(date => `<span class="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm font-black text-stone-700">
+    ${escapeHtml(formatDateDisplaySlash(date))}
+    <button type="button" onclick="removeSettingDate(this, '${escapeHtml(date)}')" class="text-stone-400 hover:text-red-500 font-black" aria-label="刪除 ${escapeHtml(date)}">×</button>
+  </span>`).join("");
 }
 
 function editRowHtml(tab, keys, row = {}, textareaLong = false) {
@@ -620,23 +709,13 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false) {
     const val = row[key] || "";
     let field = "";
 
-    if (tab === "settings" && key === "setting_name") {
-      field = `<input data-key="${key}" readonly class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-100 text-stone-500 font-black cursor-not-allowed" value="${escapeHtml(val)}">`;
-    } else if (tab === "coupons" && key === "type") {
+    if (tab === "coupons" && key === "type") {
       field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
         <option value="minus" ${val === "minus" ? "selected" : ""}>minus｜現折金額</option>
         <option value="discount" ${val === "discount" ? "selected" : ""}>discount｜折扣比例</option>
       </select>`;
     } else if (tab === "coupons" && (key === "start_date" || key === "end_date")) {
       field = `<input type="date" data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${normalizeOrderDateForCompare(val)}">`;
-    } else if (tab === "settings" && key === "value") {
-      field = `<div class="space-y-2">
-        <div class="flex gap-2">
-          <input type="date" class="setting-date-picker h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          <button type="button" onclick="appendSettingDate(this)" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66] text-xs">加入日期</button>
-        </div>
-        <textarea data-key="${key}" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-stone-50" placeholder="可用逗號分隔多個日期，例如 2026/06/24,2026/06/25">${escapeHtml(val)}</textarea>
-      </div>`;
     } else if (textareaLong && idx === 1) {
       field = `<textarea data-key="${key}" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-stone-50">${escapeHtml(val)}</textarea>`;
     } else {
@@ -644,24 +723,102 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false) {
     }
 
     return `<td class="px-2 py-2 align-top">${field}</td>`;
-  }).join("")}${tab === "settings" ? "" : `<td class="px-2 py-2 align-top text-center">
+  }).join("")}<td class="px-2 py-2 align-top text-center">
     <button onclick="this.closest('tr').remove()" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">
       🗑️
     </button>
-  </td>`}</tr>`;
+  </td></tr>`;
+}
+
+function getSettingBlock(button) {
+  return button.closest("[data-setting-row]");
+}
+
+function getSettingDates(box) {
+  const hidden = box.querySelector(".setting-date-value");
+  return hidden ? uniqueSortedDateList(hidden.value) : [];
+}
+
+function setSettingDates(box, dates) {
+  const hidden = box.querySelector(".setting-date-value");
+  const tags = box.querySelector(".setting-date-tags");
+  const count = box.querySelector(".setting-date-count");
+  const note = box.querySelector(".setting-date-tags")?.nextElementSibling;
+  const clean = Array.from(new Set((dates || []).map(formatDateHyphenFromInput).filter(Boolean))).sort();
+  const serialized = clean.join(",");
+  if (hidden) hidden.value = serialized;
+  if (tags) tags.innerHTML = renderSettingDateTags(clean);
+  if (count) count.textContent = clean.length;
+  if (note) note.textContent = "實際寫入格式：" + (serialized || "尚未設定");
+}
+
+function mergeSettingDates(box, dates) {
+  setSettingDates(box, getSettingDates(box).concat(dates));
 }
 
 function appendSettingDate(button) {
-  const box = button.closest("div").parentElement;
+  const box = getSettingBlock(button);
   const dateInput = box.querySelector(".setting-date-picker");
-  const textarea = box.querySelector("textarea[data-key='value']");
-  const date = dateInput?.value || "";
-  if (!date || !textarea) return;
-  const normalized = date.replace(/-/g, "/");
-  const current = textarea.value.split(/[,，、\n]/).map(v => v.trim()).filter(Boolean);
-  if (!current.includes(normalized)) current.push(normalized);
-  textarea.value = current.join(",");
+  const date = formatDateHyphenFromInput(dateInput?.value || "");
+  if (!date) return;
+  mergeSettingDates(box, [date]);
   dateInput.value = "";
+}
+
+function appendSettingDateRange(button) {
+  const box = getSettingBlock(button);
+  const startInput = box.querySelector(".setting-range-start");
+  const endInput = box.querySelector(".setting-range-end");
+  if (!startInput?.value || !endInput?.value) return;
+
+  const start = new Date(startInput.value + "T00:00:00");
+  const end = new Date(endInput.value + "T00:00:00");
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
+    alert("請確認起始日期不可晚於結束日期。");
+    return;
+  }
+
+  const dates = [];
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    dates.push(formatDateInputValue(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  mergeSettingDates(box, dates);
+}
+
+function appendSettingMonth(button) {
+  const box = getSettingBlock(button);
+  const monthInput = box.querySelector(".setting-month-picker");
+  const value = monthInput?.value || "";
+  if (!value) return;
+
+  const [yearText, monthText] = value.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  if (!year || !month) return;
+
+  const lastDay = new Date(year, month, 0).getDate();
+  const dates = [];
+  for (let day = 1; day <= lastDay; day++) {
+    dates.push(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+  }
+  mergeSettingDates(box, dates);
+}
+
+function removeSettingDate(button, date) {
+  const box = getSettingBlock(button);
+  setSettingDates(box, getSettingDates(box).filter(d => d !== date));
+}
+
+function clearSettingDates(button) {
+  if (!confirm("確定要清空這個日期設定嗎？")) return;
+  setSettingDates(getSettingBlock(button), []);
+}
+
+function sortSettingDates(button) {
+  const box = getSettingBlock(button);
+  setSettingDates(box, getSettingDates(box));
 }
 
 function addRow(tab) {
@@ -674,6 +831,18 @@ function addRow(tab) {
 function collectRows(tab) {
   const table = document.querySelector(`[data-edit-table="${tab}"]`);
   const keys = table.dataset.keys.split(",");
+
+  if (tab === "settings") {
+    return [...table.querySelectorAll("[data-setting-row]")].map(row => {
+      const obj = {};
+      keys.forEach(key => {
+        const input = row.querySelector(`[data-key="${key}"]`);
+        obj[key] = input ? input.value.trim() : "";
+      });
+      return obj;
+    });
+  }
+
   return [...table.querySelectorAll("tbody tr")].map(tr => {
     const obj = {};
     keys.forEach(key => {
