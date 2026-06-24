@@ -704,6 +704,30 @@ function renderSettingDateTags(dates) {
   </span>`).join("");
 }
 
+
+function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = false) {
+  const id = "tab-" + tab;
+  document.getElementById(id).innerHTML = `
+    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-black text-stone-900">${sheetName}</h2>
+          <p class="text-sm text-stone-500 mt-1">修改後請按「儲存 ${sheetName}」。</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="addRow('${tab}')" class="h-10 rounded-xl border border-stone-200 px-4 font-black text-stone-600 bg-white hover:bg-stone-50">新增一列</button>
+          <button onclick="saveSheet('${tab}','${sheetName}')" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 ${sheetName}</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm min-w-[720px]" data-edit-table="${tab}" data-keys="${keys.join(",")}">
+          <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2">${l}</th>`).join("")}<th class="px-2 py-2">操作</th></tr></thead>
+          <tbody>${rows.map(row => editRowHtml(tab, keys, row, textareaLong)).join("")}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
 function editRowHtml(tab, keys, row = {}, textareaLong = false) {
   return `<tr class="border-t border-stone-100">${keys.map((key, idx) => {
     const val = row[key] || "";
