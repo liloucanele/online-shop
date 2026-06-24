@@ -1,536 +1,615 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Lilou Admin｜後台管理</title>
-  <meta name="robots" content="noindex,nofollow">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lilou 後台管理</title>
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <style>
-    input, select, textarea { -webkit-appearance:none; appearance:none; font-size:16px; }
-    textarea { min-height: 44px; }
-    .tab-active { background:#5B7290; color:#fff; }
-    .tab-idle { background:#fff; color:#57534e; }
-    .mono { font-variant-numeric: tabular-nums; }
+    :root { --brand:#5B7290; --brandDark:#3E4F66; --bg:#F4F6F9; }
+    input, select, textarea { font-size:16px; }
+    .card { background:#fff; border:1px solid #e7e5e4; border-radius:1rem; box-shadow:0 1px 2px rgba(0,0,0,.03); }
+    .btn { height:44px; border-radius:.75rem; font-weight:900; transition:.15s; }
+    .btn-primary { background:var(--brand); color:#fff; }
+    .btn-primary:hover { background:var(--brandDark); }
+    .btn-soft { background:#f5f5f4; color:#44403c; border:1px solid #e7e5e4; }
+    .field { width:100%; height:44px; border:1px solid #d6d3d1; border-radius:.75rem; padding:0 .75rem; background:#fff; outline:none; }
+    .field:focus { border-color:var(--brand); box-shadow:0 0 0 1px var(--brand); }
+    .textarea { width:100%; min-height:88px; border:1px solid #d6d3d1; border-radius:.75rem; padding:.75rem; background:#fff; outline:none; }
+    .badge { display:inline-flex; align-items:center; padding:.25rem .55rem; border-radius:999px; font-size:12px; font-weight:900; }
+    .status-訂單確認中 { background:#f5f5f4; color:#57534e; }
+    .status-待付款 { background:#fff7ed; color:#c2410c; }
+    .status-付款已確認 { background:#eff6ff; color:#1d4ed8; }
+    .status-可取貨 { background:#ecfdf5; color:#047857; }
+    .status-已出貨 { background:#eef2ff; color:#4338ca; }
+    .status-已取貨 { background:#f0fdf4; color:#166534; }
+    .method-store { background:#ecfeff; color:#0e7490; }
+    .method-delivery { background:#fef3c7; color:#92400e; }
+    th { white-space:nowrap; }
+    .hidden-important { display:none !important; }
   </style>
 </head>
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
-  <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-      <div>
-        <h1 class="text-lg md:text-2xl font-black tracking-wider">LILOU｜後台管理系統</h1>
-      </div>
-      <button id="logoutBtn" onclick="logoutAdmin()" class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10">登出</button>
-    </div>
-  </header>
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbyA3ovLtC-hDYGL-_9CMNKk9A--TcrU-W-mN6Hc0GaZ8eDrvAsew3ZdtYBLSyimuiU/exec";
+    const ORDER_STATUSES = ["訂單確認中", "待付款", "付款已確認", "可取貨", "已出貨", "已取貨"];
+    const STORE_FLOW = ["訂單確認中", "可取貨", "已取貨"];
+    const DELIVERY_FLOW = ["訂單確認中", "待付款", "付款已確認", "已出貨", "已取貨"];
 
-  <main class="max-w-7xl mx-auto p-4 md:p-6">
-    <section id="loginPanel" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-5 md:p-8 max-w-md mx-auto mt-10 space-y-4">
+    let token = localStorage.getItem("lilou_admin_token") || "";
+    let adminData = { orders: [], settings: [], dashboard: {} };
+    let filteredOrders = [];
+
+    const $ = (id) => document.getElementById(id);
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>'"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[ch]));
+    }
+
+    function normalizeMethod(method) {
+      const m = String(method || "").trim();
+      if (m === "Store Pickup" || m.toLowerCase().includes("store")) return "store";
+      if (m === "7-11 Pickup" || m.includes("7-11") || m.includes("711")) return "delivery";
+      return "delivery";
+    }
+
+    function methodLabel(method) {
+      return normalizeMethod(method) === "store" ? "門市自取" : "7-11 店到店";
+    }
+
+    function methodBadge(method) {
+      const type = normalizeMethod(method);
+      return `<span class="badge ${type === "store" ? "method-store" : "method-delivery"}">${methodLabel(method)}</span>`;
+    }
+
+    function statusBadge(status) {
+      const safe = escapeHtml(status || "訂單確認中");
+      return `<span class="badge status-${safe}">${safe}</span>`;
+    }
+
+    function toDateInputValue(value) {
+      if (!value) return "";
+      const clean = String(value).trim().replace(/\//g, "-");
+      const m = clean.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (!m) return "";
+      return `${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`;
+    }
+
+    function toSlashDate(value) {
+      const v = toDateInputValue(value);
+      return v ? v.replace(/-/g, "/") : "";
+    }
+
+    function todayMonthRange() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const last = new Date(y, d.getMonth() + 1, 0).getDate();
+      return { start: `${y}-${m}-01`, end: `${y}-${m}-${String(last).padStart(2, "0")}` };
+    }
+
+    async function apiGet(action, params = {}) {
+      const url = new URL(API_URL);
+      url.searchParams.set("action", action);
+      Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+      url.searchParams.set("_", Date.now());
+      const res = await fetch(url.toString());
+      return await res.json();
+    }
+
+    async function apiPost(payload) {
+      const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+      return await res.json();
+    }
+
+    function setBusy(isBusy, text = "處理中...") {
+      $("globalBusyText").textContent = text;
+      $("globalBusy").classList.toggle("hidden", !isBusy);
+    }
+
+    async function login() {
+      const password = $("adminPassword").value.trim();
+      if (!password) return alert("請輸入後台密碼");
+      setBusy(true, "登入中...");
+      try {
+        const data = await apiGet("adminLogin", { password });
+        if (data.status !== "success") throw new Error(data.message || "登入失敗");
+        token = data.token;
+        localStorage.setItem("lilou_admin_token", token);
+        $("loginPanel").classList.add("hidden");
+        $("adminPanel").classList.remove("hidden");
+        await loadAll();
+      } catch (e) {
+        alert(e.message);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("lilou_admin_token");
+      token = "";
+      location.reload();
+    }
+
+    async function loadAll() {
+      if (!token) return;
+      setBusy(true, "同步後台資料中...");
+      try {
+        const data = await apiGet("adminGetAll", { token });
+        if (data.status !== "success") throw new Error(data.message || "讀取失敗");
+        adminData = data;
+        initFilterDefaults();
+        applyOrderFilters();
+        renderSettings();
+        renderDashboard();
+      } catch (e) {
+        alert(e.message);
+        if (String(e.message).includes("登入") || String(e.message).includes("token")) logout();
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function initFilterDefaults() {
+      if (!$("filterStart").value && !$("filterEnd").value) {
+        const range = todayMonthRange();
+        $("filterStart").value = range.start;
+        $("filterEnd").value = range.end;
+      }
+      if (!$("dashboardDate").value) {
+        const today = new Date();
+        $("dashboardDate").value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+      }
+    }
+
+    function applyOrderFilters() {
+      const start = $("filterStart").value;
+      const end = $("filterEnd").value;
+      const method = $("filterMethod").value;
+      const status = $("filterStatus").value;
+      const keyword = $("filterKeyword").value.trim().toLowerCase();
+
+      filteredOrders = (adminData.orders || []).filter(o => {
+        const dateValue = toDateInputValue(o.date || o.timestamp);
+        if (start && dateValue && dateValue < start) return false;
+        if (end && dateValue && dateValue > end) return false;
+        if (method && normalizeMethod(o.shippingMethod) !== method) return false;
+        if (status && String(o.orderStatus || "") !== status) return false;
+        if (keyword) {
+          const haystack = [o.id, o.name, o.phone, o.email, o.address, o.details, o.note, o.statusNote, o.trackingNo].join(" ").toLowerCase();
+          if (!haystack.includes(keyword)) return false;
+        }
+        return true;
+      }).sort((a,b) => String(b.timestamp || b.id).localeCompare(String(a.timestamp || a.id)));
+
+      renderOrders();
+      renderFilterSummary();
+    }
+
+    function resetOrderFilters() {
+      const range = todayMonthRange();
+      $("filterStart").value = range.start;
+      $("filterEnd").value = range.end;
+      $("filterMethod").value = "";
+      $("filterStatus").value = "";
+      $("filterKeyword").value = "";
+      applyOrderFilters();
+    }
+
+    function renderFilterSummary() {
+      const total = filteredOrders.length;
+      const amount = filteredOrders.reduce((sum, o) => sum + (Number(String(o.total || "").replace(/[^0-9.-]/g, "")) || 0), 0);
+      $("orderFilterSummary").innerHTML = `目前顯示 <b>${total}</b> 筆訂單，金額合計 <b>$${amount.toLocaleString()}</b>`;
+    }
+
+    function renderOrders() {
+      const body = $("ordersBody");
+      if (!filteredOrders.length) {
+        body.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-stone-400 font-bold">沒有符合條件的訂單</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = filteredOrders.map(o => {
+        const type = normalizeMethod(o.shippingMethod);
+        const isStore = type === "store";
+        const statusOptions = (isStore ? STORE_FLOW : DELIVERY_FLOW).map(s => `<option value="${s}" ${s === o.orderStatus ? "selected" : ""}>${s}</option>`).join("");
+        const paymentBlock = isStore ? "" : `
+          <label class="block text-xs font-black text-stone-500 mt-3 mb-1">PChomePay 付款連結</label>
+          <input class="field" id="pay-${escapeHtml(o.id)}" value="${escapeHtml(o.paymentLink)}" placeholder="https://..." />
+          <label class="block text-xs font-black text-stone-500 mt-3 mb-1">貨運編號</label>
+          <input class="field" id="track-${escapeHtml(o.id)}" value="${escapeHtml(o.trackingNo)}" placeholder="請輸入貨運編號" />`;
+
+        return `
+          <tr class="border-t border-stone-100 align-top">
+            <td class="p-3 min-w-[150px]">
+              <div class="font-black text-stone-900">${escapeHtml(o.id)}</div>
+              <div class="text-xs text-stone-400 mt-1">${escapeHtml(o.timestamp)}</div>
+              <div class="mt-2">${methodBadge(o.shippingMethod)}</div>
+            </td>
+            <td class="p-3 min-w-[150px]">
+              <div class="font-black">${escapeHtml(o.name)}</div>
+              <div class="text-xs text-stone-500">${escapeHtml(o.phone)}</div>
+              <div class="text-xs text-stone-400 break-all">${escapeHtml(o.email)}</div>
+            </td>
+            <td class="p-3 min-w-[150px]">
+              <div class="font-black">${escapeHtml(o.date)}</div>
+              <div class="text-xs text-stone-500 mt-1">${escapeHtml(o.address)}</div>
+            </td>
+            <td class="p-3 min-w-[260px]">
+              <div class="text-xs leading-relaxed whitespace-pre-wrap">${escapeHtml(formatDetails(o.details))}</div>
+              <div class="font-black text-[#5B7290] mt-2">$${escapeHtml(o.total)}</div>
+            </td>
+            <td class="p-3 min-w-[250px]">
+              <label class="block text-xs font-black text-stone-500 mb-1">訂單狀態</label>
+              <select class="field" id="status-${escapeHtml(o.id)}">${statusOptions}</select>
+              ${paymentBlock}
+              <label class="block text-xs font-black text-stone-500 mt-3 mb-1">訂單備註</label>
+              <textarea class="textarea" id="note-${escapeHtml(o.id)}" placeholder="給客人看的狀態補充，非必填">${escapeHtml(o.statusNote)}</textarea>
+            </td>
+            <td class="p-3 min-w-[130px]">${statusBadge(o.orderStatus)}<div class="text-xs text-stone-400 mt-2">${escapeHtml(o.lastUpdate)}</div></td>
+            <td class="p-3 min-w-[120px]"><button class="btn btn-primary px-4" onclick="saveOrder('${escapeHtml(o.id)}','${type}')">儲存</button></td>
+          </tr>`;
+      }).join("");
+    }
+
+    function formatDetails(details) {
+      return String(details || "")
+        .replace(/｜/g, "\n")
+        .replace(/【第/g, "\n【第")
+        .trim();
+    }
+
+    async function saveOrder(orderId, type) {
+      const isStore = type === "store";
+      const payload = {
+        action: "adminUpdateOrder",
+        token,
+        orderId,
+        orderStatus: $(`status-${orderId}`).value,
+        statusNote: $(`note-${orderId}`).value.trim(),
+        paymentLink: isStore ? "" : $(`pay-${orderId}`).value.trim(),
+        trackingNo: isStore ? "" : $(`track-${orderId}`).value.trim()
+      };
+
+      if (isStore && !STORE_FLOW.includes(payload.orderStatus)) {
+        return alert("門市自取只能使用：訂單確認中、可取貨、已取貨");
+      }
+      if (!isStore && !DELIVERY_FLOW.includes(payload.orderStatus)) {
+        return alert("7-11 店到店只能使用：訂單確認中、待付款、付款已確認、已出貨、已取貨");
+      }
+
+      setBusy(true, "更新訂單中...");
+      try {
+        const data = await apiPost(payload);
+        if (data.status !== "success") throw new Error(data.message || "更新失敗");
+        await loadAll();
+        alert("訂單已更新。若狀態有變更，系統會依 GS 設定寄出通知信。");
+      } catch (e) {
+        alert(e.message);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function dashboardOrders() {
+      const date = $("dashboardDate").value;
+      const method = $("dashboardMethod").value;
+      return (adminData.orders || []).filter(o => {
+        if (date && toDateInputValue(o.date || o.timestamp) !== date) return false;
+        if (method && normalizeMethod(o.shippingMethod) !== method) return false;
+        return true;
+      });
+    }
+
+    function renderDashboard() {
+      const orders = dashboardOrders();
+      const countBy = (status) => orders.filter(o => o.orderStatus === status).length;
+      const revenue = orders.reduce((sum, o) => sum + (Number(String(o.total || "").replace(/[^0-9.-]/g, "")) || 0), 0);
+
+      const cards = [
+        ["當日訂單", orders.length],
+        ["訂單確認中", countBy("訂單確認中")],
+        ["待付款", countBy("待付款")],
+        ["付款已確認", countBy("付款已確認")],
+        ["可取貨", countBy("可取貨")],
+        ["已出貨", countBy("已出貨")],
+        ["已取貨", countBy("已取貨")],
+        ["當日金額", "$" + revenue.toLocaleString()]
+      ];
+      $("dashboardCards").innerHTML = cards.map(([label, value]) => `
+        <div class="card p-4">
+          <div class="text-xs font-black text-stone-400 tracking-widest">${label}</div>
+          <div class="text-2xl font-black text-stone-900 mt-1">${value}</div>
+        </div>`).join("");
+
+      const production = {};
+      const packaging = {};
+      orders.forEach(o => {
+        extractProduction(o.details).forEach(([name, qty]) => production[name] = (production[name] || 0) + qty);
+        extractPackaging(o.details).forEach(([name, qty]) => packaging[name] = (packaging[name] || 0) + qty);
+      });
+      renderSummaryTable("productionSummary", production, "品項");
+      renderSummaryTable("packagingSummary", packaging, "包裝");
+      renderDashboardOrderList(orders);
+    }
+
+    function extractProduction(details) {
+      const text = String(details || "");
+      const result = [];
+      const regex = /([^｜、,，\n]+?)\((\d+)個\)/g;
+      let m;
+      while ((m = regex.exec(text)) !== null) result.push([m[1].replace(/^.*】/, "").trim(), Number(m[2]) || 0]);
+      return result;
+    }
+
+    function extractPackaging(details) {
+      const text = String(details || "");
+      const result = [];
+      const regex = /【第\d+組:\s*([^】×]+)(?:×(\d+)組)?】/g;
+      let m;
+      while ((m = regex.exec(text)) !== null) result.push([m[1].trim(), Number(m[2]) || 1]);
+      return result;
+    }
+
+    function renderSummaryTable(targetId, obj, label) {
+      const rows = Object.entries(obj).sort((a,b) => b[1] - a[1]);
+      $(targetId).innerHTML = rows.length ? rows.map(([name, qty]) => `
+        <tr class="border-t border-stone-100"><td class="py-2 pr-2">${escapeHtml(name)}</td><td class="py-2 text-right font-black">${qty}</td></tr>`).join("")
+        : `<tr><td class="py-4 text-stone-400 font-bold" colspan="2">此日期沒有${label}資料</td></tr>`;
+    }
+
+    function renderDashboardOrderList(orders) {
+      $("dashboardOrders").innerHTML = orders.length ? orders.map(o => `
+        <div class="border border-stone-100 rounded-xl p-3 bg-stone-50">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="font-black">${escapeHtml(o.id)}｜${escapeHtml(o.name)}</div>
+            <div class="flex gap-2">${methodBadge(o.shippingMethod)}${statusBadge(o.orderStatus)}</div>
+          </div>
+          <div class="text-xs text-stone-500 mt-1">${escapeHtml(o.date)}｜$${escapeHtml(o.total)}｜${escapeHtml(o.address)}</div>
+        </div>`).join("") : `<div class="text-center py-8 text-stone-400 font-bold">此日期沒有訂單</div>`;
+    }
+
+    function settingLabel(name) {
+      const key = String(name || "").toLowerCase();
+      if (key === "store_available_dates" || key === "pickup_available_dates") return "自取日期";
+      if (key === "delivery_available_dates") return "店到店出貨日期";
+      return name;
+    }
+
+    function isDateSetting(name) {
+      const key = String(name || "").toLowerCase();
+      return key.includes("date") || key.includes("日期") || key.includes("available");
+    }
+
+    function parseDateList(value) {
+      return String(value || "").split(/[,，、\n]/).map(v => toSlashDate(v.trim())).filter(Boolean);
+    }
+
+    function renderSettings() {
+      const settings = (adminData.settings || []).filter(s => s.setting_name);
+      $("settingsList").innerHTML = settings.map((s, index) => {
+        const key = escapeHtml(s.setting_name);
+        const label = escapeHtml(settingLabel(s.setting_name));
+        const dates = parseDateList(s.value);
+        if (isDateSetting(s.setting_name)) {
+          return `
+            <div class="card p-4" data-setting-index="${index}">
+              <div class="flex flex-wrap justify-between gap-3 items-center mb-3">
+                <div>
+                  <div class="text-sm font-black text-[#5B7290]">${label}</div>
+                  <div class="text-xs text-stone-400 font-bold">設定名稱已鎖定：${key}</div>
+                </div>
+              </div>
+              <input type="hidden" id="setting-name-${index}" value="${key}" />
+              <div class="flex gap-2">
+                <input type="date" id="setting-date-${index}" class="field" />
+                <button class="btn btn-primary px-4" onclick="addSettingDate(${index})">加入日期</button>
+              </div>
+              <div id="setting-chips-${index}" class="flex flex-wrap gap-2 mt-3">${dates.map(d => settingDateChip(index, d)).join("")}</div>
+              <textarea id="setting-value-${index}" class="textarea mt-3 hidden">${escapeHtml(dates.join(","))}</textarea>
+            </div>`;
+        }
+        return `
+          <div class="card p-4" data-setting-index="${index}">
+            <div class="mb-2">
+              <div class="text-sm font-black text-[#5B7290]">${label}</div>
+              <div class="text-xs text-stone-400 font-bold">設定名稱已鎖定：${key}</div>
+            </div>
+            <input type="hidden" id="setting-name-${index}" value="${key}" />
+            <textarea id="setting-value-${index}" class="textarea">${escapeHtml(s.value)}</textarea>
+          </div>`;
+      }).join("");
+    }
+
+    function settingDateChip(index, date) {
+      return `<span class="badge bg-stone-100 text-stone-700 gap-2" data-date="${escapeHtml(date)}">${escapeHtml(date)} <button class="text-red-500 font-black" onclick="removeSettingDate(${index}, '${escapeHtml(date)}')">×</button></span>`;
+    }
+
+    function addSettingDate(index) {
+      const input = $(`setting-date-${index}`);
+      const date = toSlashDate(input.value);
+      if (!date) return;
+      const textarea = $(`setting-value-${index}`);
+      const dates = Array.from(new Set([...parseDateList(textarea.value), date])).sort();
+      textarea.value = dates.join(",");
+      $(`setting-chips-${index}`).innerHTML = dates.map(d => settingDateChip(index, d)).join("");
+      input.value = "";
+    }
+
+    function removeSettingDate(index, date) {
+      const textarea = $(`setting-value-${index}`);
+      const dates = parseDateList(textarea.value).filter(d => d !== date);
+      textarea.value = dates.join(",");
+      $(`setting-chips-${index}`).innerHTML = dates.map(d => settingDateChip(index, d)).join("");
+    }
+
+    async function saveSettings() {
+      const rows = [];
+      document.querySelectorAll("[data-setting-index]").forEach(card => {
+        const index = card.getAttribute("data-setting-index");
+        rows.push({
+          setting_name: $(`setting-name-${index}`).value,
+          value: $(`setting-value-${index}`).value.trim()
+        });
+      });
+      setBusy(true, "儲存日期設定中...");
+      try {
+        const data = await apiPost({ action: "adminReplaceSheetRows", token, sheetName: "Settings", rows });
+        if (data.status !== "success") throw new Error(data.message || "儲存失敗");
+        await loadAll();
+        alert("日期設定已更新。設定名稱維持不變。 ");
+      } catch (e) {
+        alert(e.message);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function switchTab(tab) {
+      ["dashboard", "orders", "settings"].forEach(t => {
+        $(`tab-${t}`).classList.toggle("hidden", t !== tab);
+        $(`btn-${t}`).classList.toggle("btn-primary", t === tab);
+        $(`btn-${t}`).classList.toggle("btn-soft", t !== tab);
+      });
+      if (tab === "dashboard") renderDashboard();
+      if (tab === "orders") applyOrderFilters();
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      ORDER_STATUSES.forEach(s => $("filterStatus").insertAdjacentHTML("beforeend", `<option value="${s}">${s}</option>`));
+      if (token) {
+        $("loginPanel").classList.add("hidden");
+        $("adminPanel").classList.remove("hidden");
+        await loadAll();
+      }
+    });
+  </script>
+
+  <div id="globalBusy" class="fixed inset-0 z-50 hidden items-center justify-center bg-stone-950/50 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl p-6 shadow-xl text-center mx-4">
+      <div class="w-9 h-9 mx-auto rounded-full border-4 border-stone-200 border-l-[#5B7290] animate-spin"></div>
+      <div id="globalBusyText" class="mt-3 font-black text-stone-700">處理中...</div>
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
+    <header class="flex flex-wrap justify-between items-center gap-4">
       <div>
-        <h2 class="text-xl font-black text-stone-900">後台登入</h2>
-        <p class="text-sm text-stone-500 mt-1">此頁不會顯示在前台，請輸入管理密碼。</p>
+        <h1 class="text-2xl md:text-3xl font-black text-stone-900">Lilou 後台管理</h1>
+        <p class="text-sm text-stone-500 font-bold mt-1">訂單、Dashboard 與日期設定</p>
       </div>
+      <button onclick="logout()" class="btn btn-soft px-4">登出</button>
+    </header>
+
+    <section id="loginPanel" class="card p-6 max-w-md mx-auto mt-20 space-y-4">
       <div>
-        <label class="text-xs font-black text-stone-500 tracking-widest">管理密碼</label>
-        <input id="adminPassword" type="password" class="mt-1 w-full h-12 rounded-xl border border-stone-200 px-3 bg-stone-50 focus:outline-none focus:border-[#5B7290]" placeholder="請輸入密碼">
+        <h2 class="text-xl font-black">後台登入</h2>
+        <p class="text-sm text-stone-500 mt-1">請輸入管理密碼</p>
       </div>
-      <button onclick="adminLogin()" class="w-full h-12 rounded-xl bg-[#5B7290] text-white font-black tracking-widest hover:bg-[#3E4F66]">登入</button>
-      <p id="loginMessage" class="hidden text-sm font-bold"></p>
+      <input type="password" id="adminPassword" class="field" placeholder="後台密碼" onkeydown="if(event.key==='Enter') login()" />
+      <button onclick="login()" class="btn btn-primary w-full">登入</button>
     </section>
 
     <section id="adminPanel" class="hidden space-y-5">
-      <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-3 overflow-x-auto">
-        <div id="tabs" class="flex gap-2 min-w-max">
-          <button onclick="switchTab('dashboard')" data-tab="dashboard" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-active">Dashboard</button>
-          <button onclick="switchTab('orders')" data-tab="orders" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">訂單管理</button>
-          <button onclick="switchTab('products')" data-tab="products" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">產品</button>
-          <button onclick="switchTab('packaging')" data-tab="packaging" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">包裝</button>
-          <button onclick="switchTab('coupons')" data-tab="coupons" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">優惠券</button>
-          <button onclick="switchTab('settings')" data-tab="settings" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">日期設定</button>
+      <nav class="flex flex-wrap gap-2">
+        <button id="btn-dashboard" onclick="switchTab('dashboard')" class="btn btn-primary px-4">Dashboard</button>
+        <button id="btn-orders" onclick="switchTab('orders')" class="btn btn-soft px-4">訂單管理</button>
+        <button id="btn-settings" onclick="switchTab('settings')" class="btn btn-soft px-4">日期設定</button>
+        <button onclick="loadAll()" class="btn btn-soft px-4 ml-auto">重新整理</button>
+      </nav>
+
+      <section id="tab-dashboard" class="space-y-5">
+        <div class="card p-4 grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+          <div>
+            <label class="block text-xs font-black text-stone-500 mb-1">Dashboard 日期</label>
+            <input type="date" id="dashboardDate" class="field" onchange="renderDashboard()" />
+          </div>
+          <div>
+            <label class="block text-xs font-black text-stone-500 mb-1">配送方式</label>
+            <select id="dashboardMethod" class="field" onchange="renderDashboard()">
+              <option value="">全部</option>
+              <option value="store">門市自取</option>
+              <option value="delivery">7-11 店到店</option>
+            </select>
+          </div>
         </div>
-      </div>
+        <div id="dashboardCards" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="card p-4">
+            <h3 class="font-black mb-2">當日製作統計</h3>
+            <table class="w-full text-sm"><tbody id="productionSummary"></tbody></table>
+          </div>
+          <div class="card p-4">
+            <h3 class="font-black mb-2">當日包裝統計</h3>
+            <table class="w-full text-sm"><tbody id="packagingSummary"></tbody></table>
+          </div>
+        </div>
+        <div class="card p-4">
+          <h3 class="font-black mb-3">當日訂單清單</h3>
+          <div id="dashboardOrders" class="space-y-2"></div>
+        </div>
+      </section>
 
-      <div class="flex flex-col md:flex-row md:items-center gap-3 justify-between">
-        <p id="adminMessage" class="hidden text-sm font-bold"></p>
-        <button onclick="loadAll()" class="h-11 rounded-xl bg-[#5B7290] text-white px-5 font-black hover:bg-[#3E4F66]">重新載入</button>
-      </div>
+      <section id="tab-orders" class="hidden space-y-4">
+        <div class="card p-4 space-y-3">
+          <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+            <div>
+              <label class="block text-xs font-black text-stone-500 mb-1">開始日期</label>
+              <input type="date" id="filterStart" class="field" />
+            </div>
+            <div>
+              <label class="block text-xs font-black text-stone-500 mb-1">結束日期</label>
+              <input type="date" id="filterEnd" class="field" />
+            </div>
+            <div>
+              <label class="block text-xs font-black text-stone-500 mb-1">配送方式</label>
+              <select id="filterMethod" class="field"><option value="">全部</option><option value="store">門市自取</option><option value="delivery">7-11 店到店</option></select>
+            </div>
+            <div>
+              <label class="block text-xs font-black text-stone-500 mb-1">訂單狀態</label>
+              <select id="filterStatus" class="field"><option value="">全部</option></select>
+            </div>
+            <div>
+              <label class="block text-xs font-black text-stone-500 mb-1">關鍵字</label>
+              <input type="text" id="filterKeyword" class="field" placeholder="姓名/電話/編號" onkeydown="if(event.key==='Enter') applyOrderFilters()" />
+            </div>
+            <div class="flex gap-2">
+              <button onclick="applyOrderFilters()" class="btn btn-primary px-4 flex-1">篩選</button>
+              <button onclick="resetOrderFilters()" class="btn btn-soft px-4">重設</button>
+            </div>
+          </div>
+          <div id="orderFilterSummary" class="text-sm text-stone-500 font-bold"></div>
+        </div>
+        <div class="card overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-stone-50 text-stone-500 text-xs font-black tracking-wider">
+              <tr>
+                <th class="text-left p-3">訂單</th>
+                <th class="text-left p-3">客人</th>
+                <th class="text-left p-3">取貨/出貨</th>
+                <th class="text-left p-3">商品</th>
+                <th class="text-left p-3">狀態欄位</th>
+                <th class="text-left p-3">目前狀態</th>
+                <th class="text-left p-3">操作</th>
+              </tr>
+            </thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+        </div>
+      </section>
 
-      <section id="tab-dashboard" class="tab-page space-y-5"></section>
-      <section id="tab-orders" class="tab-page hidden space-y-5"></section>
-      <section id="tab-products" class="tab-page hidden space-y-5"></section>
-      <section id="tab-packaging" class="tab-page hidden space-y-5"></section>
-      <section id="tab-coupons" class="tab-page hidden space-y-5"></section>
-      <section id="tab-settings" class="tab-page hidden space-y-5"></section>
+      <section id="tab-settings" class="hidden space-y-4">
+        <div class="card p-4 flex flex-wrap justify-between gap-3 items-center">
+          <div>
+            <h2 class="font-black text-lg">日期設定</h2>
+            <p class="text-sm text-stone-500 font-bold">設定名稱已鎖定不可修改；請用日曆加入日期。沒有刪除整列按鈕。</p>
+          </div>
+          <button onclick="saveSettings()" class="btn btn-primary px-5">儲存日期設定</button>
+        </div>
+        <div id="settingsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      </section>
     </section>
   </main>
-
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyA3ovLtC-hDYGL-_9CMNKk9A--TcrU-W-mN6Hc0GaZ8eDrvAsew3ZdtYBLSyimuiU/exec";
-const TOKEN_KEY = "lilou_admin_token";
-let adminData = null;
-let currentTab = "dashboard";
-
-function escapeHtml(value) {
-  return (value ?? "").toString()
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
-
-function showMessage(id, text, type = "info") {
-  const el = document.getElementById(id);
-  el.textContent = text;
-  el.classList.remove("hidden", "text-red-500", "text-emerald-600", "text-stone-500");
-  el.classList.add(type === "error" ? "text-red-500" : type === "success" ? "text-emerald-600" : "text-stone-500");
-}
-
-function getToken() { return localStorage.getItem(TOKEN_KEY) || ""; }
-
-function setLoggedInState(isLoggedIn) {
-  document.getElementById("loginPanel").classList.toggle("hidden", isLoggedIn);
-  document.getElementById("adminPanel").classList.toggle("hidden", !isLoggedIn);
-  document.getElementById("logoutBtn").classList.toggle("hidden", !isLoggedIn);
-}
-
-async function adminLogin() {
-  const password = document.getElementById("adminPassword").value.trim();
-  if (!password) { showMessage("loginMessage", "請輸入管理密碼。", "error"); return; }
-  showMessage("loginMessage", "登入中...", "info");
-  try {
-    const res = await fetch(`${API_URL}?action=adminLogin&password=${encodeURIComponent(password)}&_=${Date.now()}`);
-    const data = await res.json();
-    if (data.status !== "success") { showMessage("loginMessage", data.message || "登入失敗。", "error"); return; }
-    localStorage.setItem(TOKEN_KEY, data.token);
-    setLoggedInState(true);
-    await loadAll();
-  } catch (err) {
-    showMessage("loginMessage", "登入失敗：" + err.message, "error");
-  }
-}
-
-function logoutAdmin() {
-  localStorage.removeItem(TOKEN_KEY);
-  adminData = null;
-  setLoggedInState(false);
-}
-
-function switchTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll(".tab-btn").forEach(btn => {
-    const active = btn.dataset.tab === tab;
-    btn.classList.toggle("tab-active", active);
-    btn.classList.toggle("tab-idle", !active);
-  });
-  document.querySelectorAll(".tab-page").forEach(page => page.classList.add("hidden"));
-  document.getElementById("tab-" + tab).classList.remove("hidden");
-}
-
-async function loadAll() {
-  const token = getToken();
-  if (!token) { setLoggedInState(false); return; }
-  showMessage("adminMessage", "載入中...", "info");
-  try {
-    const res = await fetch(`${API_URL}?action=adminGetAll&token=${encodeURIComponent(token)}&_=${Date.now()}`);
-    const data = await res.json();
-    if (data.status !== "success") {
-      showMessage("adminMessage", data.message || "載入失敗。", "error");
-      if ((data.message || "").includes("登入")) logoutAdmin();
-      return;
-    }
-    adminData = data;
-    renderAll();
-    showMessage("adminMessage", "資料已更新。", "success");
-  } catch (err) {
-    showMessage("adminMessage", "載入失敗：" + err.message, "error");
-  }
-}
-
-function renderAll() {
-  renderDashboard();
-  renderOrders();
-  renderProducts();
-  renderPackaging();
-  renderCoupons();
-  renderSettings();
-  switchTab(currentTab);
-}
-
-
-function formatOrderDetailsAdmin(details) {
-  const text = (details || "").toString().trim();
-  if (!text) return `<p class="text-stone-400 font-bold">無商品明細</p>`;
-
-  const groups = [];
-  const regex = /【第(\d+)組:\s*([^】]+)】([\s\S]*?)(?=\s*｜\s*【第\d+組:|$)/g;
-  let match;
-
-  while ((match = regex.exec(text)) !== null) {
-    const groupNo = match[1];
-    const packageName = match[2].trim();
-    const itemsText = (match[3] || "").trim().replace(/^｜\s*/, "");
-    const items = itemsText
-      .split(/、/)
-      .map(item => item.trim())
-      .filter(Boolean);
-
-    groups.push({ groupNo, packageName, items });
-  }
-
-  if (!groups.length) {
-    return `<div class="whitespace-pre-wrap text-stone-700 font-bold leading-relaxed">${escapeHtml(text)}</div>`;
-  }
-
-  return `<div class="space-y-3">${groups.map(group => `
-    <div class="bg-white border border-stone-200 rounded-2xl p-3">
-      <div class="flex flex-wrap items-center gap-2 mb-2">
-        <span class="inline-flex items-center justify-center rounded-full bg-[#5B7290] text-white text-[11px] font-black px-2 py-0.5">
-          第${escapeHtml(group.groupNo)}組
-        </span>
-        <span class="font-black text-stone-800">${escapeHtml(group.packageName)}</span>
-      </div>
-      <div class="space-y-1">
-        ${group.items.length
-          ? group.items.map(item => `<div class="text-sm text-stone-700 font-bold leading-relaxed">・${escapeHtml(item)}</div>`).join("")
-          : `<div class="text-sm text-stone-400 font-bold">無品項資料</div>`}
-      </div>
-    </div>
-  `).join("")}</div>`;
-}
-
-function summaryList(summary) {
-  const entries = Object.entries(summary || {}).sort((a,b) => b[1] - a[1]);
-  if (!entries.length) return `<p class="text-stone-400 font-bold">目前無資料</p>`;
-  return entries.map(([name, qty]) => `
-    <div class="flex items-center justify-between gap-3 bg-stone-50 rounded-xl px-3 py-2 border border-stone-100">
-      <span class="font-bold text-stone-700">${escapeHtml(name)}</span>
-      <span class="font-black text-[#5B7290] mono">${qty}</span>
-    </div>`).join("");
-}
-
-function renderDashboard() {
-  const d = adminData.dashboard || {};
-  document.getElementById("tab-dashboard").innerHTML = `
-    <div class="grid grid-cols-2 md:grid-cols-7 gap-3">
-      ${kpi("全部訂單", d.totalOrders || 0)}
-      ${kpi("待付款", d.pendingPayment || 0)}
-      ${kpi("付款已確認", d.paid || 0)}
-      ${kpi("可取貨", d.readyPickup || 0)}
-      ${kpi("已出貨", d.shipped || 0)}
-      ${kpi("總金額", "$" + (d.revenue || 0))}
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
-        <h3 class="font-black text-[#5B7290] tracking-widest mb-3">生產數量統計</h3>
-        <div class="space-y-2">${summaryList(adminData.productionSummary)}</div>
-      </div>
-      <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
-        <h3 class="font-black text-[#5B7290] tracking-widest mb-3">包材統計</h3>
-        <div class="space-y-2">${summaryList(adminData.packagingSummary)}</div>
-      </div>
-    </div>`;
-}
-
-function kpi(label, value) {
-  return `<div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
-    <div class="text-[11px] font-black tracking-widest text-stone-400">${label}</div>
-    <div class="mt-1 text-xl md:text-2xl font-black text-stone-900 mono">${value}</div>
-  </div>`;
-}
-
-
-function getOrderMethodType(order) {
-  const raw = [order.shippingMethod || "", order.address || ""].join(" ").toLowerCase();
-  if (raw.includes("7-11") || raw.includes("711") || raw.includes("pickup")) return "delivery";
-  return "store";
-}
-function getOrderMethodLabel(order) {
-  return getOrderMethodType(order) === "delivery" ? "7-11 店到店" : "門市自取";
-}
-function methodBadgeClass(order) {
-  return getOrderMethodType(order) === "delivery"
-    ? "bg-amber-50 text-amber-700 border-amber-200"
-    : "bg-blue-50 text-blue-700 border-blue-200";
-}
-function methodCardClass(order) {
-  return getOrderMethodType(order) === "delivery"
-    ? "border-l-4 border-l-amber-400"
-    : "border-l-4 border-l-blue-400";
-}
-
-function statusClass(status) {
-  if (status === "已出貨") return "bg-emerald-50 text-emerald-700 border-emerald-200";
-  if (status === "付款已確認" || status === "可取貨") return "bg-blue-50 text-blue-700 border-blue-200";
-  if (status === "待付款") return "bg-amber-50 text-amber-700 border-amber-200";
-  return "bg-stone-50 text-stone-700 border-stone-200";
-}
-
-
-function formatDateInputValue(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function getDefaultMonthRange() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  return {
-    start: formatDateInputValue(start),
-    end: formatDateInputValue(end)
-  };
-}
-
-function normalizeOrderDateForCompare(value) {
-  const raw = (value || "").toString().trim();
-  if (!raw) return "";
-
-  const match = raw.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-  if (!match) return "";
-
-  const y = match[1];
-  const m = String(match[2]).padStart(2, "0");
-  const d = String(match[3]).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function setOrderDateDefaultMonth() {
-  const range = getDefaultMonthRange();
-  const startInput = document.getElementById("orderStartDate");
-  const endInput = document.getElementById("orderEndDate");
-  if (startInput) startInput.value = range.start;
-  if (endInput) endInput.value = range.end;
-  setOrderDateDefaultMonth();
-}
-
-function clearOrderDateFilter() {
-  const startInput = document.getElementById("orderStartDate");
-  const endInput = document.getElementById("orderEndDate");
-  if (startInput) startInput.value = "";
-  if (endInput) endInput.value = "";
-  filterOrders();
-}
-
-function renderOrders() {
-  const orders = adminData.orders || [];
-  document.getElementById("tab-orders").innerHTML = `
-    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-3">
-      <div class="grid grid-cols-1 md:grid-cols-8 gap-3">
-        <input id="orderSearch" oninput="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2" placeholder="搜尋訂單編號、姓名、電話、日期">
-        <select id="orderStatusFilter" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          <option value="">全部狀態</option>
-          <option value="訂單確認中">訂單確認中</option>
-          <option value="可取貨">可取貨</option>
-          <option value="待付款">待付款</option>
-          <option value="付款已確認">付款已確認</option>
-          <option value="已出貨">已出貨</option>
-        </select>
-        <select id="orderMethodFilter" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          <option value="">全部配送</option>
-          <option value="store">門市自取</option>
-          <option value="delivery">7-11 店到店</option>
-        </select>
-        <input id="orderStartDate" type="date" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        <input id="orderEndDate" type="date" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        <div class="flex gap-2 md:col-span-2">
-          <button onclick="filterOrders()" class="flex-1 h-11 rounded-xl bg-[#5B7290] text-white px-3 font-black hover:bg-[#3E4F66] text-xs">篩選</button>
-          <button onclick="setOrderDateDefaultMonth()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">本月</button>
-          <button onclick="clearOrderDateFilter()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">全部</button>
-        </div>
-      </div>
-      <div id="orderCount" class="text-sm font-black text-stone-500"></div>
-    </div>
-    <div id="ordersArea" class="space-y-4"></div>`;
-  filterOrders();
-}
-
-function filterOrders() {
-  const q = (document.getElementById("orderSearch")?.value || "").toLowerCase();
-  const status = document.getElementById("orderStatusFilter")?.value || "";
-  const method = document.getElementById("orderMethodFilter")?.value || "";
-  const startDate = document.getElementById("orderStartDate")?.value || "";
-  const endDate = document.getElementById("orderEndDate")?.value || "";
-
-  const orders = (adminData.orders || []).filter(o => {
-    const text = [o.id,o.name,o.phone,o.date,o.email,o.shippingMethod,o.address].join(" ").toLowerCase();
-    const orderDate = normalizeOrderDateForCompare(o.date);
-    const methodType = getOrderMethodType(o);
-
-    const keywordOk = !q || text.includes(q);
-    const statusOk = !status || o.orderStatus === status;
-    const methodOk = !method || methodType === method;
-    const startOk = !startDate || (orderDate && orderDate >= startDate);
-    const endOk = !endDate || (orderDate && orderDate <= endDate);
-
-    return keywordOk && statusOk && methodOk && startOk && endOk;
-  });
-  const storeCount = orders.filter(o => getOrderMethodType(o) === "store").length;
-  const deliveryCount = orders.filter(o => getOrderMethodType(o) === "delivery").length;
-  document.getElementById("orderCount").textContent = `${orders.length} 筆訂單｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}`;
-  const area = document.getElementById("ordersArea");
-  if (!orders.length) {
-    area.innerHTML = `<div class="bg-white rounded-3xl border border-stone-100 p-8 text-center text-stone-400 font-bold">目前沒有符合條件的訂單</div>`;
-    return;
-  }
-  area.innerHTML = orders.map(orderCard).join("");
-}
-
-function orderCard(order) {
-  const statuses = ["訂單確認中", "可取貨", "待付款", "付款已確認", "已出貨"];
-  return `<article class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4 ${methodCardClass(order)}" data-order-id="${escapeHtml(order.id)}">
-    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 border-b border-stone-100 pb-3">
-      <div class="space-y-1">
-        <div class="text-[11px] font-black text-stone-400 tracking-widest">訂單編號</div>
-        <div class="text-lg font-black text-stone-900">${escapeHtml(order.id)}</div>
-        <div class="text-xs text-stone-500 font-bold">下單：${escapeHtml(order.timestamp || "-")}</div>
-        <div class="text-xs text-stone-500 font-bold">預定：${escapeHtml(order.date || "-")}</div>
-      </div>
-      <div class="flex flex-wrap gap-2"><span class="inline-flex w-fit px-3 py-1 rounded-full border text-sm font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span><span class="inline-flex w-fit px-3 py-1 rounded-full border text-sm font-black ${statusClass(order.orderStatus)}">${escapeHtml(order.orderStatus || "未設定")}</span></div>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-      <div><strong>姓名：</strong>${escapeHtml(order.name)}</div>
-      <div><strong>電話：</strong><a href="tel:${escapeHtml(order.phone)}" class="text-[#5B7290] font-black">${escapeHtml(order.phone)}</a></div>
-      <div><strong>Email：</strong>${escapeHtml(order.email || "-")}</div>
-      <div><strong>總金額：</strong><span class="text-[#5B7290] font-black">$${escapeHtml(order.total)}</span></div>
-      <div><strong>配送方式：</strong><span class="inline-flex px-2 py-0.5 rounded-lg border text-xs font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span> <span class="text-stone-500">${escapeHtml(order.shippingMethod)}</span></div>
-      <div><strong>取貨／收件：</strong>${escapeHtml(order.address)}</div>
-    </div>
-    <div class="bg-stone-50 border border-stone-100 rounded-2xl p-3 text-sm leading-relaxed">
-      <div class="font-black text-stone-500 tracking-widest text-[11px] mb-2">商品明細</div>
-      ${formatOrderDetailsAdmin(order.details)}
-    </div>
-    ${order.note ? `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-sm"><strong>訂單備註：</strong>${escapeHtml(order.note)}</div>` : ""}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-      <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">Order_Status</span><select class="admin-status mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">${statuses.map(s => `<option value="${s}" ${order.orderStatus === s ? "selected" : ""}>${s}</option>`).join("")}</select></label>
-      <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">Payment_Link</span><input class="admin-payment mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.paymentLink || "")}" placeholder="PChomePay 付款連結"></label>
-      <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">Tracking_No</span><input class="admin-tracking mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.trackingNo || "")}" placeholder="貨運編號"></label>
-      <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">Status_Note</span><input class="admin-note mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.statusNote || "")}" placeholder="狀態備註"></label>
-    </div>
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2">
-      <div class="text-xs text-stone-400 font-bold">最後更新：${escapeHtml(order.lastUpdate || "-")}</div>
-      <button onclick="updateOrder('${escapeHtml(order.id)}')" class="h-11 rounded-xl bg-[#3E2D20] text-white px-5 font-black hover:bg-[#2B1F16]">儲存更新</button>
-    </div>
-  </article>`;
-}
-
-async function updateOrder(orderId) {
-  const card = document.querySelector(`[data-order-id="${CSS.escape(orderId)}"]`);
-  if (!card) return;
-  const payload = {
-    action: "adminUpdateOrder",
-    token: getToken(),
-    orderId,
-    orderStatus: card.querySelector(".admin-status").value,
-    paymentLink: card.querySelector(".admin-payment").value.trim(),
-    trackingNo: card.querySelector(".admin-tracking").value.trim(),
-    statusNote: card.querySelector(".admin-note").value.trim()
-  };
-  await postAdmin(payload, `${orderId} 已更新。`);
-}
-
-function renderProducts() {
-  renderEditableTable("products", "Products", ["name","price","stock"], ["商品名稱","價格","庫存"], adminData.products || []);
-}
-function renderPackaging() {
-  renderEditableTable("packaging", "Packaging", ["name","extra_price"], ["包裝名稱","加價"], adminData.packaging || []);
-}
-function renderCoupons() {
-  renderEditableTable("coupons", "Coupons", ["code","type","value","min_spend","start_date","end_date"], ["折扣碼","類型","折扣值","低消","開始日","結束日"], adminData.coupons || []);
-}
-function renderSettings() {
-  renderEditableTable("settings", "Settings", ["setting_name","value"], ["設定名稱","設定內容"], adminData.settings || [], true);
-}
-
-function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = false) {
-  const id = "tab-" + tab;
-  document.getElementById(id).innerHTML = `
-    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div>
-          <h2 class="text-xl font-black text-stone-900">${sheetName}</h2>
-          <p class="text-sm text-stone-500 mt-1">修改後請按「儲存 ${sheetName}」。</p>
-        </div>
-        <div class="flex gap-2">
-          <button onclick="addRow('${tab}')" class="h-10 rounded-xl border border-stone-200 px-4 font-black text-stone-600 bg-white hover:bg-stone-50">新增一列</button>
-          <button onclick="saveSheet('${tab}','${sheetName}')" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 ${sheetName}</button>
-        </div>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm min-w-[720px]" data-edit-table="${tab}" data-keys="${keys.join(",")}">
-          <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2">${l}</th>`).join("")}<th class="px-2 py-2">操作</th></tr></thead>
-          <tbody>${rows.map(row => editRowHtml(tab, keys, row, textareaLong)).join("")}</tbody>
-        </table>
-      </div>
-    </div>`;
-}
-
-function editRowHtml(tab, keys, row = {}, textareaLong = false) {
-  return `<tr class="border-t border-stone-100">${keys.map((key, idx) => {
-    const val = row[key] || "";
-    let field = "";
-
-    if (tab === "coupons" && key === "type") {
-      field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        <option value="minus" ${val === "minus" ? "selected" : ""}>minus｜現折金額</option>
-        <option value="discount" ${val === "discount" ? "selected" : ""}>discount｜折扣比例</option>
-      </select>`;
-    } else if (textareaLong && idx === 1) {
-      field = `<textarea data-key="${key}" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-stone-50">${escapeHtml(val)}</textarea>`;
-    } else {
-      field = `<input data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(val)}">`;
-    }
-
-    return `<td class="px-2 py-2 align-top">${field}</td>`;
-  }).join("")}<td class="px-2 py-2 align-top text-center">
-    <button onclick="this.closest('tr').remove()" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">
-      🗑️
-    </button>
-  </td></tr>`;
-}
-
-function addRow(tab) {
-  const table = document.querySelector(`[data-edit-table="${tab}"]`);
-  const keys = table.dataset.keys.split(",");
-  const textareaLong = tab === "settings";
-  table.querySelector("tbody").insertAdjacentHTML("beforeend", editRowHtml(tab, keys, {}, textareaLong));
-}
-
-function collectRows(tab) {
-  const table = document.querySelector(`[data-edit-table="${tab}"]`);
-  const keys = table.dataset.keys.split(",");
-  return [...table.querySelectorAll("tbody tr")].map(tr => {
-    const obj = {};
-    keys.forEach(key => {
-      const input = tr.querySelector(`[data-key="${key}"]`);
-      obj[key] = input ? input.value.trim() : "";
-    });
-    return obj;
-  });
-}
-
-async function saveSheet(tab, sheetName) {
-  const rows = collectRows(tab);
-  await postAdmin({ action:"adminReplaceSheetRows", token:getToken(), sheetName, rows }, `${sheetName} 已儲存。`);
-}
-
-async function postAdmin(payload, successMessage) {
-  showMessage("adminMessage", "儲存中...", "info");
-  try {
-    const res = await fetch(API_URL, { method:"POST", body: JSON.stringify(payload) });
-    const data = await res.json();
-    if (data.status !== "success") {
-      showMessage("adminMessage", data.message || "儲存失敗。", "error");
-      return;
-    }
-    showMessage("adminMessage", successMessage || data.message || "已儲存。", "success");
-    await loadAll();
-  } catch (err) {
-    showMessage("adminMessage", "儲存失敗：" + err.message, "error");
-  }
-}
-
-document.getElementById("adminPassword").addEventListener("keydown", e => { if (e.key === "Enter") adminLogin(); });
-if (getToken()) { setLoggedInState(true); loadAll(); }
-</script>
 </body>
 </html>
