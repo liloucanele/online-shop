@@ -1273,11 +1273,16 @@
             if (status === "可取貨") return "bg-green-50 text-green-700 border-green-200";
             if (status === "付款已確認") return "bg-blue-50 text-blue-700 border-blue-200";
             if (status === "已出貨") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+            if (status === "已取貨") return "bg-stone-900 text-white border-stone-900";
             return "bg-stone-50 text-stone-700 border-stone-200";
         }
 
         function getOrderStatusMessage(order, isStorePickup) {
             const status = (order.status || "訂單確認中").toString().trim();
+
+            if (status === "已取貨") {
+                return "您的訂單已完成取貨，感謝您選擇 Lilou。";
+            }
 
             if (isStorePickup) {
                 if (status === "可取貨") {
@@ -1287,7 +1292,7 @@
             }
 
             if (status === "待付款") {
-                return "您的訂單已成立。請點擊下方「前往 PChomePay 付款」按鈕進行付款，如有疑慮請私訊Lilou官方LINE或Instagram。";
+                return "您的訂單已成立。請點擊下方「前往 PChomePay 付款」按鈕進行付款，如有疑慮請私訊 Lilou 官方 LINE 或 Instagram。";
             }
 
             if (status === "付款已確認") {
@@ -1295,7 +1300,7 @@
             }
 
             if (status === "已出貨") {
-                return "您的訂單已出貨，請留意到貨通知。";
+                return "您的訂單已出貨，請留意 7-11 到貨通知；完成取貨後，訂單狀態會更新為「已取貨」。";
             }
 
             return "您的訂單已收到，正在確認中。";
