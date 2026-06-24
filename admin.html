@@ -170,6 +170,18 @@ function renderAll() {
 }
 
 
+function normalizePackageForSummary(packageName) {
+  const raw = (packageName || "未命名包裝").toString().trim();
+  const match = raw.match(/^(.*?)(?:\s*[x×]\s*(\d+)\s*組)\s*$/i);
+  if (match) {
+    return {
+      name: (match[1] || "未命名包裝").trim(),
+      qty: Math.max(1, parseInt(match[2], 10) || 1)
+    };
+  }
+  return { name: raw || "未命名包裝", qty: 1 };
+}
+
 function formatOrderDetailsAdmin(details) {
   const text = (details || "").toString().trim();
   if (!text) return `<p class="text-stone-400 font-bold">無商品明細</p>`;
@@ -180,14 +192,16 @@ function formatOrderDetailsAdmin(details) {
 
   while ((match = regex.exec(text)) !== null) {
     const groupNo = match[1];
-    const packageName = match[2].trim();
+    const packageInfo = normalizePackageForSummary(match[2]);
+    const packageName = packageInfo.name;
+    const packageQty = packageInfo.qty;
     const itemsText = (match[3] || "").trim().replace(/^｜\s*/, "");
     const items = itemsText
       .split(/、/)
       .map(item => item.trim())
       .filter(Boolean);
 
-    groups.push({ groupNo, packageName, items });
+    groups.push({ groupNo, packageName, packageQty, items });
   }
 
   if (!groups.length) {
@@ -204,7 +218,7 @@ function formatOrderDetailsAdmin(details) {
   const packageSummary = {};
   const itemSummary = {};
   groups.forEach(group => {
-    packageSummary[group.packageName] = (packageSummary[group.packageName] || 0) + 1;
+    packageSummary[group.packageName] = (packageSummary[group.packageName] || 0) + (group.packageQty || 1);
     group.items.forEach(item => {
       const itemMatch = item.match(/^(.+?)[(（](\d+)/);
       if (itemMatch) {
@@ -216,7 +230,7 @@ function formatOrderDetailsAdmin(details) {
   });
 
   const packageLine = Object.entries(packageSummary)
-    .map(([name, qty]) => `${escapeHtml(name)} × ${qty}`)
+    .map(([name, qty]) => `${escapeHtml(name)} ×${qty}`)
     .join("、");
 
   const itemChips = Object.entries(itemSummary)
@@ -295,8 +309,9 @@ function summarizeDetailsFromOrders(orders) {
 
     while ((groupMatch = groupRegex.exec(details)) !== null) {
       matchedGroup = true;
-      const packageName = (groupMatch[1] || "未命名包裝").trim();
-      packaging[packageName] = (packaging[packageName] || 0) + 1;
+      const packageInfo = normalizePackageForSummary(groupMatch[1] || "未命名包裝");
+      const packageName = packageInfo.name;
+      packaging[packageName] = (packaging[packageName] || 0) + packageInfo.qty;
 
       const itemsText = groupMatch[2] || "";
       const itemRegex = /([^、｜()（）]+)[(（](\d+)/g;
