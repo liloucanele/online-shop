@@ -8,11 +8,97 @@
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <!--Developed by TylerChen Design 2026-->
   <style>
-    input, select, textarea { -webkit-appearance:none; appearance:none; font-size:16px; }
+    :root {
+      --admin-text-xs: 12px;
+      --admin-text-sm: 13px;
+      --admin-text-base: 14px;
+      --admin-text-md: 15px;
+      --admin-text-lg: 18px;
+    }
+    html { font-size: 14px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      font-size: var(--admin-text-base);
+      line-height: 1.55;
+      letter-spacing: .01em;
+    }
+    input, select, textarea {
+      -webkit-appearance:none;
+      appearance:none;
+      font-size: var(--admin-text-base);
+      line-height: 1.4;
+    }
     textarea { min-height: 44px; }
     .tab-active { background:#5B7290; color:#fff; }
     .tab-idle { background:#fff; color:#57534e; }
+    .tab-btn { font-size: var(--admin-text-sm) !important; }
     .mono { font-variant-numeric: tabular-nums; }
+
+    /* 後台字級統一：讓列表、篩選、表格不再混用過大的文字 */
+    #adminPanel input,
+    #adminPanel select,
+    #adminPanel textarea {
+      font-size: var(--admin-text-sm) !important;
+      font-weight: 700;
+    }
+    #adminPanel button {
+      font-size: var(--admin-text-sm);
+    }
+    #tab-orders input,
+    #tab-orders select,
+    #tab-orders button,
+    #tab-dashboard input,
+    #tab-dashboard select,
+    #tab-dashboard button {
+      font-size: var(--admin-text-sm) !important;
+    }
+    article[data-order-id] {
+      font-size: var(--admin-text-base);
+    }
+    article[data-order-id] .text-lg,
+    article[data-order-id] .md\:text-lg {
+      font-size: 16px !important;
+      line-height: 1.35 !important;
+    }
+    article[data-order-id] .text-base,
+    article[data-order-id] .md\:text-base {
+      font-size: 15px !important;
+      line-height: 1.4 !important;
+    }
+    article[data-order-id] .text-sm {
+      font-size: var(--admin-text-sm) !important;
+      line-height: 1.45 !important;
+    }
+    table input,
+    table select,
+    table textarea {
+      font-size: var(--admin-text-sm) !important;
+    }
+    .dashboard-kpi-label {
+      font-size: 11px;
+      line-height: 1.25;
+      letter-spacing: .08em;
+    }
+    .dashboard-kpi-value {
+      font-size: 22px;
+      line-height: 1.15;
+      letter-spacing: -.02em;
+    }
+    .dashboard-money-value {
+      font-size: 26px;
+      line-height: 1.15;
+      letter-spacing: -.03em;
+    }
+    @media (max-width: 640px) {
+      /* 手機保留 16px，避免 iOS 輸入時自動放大 */
+      #adminPanel input,
+      #adminPanel select,
+      #adminPanel textarea {
+        font-size: 16px !important;
+      }
+      .dashboard-kpi-value { font-size: 20px; }
+      .dashboard-money-value { font-size: 24px; }
+    }
     .admin-toast {
       transform: translateY(16px);
       opacity: 0;
@@ -799,22 +885,19 @@ function clearDashboardFilter() { renderDashboardContent(); }
 function filterDashboard() { renderDashboardContent(); }
 
 function kpi(label, value) {
-  return `<div class="bg-white rounded-2xl border border-stone-100 p-3 md:p-4 shadow-sm min-w-0">
-    <div class="text-[11px] font-black tracking-widest text-stone-400 leading-snug break-words">${label}</div>
-    <div class="mt-1 text-xl md:text-2xl font-black text-stone-900 mono truncate">${value}</div>
+  return `<div class="bg-white rounded-2xl border border-stone-100 p-3 shadow-sm min-w-0">
+    <div class="dashboard-kpi-label font-black text-stone-400 break-words">${label}</div>
+    <div class="dashboard-kpi-value mt-1 font-black text-stone-900 mono truncate">${value}</div>
   </div>`;
 }
 
 function revenueKpi(label, value, note) {
-  return `<div class="bg-white rounded-3xl border border-stone-100 p-4 md:p-5 shadow-sm min-w-0">
-    <div class="flex items-start justify-between gap-3">
-      <div class="min-w-0">
-        <div class="text-xs font-black tracking-widest text-stone-400">${label}</div>
-        <div class="mt-2 text-2xl md:text-3xl font-black text-stone-900 mono whitespace-nowrap tracking-tight">${value}</div>
-      </div>
-      <div class="hidden md:flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#5B7290]/10 text-[#5B7290] font-black">$</div>
+  return `<div class="bg-white rounded-3xl border border-stone-100 p-4 shadow-sm min-w-0">
+    <div class="min-w-0">
+      <div class="dashboard-kpi-label font-black text-stone-400">${label}</div>
+      <div class="dashboard-money-value mt-1.5 font-black text-stone-900 mono whitespace-nowrap">${value}</div>
     </div>
-    <div class="mt-2 text-xs font-bold text-stone-400">${note}</div>
+    <div class="mt-1.5 text-xs font-bold text-stone-400 leading-snug">${note}</div>
   </div>`;
 }
 
