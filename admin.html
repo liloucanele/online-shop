@@ -768,7 +768,7 @@ function renderDashboardContent() {
   };
 
   document.getElementById("dashboardStatsArea").innerHTML = `
-    <div class="grid grid-cols-2 md:grid-cols-11 gap-3">
+    <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
       ${kpi("全部訂單", d.totalOrders || 0)}
       ${kpi("訂單確認中", d.confirming || 0)}
       ${kpi("待付款", d.pendingPayment || 0)}
@@ -777,9 +777,11 @@ function renderDashboardContent() {
       ${kpi("已出貨", d.shipped || 0)}
       ${kpi("已取貨", d.pickedUp || 0)}
       ${kpi("已作廢", d.voided || 0)}
-      ${kpi("今日營業額", formatCurrency(todayRevenue))}
-      ${kpi("近 7 日營業額", formatCurrency(sevenDayRevenue))}
-      ${kpi("本月營業額", formatCurrency(monthRevenue))}
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      ${revenueKpi("今日營業額", formatCurrency(todayRevenue), "依下單日期計算")}
+      ${revenueKpi("近 7 日營業額", formatCurrency(sevenDayRevenue), "搭配下方曲線圖")}
+      ${revenueKpi("本月營業額", formatCurrency(monthRevenue), "不含已作廢訂單")}
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       ${renderTodayPickupCard()}
@@ -797,9 +799,22 @@ function clearDashboardFilter() { renderDashboardContent(); }
 function filterDashboard() { renderDashboardContent(); }
 
 function kpi(label, value) {
-  return `<div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
-    <div class="text-[11px] font-black tracking-widest text-stone-400">${label}</div>
-    <div class="mt-1 text-xl md:text-2xl font-black text-stone-900 mono">${value}</div>
+  return `<div class="bg-white rounded-2xl border border-stone-100 p-3 md:p-4 shadow-sm min-w-0">
+    <div class="text-[11px] font-black tracking-widest text-stone-400 leading-snug break-words">${label}</div>
+    <div class="mt-1 text-xl md:text-2xl font-black text-stone-900 mono truncate">${value}</div>
+  </div>`;
+}
+
+function revenueKpi(label, value, note) {
+  return `<div class="bg-white rounded-3xl border border-stone-100 p-4 md:p-5 shadow-sm min-w-0">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <div class="text-xs font-black tracking-widest text-stone-400">${label}</div>
+        <div class="mt-2 text-2xl md:text-3xl font-black text-stone-900 mono whitespace-nowrap tracking-tight">${value}</div>
+      </div>
+      <div class="hidden md:flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#5B7290]/10 text-[#5B7290] font-black">$</div>
+    </div>
+    <div class="mt-2 text-xs font-bold text-stone-400">${note}</div>
   </div>`;
 }
 
