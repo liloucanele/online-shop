@@ -594,6 +594,15 @@ function formatDateDisplaySlash(value) {
   return normalized ? normalized.replace(/-/g, "/") : "";
 }
 
+function formatDateDisplayWithWeekday(value) {
+  const normalized = formatDateHyphenFromInput(value);
+  if (!normalized) return "";
+  const date = new Date(normalized + "T00:00:00");
+  const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+  const weekday = isNaN(date.getTime()) ? "" : `(${weekdays[date.getDay()]})`;
+  return normalized.replace(/-/g, "/") + weekday;
+}
+
 function parseDateList(value) {
   return (value || "").toString()
     .replace(/[\r\n、，]/g, ",")
@@ -627,7 +636,7 @@ function renderSettings() {
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <h2 class="text-xl font-black text-stone-900">日期設定</h2>
-          <p class="text-sm text-stone-500 mt-1">可單日新增、區間新增，或一次加入整個月；修改後請按「儲存 日期設定」。</p>
+          <p class="text-sm text-stone-500 mt-1">用區間新增可用日期；畫面顯示星期，儲存時仍會寫入 Google 試算表需要的日期格式。</p>
         </div>
         <button onclick="saveSheet('settings','Settings')" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 日期設定</button>
       </div>
@@ -646,7 +655,7 @@ function settingDateBlock(label, value) {
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
       <div>
         <h3 class="text-lg font-black text-stone-900">${escapeHtml(label)}</h3>
-        <p class="text-xs text-stone-400 font-bold mt-1">畫面用標籤管理；儲存到 Google 試算表時會維持 YYYY-MM-DD。</p>
+        <p class="text-xs text-stone-400 font-bold mt-1">請選擇起始與結束日期，一次加入多天。</p>
       </div>
       <div class="flex gap-2">
         <button type="button" onclick="clearSettingDates(this)" class="h-10 rounded-xl border border-red-100 bg-red-50 px-4 font-black text-red-500 hover:bg-red-100 text-xs">清空日期</button>
@@ -654,30 +663,12 @@ function settingDateBlock(label, value) {
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-      <div class="bg-white rounded-2xl border border-stone-100 p-3 space-y-2">
-        <div class="text-xs font-black text-stone-500 tracking-widest">單日新增</div>
-        <div class="flex gap-2">
-          <input type="date" class="setting-date-picker flex-1 h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          <button type="button" onclick="appendSettingDate(this)" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66] text-xs">加入</button>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-2xl border border-stone-100 p-3 space-y-2">
-        <div class="text-xs font-black text-stone-500 tracking-widest">區間新增</div>
-        <div class="grid grid-cols-2 gap-2">
-          <input type="date" class="setting-range-start h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          <input type="date" class="setting-range-end h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        </div>
-        <button type="button" onclick="appendSettingDateRange(this)" class="w-full h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66] text-xs">加入區間日期</button>
-      </div>
-
-      <div class="bg-white rounded-2xl border border-stone-100 p-3 space-y-2">
-        <div class="text-xs font-black text-stone-500 tracking-widest">整月新增</div>
-        <div class="flex gap-2">
-          <input type="month" class="setting-month-picker flex-1 h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          <button type="button" onclick="appendSettingMonth(this)" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66] text-xs">加入整月</button>
-        </div>
+    <div class="bg-white rounded-2xl border border-stone-100 p-3 space-y-3">
+      <div class="text-xs font-black text-stone-500 tracking-widest">區間新增</div>
+      <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2">
+        <input type="date" class="setting-range-start h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" aria-label="開始日期">
+        <input type="date" class="setting-range-end h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" aria-label="結束日期">
+        <button type="button" onclick="appendSettingDateRange(this)" class="h-11 rounded-xl bg-[#5B7290] text-white px-5 font-black hover:bg-[#3E4F66] text-sm">加入區間</button>
       </div>
     </div>
 
@@ -689,7 +680,6 @@ function settingDateBlock(label, value) {
       <div class="setting-date-tags flex flex-wrap gap-2 min-h-[44px]">
         ${renderSettingDateTags(cleanDates)}
       </div>
-      <p class="text-[11px] text-stone-400 font-bold leading-relaxed">實際寫入格式：${escapeHtml(cleanValue || "尚未設定")}</p>
     </div>
   </section>`;
 }
@@ -699,7 +689,7 @@ function renderSettingDateTags(dates) {
     return `<div class="text-sm text-stone-400 font-bold py-2">尚未設定日期</div>`;
   }
   return dates.map(date => `<span class="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm font-black text-stone-700">
-    ${escapeHtml(formatDateDisplaySlash(date))}
+    ${escapeHtml(formatDateDisplayWithWeekday(date))}
     <button type="button" onclick="removeSettingDate(this, '${escapeHtml(date)}')" class="text-stone-400 hover:text-red-500 font-black" aria-label="刪除 ${escapeHtml(date)}">×</button>
   </span>`).join("");
 }
@@ -767,13 +757,11 @@ function setSettingDates(box, dates) {
   const hidden = box.querySelector(".setting-date-value");
   const tags = box.querySelector(".setting-date-tags");
   const count = box.querySelector(".setting-date-count");
-  const note = box.querySelector(".setting-date-tags")?.nextElementSibling;
   const clean = Array.from(new Set((dates || []).map(formatDateHyphenFromInput).filter(Boolean))).sort();
   const serialized = clean.join(",");
   if (hidden) hidden.value = serialized;
   if (tags) tags.innerHTML = renderSettingDateTags(clean);
   if (count) count.textContent = clean.length;
-  if (note) note.textContent = "實際寫入格式：" + (serialized || "尚未設定");
 }
 
 function mergeSettingDates(box, dates) {
