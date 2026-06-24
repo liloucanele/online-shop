@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <!--Developed by TylerChen Design 2026-->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Lilou｜後台管理系統</title>
   <meta name="robots" content="noindex,nofollow">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <!--Developed by TylerChen Design 2026-->
   <style>
     input, select, textarea { -webkit-appearance:none; appearance:none; font-size:16px; }
     textarea { min-height: 44px; }
@@ -651,7 +651,7 @@ function renderOrders() {
   const orders = adminData.orders || [];
   document.getElementById("tab-orders").innerHTML = `
     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-3">
-      <div class="grid grid-cols-1 md:grid-cols-8 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-9 gap-3">
         <input id="orderSearch" oninput="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2" placeholder="搜尋訂單編號、姓名、電話、日期">
         <select id="orderStatusFilter" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
           <option value="">全部狀態</option>
@@ -667,6 +667,10 @@ function renderOrders() {
           <option value="">全部配送</option>
           <option value="store">門市自取</option>
           <option value="delivery">7-11 店到店</option>
+        </select>
+        <select id="orderSortFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+          <option value="dateAsc">日期近到遠</option>
+          <option value="dateDesc">日期遠到近</option>
         </select>
         <input id="orderStartDate" type="date" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
         <input id="orderEndDate" type="date" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
@@ -689,6 +693,7 @@ function filterOrders() {
   const method = document.getElementById("orderMethodFilter")?.value || "";
   const startDate = document.getElementById("orderStartDate")?.value || "";
   const endDate = document.getElementById("orderEndDate")?.value || "";
+  const sortMode = document.getElementById("orderSortFilter")?.value || "dateAsc";
 
   const orders = (adminData.orders || []).filter(o => {
     const text = [o.id,o.name,o.phone,o.date,o.email,o.shippingMethod,o.address].join(" ").toLowerCase();
@@ -702,11 +707,29 @@ function filterOrders() {
     const endOk = !endDate || (orderDate && orderDate <= endDate);
 
     return keywordOk && statusOk && methodOk && startOk && endOk;
+  }).sort((a, b) => {
+    const dateA = normalizeOrderDateForCompare(a.date) || "9999-12-31";
+    const dateB = normalizeOrderDateForCompare(b.date) || "9999-12-31";
+    const dateCompare = dateA.localeCompare(dateB);
+    if (dateCompare !== 0) {
+      return sortMode === "dateDesc" ? -dateCompare : dateCompare;
+    }
+    const timeA = (a.timestamp || "").toString();
+    const timeB = (b.timestamp || "").toString();
+    const timeCompare = timeA.localeCompare(timeB);
+    if (timeCompare !== 0) {
+      return sortMode === "dateDesc" ? -timeCompare : timeCompare;
+    }
+    return (a.id || "").toString().localeCompare((b.id || "").toString());
   });
-  const storeCount = orders.filter(o => getOrderMethodType(o) === "store").length;
-  const deliveryCount = orders.filter(o => getOrderMethodType(o) === "delivery").length;
+  const effectiveOrders = orders.filter(o => o.orderStatus !== "已作廢");
+  const voidCount = orders.length - effectiveOrders.length;
+  const storeCount = effectiveOrders.filter(o => getOrderMethodType(o) === "store").length;
+  const deliveryCount = effectiveOrders.filter(o => getOrderMethodType(o) === "delivery").length;
   const rangeText = startDate && !endDate ? `｜日期：${startDate} 之後` : startDate && endDate ? `｜日期：${startDate}～${endDate}` : !startDate && endDate ? `｜日期：${endDate} 以前` : "｜日期：全部";
-  document.getElementById("orderCount").textContent = `${orders.length} 筆訂單｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}${rangeText}`;
+  const sortText = sortMode === "dateDesc" ? "遠到近" : "近到遠";
+  const voidText = voidCount > 0 ? `｜已作廢 ${voidCount}` : "";
+  document.getElementById("orderCount").textContent = `${effectiveOrders.length} 筆有效訂單｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}${voidText}${rangeText}｜排序：${sortText}`;
   const area = document.getElementById("ordersArea");
   if (!orders.length) {
     area.innerHTML = `<div class="bg-white rounded-3xl border border-stone-100 p-8 text-center text-stone-400 font-bold">目前沒有符合條件的訂單</div>`;
