@@ -1067,6 +1067,10 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
       <p class="text-xs text-stone-500 font-bold leading-relaxed">
         📌 （限）＝限定品項，僅顯示在「期間限定商品」內｜（自取）＝限門市自取｜例：開心果可麗露（限）、巴斯克蛋糕（限自取）
       </p>` : "";
+  const couponNotice = tab === "coupons" ? `
+      <p class="text-xs text-stone-500 font-bold leading-relaxed">
+        📌 現折金額請直接輸入金額，例如 100；折扣比例請輸入小數，例如 0.9 代表 9 折。
+      </p>` : "";
 
   document.getElementById(id).innerHTML = `
     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4">
@@ -1081,6 +1085,7 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
         </div>
       </div>
       ${productNamingNotice}
+      ${couponNotice}
       <div class="overflow-x-auto">
         <table class="w-full text-sm min-w-[720px]" data-edit-table="${tab}" data-keys="${keys.join(",")}">
           <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2">${l}</th>`).join("")}<th class="px-2 py-2">操作</th></tr></thead>
