@@ -229,10 +229,6 @@ function formatOrderDetailsAdmin(details) {
     });
   });
 
-  const packageLine = Object.entries(packageSummary)
-    .map(([name, qty]) => `${escapeHtml(name)} ×${qty}`)
-    .join("、");
-
   const itemChips = Object.entries(itemSummary)
     .sort((a, b) => b[1] - a[1])
     .map(([name, qty]) => `<span class="inline-flex items-center rounded-full bg-white border border-stone-200 px-2.5 py-1 text-xs font-black text-stone-700">${escapeHtml(name)} × ${qty}</span>`)
@@ -256,10 +252,7 @@ function formatOrderDetailsAdmin(details) {
 
   return `<div class="space-y-3">
     <div class="bg-white border border-stone-200 rounded-2xl p-3 space-y-2">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <div class="font-black text-stone-800">共 ${groups.length} 組</div>
-        <div class="text-xs text-stone-500 font-bold leading-relaxed">${packageLine}</div>
-      </div>
+      <div class="font-black text-stone-800">共 ${groups.length} 組</div>
       <div class="flex flex-wrap gap-1.5">${itemChips || `<span class="text-xs text-stone-400 font-bold">無品項統計</span>`}</div>
     </div>
     <details class="group">
@@ -839,7 +832,7 @@ function orderCard(order) {
       <div class="mt-3 space-y-4 border-t border-stone-100 pt-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
           <div><strong>Email：</strong>${escapeHtml(order.email || "-")}</div>
-          <div><strong>配送方式：</strong><span class="inline-flex px-2 py-0.5 rounded-lg border text-xs font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span> <span class="text-stone-500">${escapeHtml(order.shippingMethod)}</span></div>
+          <div><strong>配送方式：</strong><span class="inline-flex px-2 py-0.5 rounded-lg border text-xs font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span></div>
           <div class="md:col-span-2"><strong>取貨／收件：</strong>${escapeHtml(order.address)}</div>
         </div>
         <div class="bg-stone-50 border border-stone-100 rounded-2xl p-3 text-sm leading-relaxed">
