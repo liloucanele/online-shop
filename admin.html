@@ -902,26 +902,26 @@ function orderCard(order) {
     <label class="block ${isDelivery ? "" : "md:col-span-1"}"><span class="text-xs font-black text-stone-500 tracking-widest">訂單備註</span><input class="admin-note mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.statusNote || "")}" placeholder="給客人看的訂單備註"></label>`;
 
   return `<article class="bg-white rounded-2xl border border-stone-100 shadow-sm px-4 py-3 md:px-5 md:py-4 space-y-3 ${methodCardClass(order)}" data-order-id="${escapeHtml(order.id)}">
-    <div class="border-b border-stone-100 pb-2">
-      <div class="flex items-start justify-between gap-3">
-        <div class="min-w-0 text-base md:text-lg font-black text-stone-900 break-all leading-tight">${escapeHtml(order.id)}</div>
-        <div class="shrink-0 text-base md:text-lg font-black text-stone-900 mono whitespace-nowrap">NT$${escapeHtml(order.total || 0)}</div>
-      </div>
-      <div class="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-        <div class="flex flex-wrap items-center gap-1.5">
-          <span class="inline-flex w-fit px-2 py-0.5 rounded-full border text-[11px] font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span>
-          <span class="inline-flex w-fit px-2 py-0.5 rounded-full border text-[11px] font-black ${statusClass(order.orderStatus)}">${escapeHtml(order.orderStatus || "未設定")}</span>
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-2 border-b border-stone-100 pb-2.5">
+      <div class="min-w-0 space-y-1.5">
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="text-lg md:text-xl font-black text-stone-900 break-all leading-tight">${escapeHtml(order.id)}</div>
+          <span class="inline-flex w-fit px-2.5 py-0.5 rounded-full border text-xs font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span>
+          <span class="inline-flex w-fit px-2.5 py-0.5 rounded-full border text-xs font-black ${statusClass(order.orderStatus)}">${escapeHtml(order.orderStatus || "未設定")}</span>
         </div>
-        <div class="min-w-0 text-sm font-bold text-stone-700 md:text-right">
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm md:text-base font-bold text-stone-700">
           <span class="font-black text-stone-900">${escapeHtml(order.name || "-")}</span>
           <span class="text-stone-300">｜</span>
           <a href="tel:${escapeHtml(order.phone)}" class="text-[#5B7290] font-black">${escapeHtml(order.phone || "-")}</a>
+          <span class="text-stone-300">｜</span>
+          <span class="text-[#5B7290] font-black">NT$${escapeHtml(order.total || 0)}</span>
         </div>
       </div>
     </div>
 
-    <div class="space-y-1 text-sm font-bold text-stone-700">
-      <div class="min-w-0"><span class="text-stone-400 font-black">取貨／到貨：</span><span class="text-stone-900 font-black">${escapeHtml(dateDisplay)}</span><span class="text-stone-300 mx-1">｜</span><span class="text-stone-400 font-black">下單時間：</span><span class="text-stone-900 font-black">${escapeHtml(timestampDisplay)}</span></div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5 text-sm font-bold text-stone-700">
+      <div class="min-w-0"><span class="text-stone-400 font-black">取貨／到貨：</span><span class="text-stone-900 font-black">${escapeHtml(dateDisplay)}</span></div>
+      <div class="min-w-0"><span class="text-stone-400 font-black">下單時間：</span><span class="text-stone-900 font-black">${escapeHtml(timestampDisplay)}</span></div>
       <div class="min-w-0 break-all"><span class="text-stone-400 font-black">Email：</span>${escapeHtml(order.email || "-")}</div>
       <div class="min-w-0 break-words"><span class="text-stone-400 font-black">取貨／收件：</span>${escapeHtml(order.address || "-")}</div>
     </div>
