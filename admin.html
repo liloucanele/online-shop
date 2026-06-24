@@ -413,6 +413,155 @@ function summaryList(summary) {
     </div>`).join("");
 }
 
+
+function summaryEntries(summary) {
+  return Object.entries(summary || {})
+    .map(([name, qty]) => ({ name, qty: Number(qty) || 0 }))
+    .filter(item => item.name && item.qty > 0)
+    .sort((a, b) => b.qty - a.qty);
+}
+
+function formatCurrencyShort(value) {
+  const n = Number(value) || 0;
+  return "$" + Math.round(n).toLocaleString("zh-TW");
+}
+
+function buildSalesRankingSlices(summary, maxItems = 7) {
+  const entries = summaryEntries(summary);
+  if (entries.length <= maxItems) return entries;
+  const top = entries.slice(0, maxItems);
+  const otherQty = entries.slice(maxItems).reduce((sum, item) => sum + item.qty, 0);
+  if (otherQty > 0) top.push({ name: "其他", qty: otherQty });
+  return top;
+}
+
+function renderSalesRankingChart(summary) {
+  const entries = buildSalesRankingSlices(summary);
+  const total = entries.reduce((sum, item) => sum + item.qty, 0);
+  if (!entries.length || !total) {
+    return `<p class="text-stone-400 font-bold">目前沒有銷售資料。</p>`;
+  }
+
+  const colors = ["#5B7290", "#8FA3B8", "#B98B73", "#D5B99E", "#7D8F69", "#C8A7A1", "#A7B7C8", "#D6D3D1"];
+  const r = 64;
+  const c = 2 * Math.PI * r;
+  let offset = 0;
+  const circles = entries.map((item, index) => {
+    const ratio = item.qty / total;
+    const dash = Math.max(0.35, ratio * c);
+    const circle = `<circle cx="80" cy="80" r="${r}" fill="none" stroke="${colors[index % colors.length]}" stroke-width="24" stroke-dasharray="${dash} ${c - dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 80 80)" stroke-linecap="butt"></circle>`;
+    offset += dash;
+    return circle;
+  }).join("");
+
+  const list = entries.map((item, index) => {
+    const pct = Math.round((item.qty / total) * 100);
+    return `<div class="flex items-center justify-between gap-3 rounded-xl bg-stone-50 border border-stone-100 px-3 py-2">
+      <div class="min-w-0 flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${colors[index % colors.length]}"></span>
+        <span class="font-bold text-stone-700 truncate">${escapeHtml(item.name)}</span>
+      </div>
+      <div class="shrink-0 text-right">
+        <span class="font-black text-[#5B7290] mono">${item.qty}</span>
+        <span class="ml-1 text-xs font-black text-stone-400">${pct}%</span>
+      </div>
+    </div>`;
+  }).join("");
+
+  return `<div class="grid grid-cols-1 md:grid-cols-[190px_1fr] gap-4 items-center">
+    <div class="flex justify-center">
+      <svg viewBox="0 0 160 160" class="w-40 h-40" role="img" aria-label="銷售排行圓餅圖">
+        <circle cx="80" cy="80" r="${r}" fill="none" stroke="#F5F5F4" stroke-width="24"></circle>
+        ${circles}
+        <circle cx="80" cy="80" r="42" fill="white"></circle>
+        <text x="80" y="76" text-anchor="middle" class="fill-stone-400" style="font-size:11px;font-weight:900;letter-spacing:.08em;">總數量</text>
+        <text x="80" y="96" text-anchor="middle" class="fill-stone-900" style="font-size:22px;font-weight:900;">${total}</text>
+      </svg>
+    </div>
+    <div class="space-y-2">${list}</div>
+  </div>`;
+}
+
+function getDailyRevenueSeries(orders) {
+  const map = {};
+  (orders || []).forEach(order => {
+    const date = normalizeOrderDateForCompare(order.date);
+    if (!date) return;
+    map[date] = (map[date] || 0) + parseMoneyNumber(order.total);
+  });
+  return Object.entries(map)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, revenue]) => ({ date, revenue }));
+}
+
+function formatChartDateLabel(dateValue) {
+  const normalized = normalizeOrderDateForCompare(dateValue);
+  if (!normalized) return dateValue || "-";
+  const [, m, d] = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/) || [];
+  return m && d ? `${m}/${d}` : normalized;
+}
+
+function renderDailyRevenueLineChart(orders) {
+  const series = getDailyRevenueSeries(orders);
+  if (!series.length) {
+    return `<p class="text-stone-400 font-bold">目前沒有營業額資料。</p>`;
+  }
+
+  const width = 640;
+  const height = 240;
+  const padX = 42;
+  const padTop = 24;
+  const padBottom = 42;
+  const chartW = width - padX * 2;
+  const chartH = height - padTop - padBottom;
+  const maxRevenue = Math.max(...series.map(d => d.revenue), 1);
+  const yMax = Math.ceil(maxRevenue / 100) * 100 || maxRevenue;
+  const xFor = index => series.length === 1 ? width / 2 : padX + (index / (series.length - 1)) * chartW;
+  const yFor = value => padTop + (1 - (value / yMax)) * chartH;
+  const points = series.map((d, i) => `${xFor(i)},${yFor(d.revenue)}`);
+  const path = points.length > 1 ? `M ${points.join(" L ")}` : "";
+  const areaPath = points.length > 1
+    ? `M ${points[0]} L ${points.slice(1).join(" L ")} L ${xFor(series.length - 1)},${padTop + chartH} L ${xFor(0)},${padTop + chartH} Z`
+    : "";
+  const gridValues = [0, 0.5, 1].map(r => Math.round(yMax * r));
+
+  const grid = gridValues.map(value => {
+    const y = yFor(value);
+    return `<line x1="${padX}" y1="${y}" x2="${width - padX}" y2="${y}" stroke="#E7E5E4" stroke-width="1"></line>
+      <text x="${padX - 8}" y="${y + 4}" text-anchor="end" class="fill-stone-400" style="font-size:11px;font-weight:700;">${value ? formatCurrencyShort(value) : "$0"}</text>`;
+  }).join("");
+
+  const dots = series.map((d, i) => `
+    <circle cx="${xFor(i)}" cy="${yFor(d.revenue)}" r="4" fill="#5B7290"></circle>
+    <title>${formatChartDateLabel(d.date)} ${formatCurrencyShort(d.revenue)}</title>
+  `).join("");
+
+  const labels = series.map((d, i) => {
+    const show = series.length <= 7 || i === 0 || i === series.length - 1 || i % Math.ceil(series.length / 6) === 0;
+    if (!show) return "";
+    return `<text x="${xFor(i)}" y="${height - 16}" text-anchor="middle" class="fill-stone-400" style="font-size:11px;font-weight:700;">${formatChartDateLabel(d.date)}</text>`;
+  }).join("");
+
+  const latest = series[series.length - 1];
+  const total = series.reduce((sum, item) => sum + item.revenue, 0);
+
+  return `<div class="space-y-3">
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-bold text-stone-500">
+      <span>區間營業額 <strong class="text-stone-900 mono">${formatCurrencyShort(total)}</strong></span>
+      <span>最近日期 <strong class="text-stone-900 mono">${formatChartDateLabel(latest.date)}｜${formatCurrencyShort(latest.revenue)}</strong></span>
+    </div>
+    <div class="overflow-x-auto">
+      <svg viewBox="0 0 ${width} ${height}" class="w-full min-w-[520px] h-[240px]" role="img" aria-label="每日營業額曲線圖">
+        ${grid}
+        ${areaPath ? `<path d="${areaPath}" fill="#5B7290" opacity="0.10"></path>` : ""}
+        ${path ? `<path d="${path}" fill="none" stroke="#5B7290" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>` : ""}
+        ${dots}
+        ${labels}
+      </svg>
+    </div>
+  </div>`;
+}
+
 function parseMoneyNumber(value) {
   const n = Number((value || "").toString().replace(/[^0-9.-]/g, ""));
   return isNaN(n) ? 0 : n;
@@ -682,12 +831,12 @@ function filterDashboard() {
     ${renderFutureSevenDayPreview()}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
-        <h3 class="font-black text-[#5B7290] tracking-widest mb-3">生產數量統計</h3>
-        <div class="space-y-2">${summaryList(summary.production)}</div>
+        <h3 class="font-black text-[#5B7290] tracking-widest mb-3">銷售排行</h3>
+        ${renderSalesRankingChart(summary.production)}
       </div>
       <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
-        <h3 class="font-black text-[#5B7290] tracking-widest mb-3">包材統計</h3>
-        <div class="space-y-2">${summaryList(summary.packaging)}</div>
+        <h3 class="font-black text-[#5B7290] tracking-widest mb-3">每日營業額</h3>
+        ${renderDailyRevenueLineChart(activeOrders)}
       </div>
     </div>`;
 }
