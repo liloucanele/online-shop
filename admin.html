@@ -35,7 +35,10 @@
       <div>
         <h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1>
       </div>
-      <button id="logoutBtn" onclick="logoutAdmin()" class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10">登出</button>
+      <div class="flex items-center gap-2">
+        <button id="adminReloadBtn" onclick="loadAll()" title="重新整理資料" class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10">重新整理</button>
+        <button id="logoutBtn" onclick="logoutAdmin()" class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10">登出</button>
+      </div>
     </div>
   </header>
 
@@ -65,10 +68,7 @@
         </div>
       </div>
 
-      <div class="flex flex-col md:flex-row md:items-center gap-3 justify-between">
-        <p id="adminMessage" class="hidden text-sm font-bold"></p>
-        <button onclick="loadAll()" class="h-11 rounded-xl bg-[#5B7290] text-white px-5 font-black hover:bg-[#3E4F66]">重新載入</button>
-      </div>
+      <p id="adminMessage" class="hidden text-sm font-bold" aria-live="polite"></p>
 
       <section id="tab-dashboard" class="tab-page space-y-5"></section>
       <section id="tab-orders" class="tab-page hidden space-y-5"></section>
@@ -169,6 +169,7 @@ function setLoggedInState(isLoggedIn) {
   document.getElementById("loginPanel").classList.toggle("hidden", isLoggedIn);
   document.getElementById("adminPanel").classList.toggle("hidden", !isLoggedIn);
   document.getElementById("logoutBtn").classList.toggle("hidden", !isLoggedIn);
+  document.getElementById("adminReloadBtn")?.classList.toggle("hidden", !isLoggedIn);
 }
 
 async function adminLogin() {
@@ -224,7 +225,7 @@ async function loadAll() {
     renderAll();
     showSuccessMessage("adminMessage", "資料已更新");
     removeAdminToast(loadingToast);
-    showAdminToast("資料已更新", "success");
+    showAdminToast(`資料已更新 ${formatAdminNow().slice(11)}`, "success");
   } catch (err) {
     showMessage("adminMessage", "載入失敗：" + err.message, "error");
     removeAdminToast(loadingToast);
