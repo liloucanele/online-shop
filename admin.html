@@ -856,35 +856,58 @@ function orderCard(order) {
     ${isDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">貨運編號</span><input class="admin-tracking mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.trackingNo || "")}" placeholder="貨運編號"></label>` : `<input type="hidden" class="admin-tracking" value="${escapeHtml(order.trackingNo || "")}">`}
     <label class="block ${isDelivery ? "" : "md:col-span-1"}"><span class="text-xs font-black text-stone-500 tracking-widest">訂單備註</span><input class="admin-note mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.statusNote || "")}" placeholder="給客人看的訂單備註"></label>`;
 
-  return `<article class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4 ${methodCardClass(order)}" data-order-id="${escapeHtml(order.id)}">
-    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 border-b border-stone-100 pb-3">
-      <div class="space-y-1">
-        <div class="text-[11px] font-black text-stone-400 tracking-widest">訂單編號</div>
-        <div class="text-lg font-black text-stone-900">${escapeHtml(order.id)}</div>
-        <div class="text-xs text-stone-500 font-bold">下單：${escapeHtml(order.timestamp || "-")}</div>
-        <div class="text-xs text-stone-500 font-bold">預定：${escapeHtml(order.date || "-")}</div>
+  const customerNote = order.note
+    ? `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-sm"><strong>客人備註：</strong>${escapeHtml(order.note)}</div>`
+    : `<div class="text-sm text-stone-400 font-bold">無客人備註</div>`;
+
+  return `<article class="bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-4 space-y-3 ${methodCardClass(order)}" data-order-id="${escapeHtml(order.id)}">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-stone-100 pb-3">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="text-base md:text-lg font-black text-stone-900 break-all">${escapeHtml(order.id)}</div>
+          <span class="inline-flex w-fit px-2.5 py-0.5 rounded-full border text-xs font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span>
+          <span class="inline-flex w-fit px-2.5 py-0.5 rounded-full border text-xs font-black ${statusClass(order.orderStatus)}">${escapeHtml(order.orderStatus || "未設定")}</span>
+        </div>
+        <div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-500 font-bold">
+          <span>預定：${escapeHtml(order.date || "-")}</span>
+          <span>姓名：${escapeHtml(order.name || "-")}</span>
+          <a href="tel:${escapeHtml(order.phone)}" class="text-[#5B7290] font-black">${escapeHtml(order.phone || "-")}</a>
+        </div>
       </div>
-      <div class="flex flex-wrap gap-2"><span class="inline-flex w-fit px-3 py-1 rounded-full border text-sm font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span><span class="inline-flex w-fit px-3 py-1 rounded-full border text-sm font-black ${statusClass(order.orderStatus)}">${escapeHtml(order.orderStatus || "未設定")}</span></div>
+      <div class="flex md:flex-col items-center md:items-end justify-between gap-2">
+        <div class="text-xs text-stone-400 font-black tracking-widest">總金額</div>
+        <div class="text-xl font-black text-[#5B7290] mono">$${escapeHtml(order.total)}</div>
+      </div>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-      <div><strong>姓名：</strong>${escapeHtml(order.name)}</div>
-      <div><strong>電話：</strong><a href="tel:${escapeHtml(order.phone)}" class="text-[#5B7290] font-black">${escapeHtml(order.phone)}</a></div>
-      <div><strong>Email：</strong>${escapeHtml(order.email || "-")}</div>
-      <div><strong>總金額：</strong><span class="text-[#5B7290] font-black">$${escapeHtml(order.total)}</span></div>
-      <div><strong>配送方式：</strong><span class="inline-flex px-2 py-0.5 rounded-lg border text-xs font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span> <span class="text-stone-500">${escapeHtml(order.shippingMethod)}</span></div>
-      <div><strong>取貨／收件：</strong>${escapeHtml(order.address)}</div>
-    </div>
-    <div class="bg-stone-50 border border-stone-100 rounded-2xl p-3 text-sm leading-relaxed">
-      <div class="font-black text-stone-500 tracking-widest text-[11px] mb-2">商品明細</div>
-      ${formatOrderDetailsAdmin(order.details)}
-    </div>
-    ${order.note ? `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-sm"><strong>客人備註：</strong>${escapeHtml(order.note)}</div>` : ""}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       ${statusFields}
     </div>
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2">
+
+    <details class="group rounded-2xl border border-stone-100 bg-stone-50/70 overflow-hidden">
+      <summary class="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between gap-3 text-sm font-black text-stone-600">
+        <span>完整訂單資料 / 商品明細</span>
+        <span class="text-xs text-[#5B7290] group-open:hidden">展開</span>
+        <span class="text-xs text-stone-400 hidden group-open:inline">收合</span>
+      </summary>
+      <div class="border-t border-stone-100 p-3 space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+          <div><strong>Email：</strong>${escapeHtml(order.email || "-")}</div>
+          <div><strong>下單時間：</strong>${escapeHtml(order.timestamp || "-")}</div>
+          <div><strong>配送方式：</strong><span class="inline-flex px-2 py-0.5 rounded-lg border text-xs font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span> <span class="text-stone-500">${escapeHtml(order.shippingMethod)}</span></div>
+          <div><strong>取貨／收件：</strong>${escapeHtml(order.address)}</div>
+        </div>
+        <div class="bg-white border border-stone-100 rounded-2xl p-3 text-sm leading-relaxed">
+          <div class="font-black text-stone-500 tracking-widest text-[11px] mb-2">商品明細</div>
+          ${formatOrderDetailsAdmin(order.details)}
+        </div>
+        ${customerNote}
+      </div>
+    </details>
+
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
       <div class="text-xs text-stone-400 font-bold">最後更新：${escapeHtml(order.lastUpdate || "-")}</div>
-      <button onclick="updateOrder('${escapeHtml(order.id)}', this)" class="h-11 rounded-xl bg-[#3E2D20] text-white px-5 font-black hover:bg-[#2B1F16]">儲存更新</button>
+      <button onclick="updateOrder('${escapeHtml(order.id)}', this)" class="h-10 rounded-xl bg-[#3E2D20] text-white px-5 font-black hover:bg-[#2B1F16]">儲存更新</button>
     </div>
   </article>`;
 }
@@ -979,7 +1002,7 @@ function renderSettings() {
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <h2 class="text-xl font-black text-stone-900">日期設定</h2>
-          <p class="text-sm text-stone-500 mt-1">修改後請按「儲存 ${sheetName}」。</p>
+          <p class="text-sm text-stone-500 mt-1">用區間新增可用日期。</p>
         </div>
         <button onclick="saveSheet('settings','Settings', this)" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 日期設定</button>
       </div>
