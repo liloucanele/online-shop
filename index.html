@@ -1281,12 +1281,12 @@
         function getOrderStatusMessage(order, isStorePickup) {
             const status = (order.status || "訂單確認中").toString().trim();
 
-            if (status === "已作廢") {
-                return "此訂單已取消。如有疑問，請聯繫 Lilou 官方 LINE 或 Instagram。";
-            }
-
             if (status === "已取貨") {
                 return "您的訂單已完成取貨，感謝您選擇 Lilou。";
+            }
+
+            if (status === "已作廢") {
+                return "此訂單已取消，將不再進行處理。如有疑問，請聯繫 Lilou 官方 LINE 或 Instagram。";
             }
 
             if (isStorePickup) {
