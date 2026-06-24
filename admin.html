@@ -13,6 +13,20 @@
     .tab-active { background:#5B7290; color:#fff; }
     .tab-idle { background:#fff; color:#57534e; }
     .mono { font-variant-numeric: tabular-nums; }
+    .admin-toast {
+      transform: translateY(16px);
+      opacity: 0;
+      transition: opacity .22s ease, transform .22s ease;
+      box-shadow: 0 18px 40px rgba(28, 23, 21, .16);
+    }
+    .admin-toast.show { transform: translateY(0); opacity: 1; }
+    .admin-toast-spinner {
+      width: 16px; height: 16px; border-radius: 999px;
+      border: 2px solid rgba(255,255,255,.45);
+      border-top-color: #fff;
+      animation: adminSpin .75s linear infinite;
+    }
+    @keyframes adminSpin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
@@ -64,6 +78,7 @@
       <section id="tab-settings" class="tab-page hidden space-y-5"></section>
     </section>
   </main>
+  <div id="adminToastArea" class="fixed right-4 bottom-4 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyA3ovLtC-hDYGL-_9CMNKk9A--TcrU-W-mN6Hc0GaZ8eDrvAsew3ZdtYBLSyimuiU/exec";
@@ -96,6 +111,56 @@ function formatAdminNow() {
 
 function showSuccessMessage(id, text) {
   showMessage(id, `✅ ${text}（${formatAdminNow()}）`, "success");
+}
+
+function showAdminToast(message, type = "info", duration = 2600) {
+  const area = document.getElementById("adminToastArea");
+  if (!area) return;
+
+  const toast = document.createElement("div");
+  const isError = type === "error";
+  const isSuccess = type === "success";
+  const isLoading = type === "loading";
+  const bgClass = isError ? "bg-red-600" : isSuccess ? "bg-emerald-600" : "bg-[#5B7290]";
+  const icon = isLoading ? `<span class="admin-toast-spinner"></span>` : isError ? "❌" : isSuccess ? "✅" : "ℹ️";
+
+  toast.className = `admin-toast pointer-events-auto ${bgClass} text-white rounded-2xl px-4 py-3 min-w-[220px] max-w-[340px] flex items-center gap-2 text-sm font-black tracking-wide`;
+  toast.innerHTML = `<span class="shrink-0">${icon}</span><span class="leading-relaxed">${escapeHtml(message)}</span>`;
+  area.appendChild(toast);
+
+  requestAnimationFrame(() => toast.classList.add("show"));
+
+  if (duration !== 0) {
+    setTimeout(() => removeAdminToast(toast), duration);
+  }
+  return toast;
+}
+
+function removeAdminToast(toast) {
+  if (!toast) return;
+  toast.classList.remove("show");
+  setTimeout(() => toast.remove(), 240);
+}
+
+function setButtonLoading(button, loadingText) {
+  if (!button || button.tagName !== "BUTTON") return null;
+  const original = {
+    text: button.innerHTML,
+    disabled: button.disabled
+  };
+  button.disabled = true;
+  button.classList.add("opacity-70", "cursor-wait");
+  button.innerHTML = `<span class="inline-flex items-center gap-2"><span class="admin-toast-spinner !w-4 !h-4"></span>${escapeHtml(loadingText || "處理中...")}</span>`;
+  return function restoreButton() {
+    button.disabled = original.disabled;
+    button.classList.remove("opacity-70", "cursor-wait");
+    button.innerHTML = original.text;
+  };
+}
+
+function getActiveActionButton() {
+  const active = document.activeElement;
+  return active && active.tagName === "BUTTON" ? active : null;
 }
 
 function getToken() { return localStorage.getItem(TOKEN_KEY) || ""; }
@@ -142,20 +207,30 @@ function switchTab(tab) {
 async function loadAll() {
   const token = getToken();
   if (!token) { setLoggedInState(false); return; }
+  const restoreButton = setButtonLoading(getActiveActionButton(), "同步中...");
+  const loadingToast = showAdminToast("同步資料中...", "loading", 0);
   showMessage("adminMessage", "載入中...", "info");
   try {
     const res = await fetch(`${API_URL}?action=adminGetAll&token=${encodeURIComponent(token)}&_=${Date.now()}`);
     const data = await res.json();
     if (data.status !== "success") {
       showMessage("adminMessage", data.message || "載入失敗。", "error");
+      removeAdminToast(loadingToast);
+      showAdminToast(data.message || "載入失敗。", "error");
       if ((data.message || "").includes("登入")) logoutAdmin();
       return;
     }
     adminData = data;
     renderAll();
     showSuccessMessage("adminMessage", "資料已更新");
+    removeAdminToast(loadingToast);
+    showAdminToast("資料已更新", "success");
   } catch (err) {
     showMessage("adminMessage", "載入失敗：" + err.message, "error");
+    removeAdminToast(loadingToast);
+    showAdminToast("載入失敗：" + err.message, "error", 4200);
+  } finally {
+    if (restoreButton) restoreButton();
   }
 }
 
@@ -228,6 +303,10 @@ function formatOrderDetailsAdmin(details) {
       }
     });
   });
+
+  const packageLine = Object.entries(packageSummary)
+    .map(([name, qty]) => `${escapeHtml(name)} ×${qty}`)
+    .join("、");
 
   const itemChips = Object.entries(itemSummary)
     .sort((a, b) => b[1] - a[1])
@@ -1188,18 +1267,29 @@ async function saveSheet(tab, sheetName) {
 }
 
 async function postAdmin(payload, successMessage) {
+  const restoreButton = setButtonLoading(getActiveActionButton(), "儲存中...");
+  const loadingToast = showAdminToast("儲存中...", "loading", 0);
   showMessage("adminMessage", "儲存中...", "info");
   try {
     const res = await fetch(API_URL, { method:"POST", body: JSON.stringify(payload) });
     const data = await res.json();
     if (data.status !== "success") {
       showMessage("adminMessage", data.message || "儲存失敗。", "error");
+      removeAdminToast(loadingToast);
+      showAdminToast(data.message || "儲存失敗。", "error", 4200);
       return;
     }
-    showSuccessMessage("adminMessage", (successMessage || data.message || "已儲存。").replace(/。$/, ""));
+    const cleanMessage = (successMessage || data.message || "已儲存。").replace(/。$/, "");
+    showSuccessMessage("adminMessage", cleanMessage);
+    removeAdminToast(loadingToast);
+    showAdminToast(cleanMessage, "success");
     await loadAll();
   } catch (err) {
     showMessage("adminMessage", "儲存失敗：" + err.message, "error");
+    removeAdminToast(loadingToast);
+    showAdminToast("儲存失敗：" + err.message, "error", 4200);
+  } finally {
+    if (restoreButton) restoreButton();
   }
 }
 
