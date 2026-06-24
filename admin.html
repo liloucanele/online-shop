@@ -900,15 +900,15 @@ function orderCard(order) {
     ${isDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">貨運編號</span><input class="admin-tracking mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.trackingNo || "")}" placeholder="貨運編號"></label>` : `<input type="hidden" class="admin-tracking" value="${escapeHtml(order.trackingNo || "")}">`}
     <label class="block ${isDelivery ? "" : "md:col-span-1"}"><span class="text-xs font-black text-stone-500 tracking-widest">訂單備註</span><input class="admin-note mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.statusNote || "")}" placeholder="給客人看的訂單備註"></label>`;
 
-  return `<article class="bg-white rounded-2xl border border-stone-100 shadow-sm px-3 py-3 md:px-4 md:py-3 space-y-2.5 ${methodCardClass(order)}" data-order-id="${escapeHtml(order.id)}">
-    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
-      <div class="min-w-0 space-y-1">
+  return `<article class="bg-white rounded-2xl border border-stone-100 shadow-sm px-4 py-3 md:px-5 md:py-4 space-y-3 ${methodCardClass(order)}" data-order-id="${escapeHtml(order.id)}">
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-2 border-b border-stone-100 pb-2.5">
+      <div class="min-w-0 space-y-1.5">
         <div class="flex flex-wrap items-center gap-2">
-          <div class="text-lg font-black text-stone-900 break-all leading-tight">${escapeHtml(order.id)}</div>
+          <div class="text-lg md:text-xl font-black text-stone-900 break-all leading-tight">${escapeHtml(order.id)}</div>
           <span class="inline-flex w-fit px-2.5 py-0.5 rounded-full border text-xs font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span>
           <span class="inline-flex w-fit px-2.5 py-0.5 rounded-full border text-xs font-black ${statusClass(order.orderStatus)}">${escapeHtml(order.orderStatus || "未設定")}</span>
         </div>
-        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold text-stone-700">
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm md:text-base font-bold text-stone-700">
           <span class="font-black text-stone-900">${escapeHtml(order.name || "-")}</span>
           <span class="text-stone-300">｜</span>
           <a href="tel:${escapeHtml(order.phone)}" class="text-[#5B7290] font-black">${escapeHtml(order.phone || "-")}</a>
@@ -918,20 +918,20 @@ function orderCard(order) {
       </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5 text-xs md:text-sm font-bold text-stone-600 border-t border-stone-100 pt-2">
-      <div class="min-w-0"><span class="text-stone-400 font-black">📅 取貨／到貨：</span><span class="text-stone-800 font-black">${escapeHtml(dateDisplay)}</span></div>
-      <div class="min-w-0"><span class="text-stone-400 font-black">🕒 下單時間：</span><span class="text-stone-800 font-black">${escapeHtml(timestampDisplay)}</span></div>
-      <div class="min-w-0 break-all"><span class="text-stone-400 font-black">✉️ </span>${escapeHtml(order.email || "-")}</div>
-      <div class="min-w-0 break-words"><span class="text-stone-400 font-black">📍 </span>${escapeHtml(order.address || "-")}</div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5 text-sm font-bold text-stone-700">
+      <div class="min-w-0"><span class="text-stone-400 font-black">取貨／到貨：</span><span class="text-stone-900 font-black">${escapeHtml(dateDisplay)}</span></div>
+      <div class="min-w-0"><span class="text-stone-400 font-black">下單時間：</span><span class="text-stone-900 font-black">${escapeHtml(timestampDisplay)}</span></div>
+      <div class="min-w-0 break-all"><span class="text-stone-400 font-black">Email：</span>${escapeHtml(order.email || "-")}</div>
+      <div class="min-w-0 break-words"><span class="text-stone-400 font-black">取貨／收件：</span>${escapeHtml(order.address || "-")}</div>
     </div>
 
-    <div class="bg-stone-50 border border-stone-100 rounded-xl px-3 py-2 text-sm leading-relaxed">
-      <div class="font-black text-stone-500 tracking-widest text-[11px] mb-1.5">完整商品明細</div>
+    <div class="border-t border-stone-100 pt-2.5 text-sm leading-relaxed">
+      <div class="font-black text-stone-500 tracking-widest text-[11px] mb-2">完整商品明細</div>
       ${formatOrderDetailsAdmin(order.details)}
     </div>
 
     <details class="group">
-      <summary class="cursor-pointer list-none rounded-xl bg-white border border-stone-200 px-3 py-2 font-black text-[#5B7290] flex items-center justify-between gap-3 text-sm">
+      <summary class="cursor-pointer list-none rounded-xl bg-stone-50 border border-stone-200 px-3 py-2 font-black text-[#5B7290] flex items-center justify-between gap-3 text-sm">
         <span>展開完整資料／更新狀態</span>
         <span class="text-xs group-open:hidden">展開</span>
         <span class="text-xs text-stone-400 hidden group-open:inline">收合</span>
