@@ -725,8 +725,8 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false) {
 
     if (tab === "coupons" && key === "type") {
       field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        <option value="minus" ${val === "minus" ? "selected" : ""}>minus｜現折金額</option>
-        <option value="discount" ${val === "discount" ? "selected" : ""}>discount｜折扣比例</option>
+        <option value="minus" ${val === "minus" ? "selected" : ""}>現折金額</option>
+        <option value="discount" ${val === "discount" ? "selected" : ""}>折扣比例</option>
       </select>`;
     } else if (tab === "coupons" && (key === "start_date" || key === "end_date")) {
       field = `<input type="date" data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${normalizeOrderDateForCompare(val)}">`;
