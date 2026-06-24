@@ -13,6 +13,31 @@
     .tab-active { background:#5B7290; color:#fff; }
     .tab-idle { background:#fff; color:#57534e; }
     .mono { font-variant-numeric: tabular-nums; }
+    @keyframes adminToastIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes adminToastOut {
+      from { opacity: 1; transform: translateY(0) scale(1); }
+      to { opacity: 0; transform: translateY(10px) scale(0.98); }
+    }
+    @keyframes adminSpin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes adminPop {
+      0% { transform: scale(0.92); }
+      60% { transform: scale(1.04); }
+      100% { transform: scale(1); }
+    }
+    .admin-toast { animation: adminToastIn .22s ease-out both; }
+    .admin-toast.toast-hide { animation: adminToastOut .2s ease-in both; }
+    .admin-spinner {
+      width: 16px; height: 16px; border-radius: 9999px;
+      border: 2px solid rgba(91,114,144,.25); border-top-color: #5B7290;
+      animation: adminSpin .75s linear infinite;
+    }
+    .admin-success-pop { animation: adminPop .3s ease-out both; }
+    button.admin-loading { opacity: .78; cursor: wait; pointer-events: none; }
   </style>
 </head>
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
@@ -53,7 +78,7 @@
 
       <div class="flex flex-col md:flex-row md:items-center gap-3 justify-between">
         <p id="adminMessage" class="hidden text-sm font-bold"></p>
-        <button onclick="loadAll()" class="h-11 rounded-xl bg-[#5B7290] text-white px-5 font-black hover:bg-[#3E4F66]">重新載入</button>
+        <button onclick="loadAll(this)" class="h-11 rounded-xl bg-[#5B7290] text-white px-5 font-black hover:bg-[#3E4F66]">重新載入</button>
       </div>
 
       <section id="tab-dashboard" class="tab-page space-y-5"></section>
@@ -64,6 +89,8 @@
       <section id="tab-settings" class="tab-page hidden space-y-5"></section>
     </section>
   </main>
+
+  <div id="adminToastContainer" class="fixed right-4 bottom-4 z-[9999] space-y-2 w-[calc(100%-2rem)] max-w-sm pointer-events-none"></div>
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyA3ovLtC-hDYGL-_9CMNKk9A--TcrU-W-mN6Hc0GaZ8eDrvAsew3ZdtYBLSyimuiU/exec";
@@ -96,6 +123,57 @@ function formatAdminNow() {
 
 function showSuccessMessage(id, text) {
   showMessage(id, `✅ ${text}（${formatAdminNow()}）`, "success");
+}
+
+function showAdminToast(message, type = "info", duration = 2200) {
+  const container = document.getElementById("adminToastContainer");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  const isLoading = type === "loading";
+  const isError = type === "error";
+  const isSuccess = type === "success";
+  const icon = isLoading
+    ? `<span class="admin-spinner shrink-0"></span>`
+    : isSuccess
+      ? `<span class="admin-success-pop shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-black">✓</span>`
+      : isError
+        ? `<span class="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full bg-red-100 text-red-700 font-black">!</span>`
+        : `<span class="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-black">i</span>`;
+
+  toast.className = "admin-toast pointer-events-auto bg-white border border-stone-100 shadow-xl rounded-2xl px-4 py-3 flex items-center gap-3 text-sm font-black text-stone-700";
+  toast.innerHTML = `${icon}<div class="leading-relaxed">${escapeHtml(message)}</div>`;
+  container.appendChild(toast);
+
+  if (!isLoading) {
+    setTimeout(() => {
+      toast.classList.add("toast-hide");
+      setTimeout(() => toast.remove(), 220);
+    }, duration);
+  }
+
+  return toast;
+}
+
+function hideAdminToast(toast) {
+  if (!toast) return;
+  toast.classList.add("toast-hide");
+  setTimeout(() => toast.remove(), 220);
+}
+
+function setButtonLoading(button, isLoading, loadingText = "處理中...") {
+  if (!button) return;
+  if (isLoading) {
+    if (!button.dataset.originalText) button.dataset.originalText = button.textContent.trim();
+    button.textContent = loadingText;
+    button.disabled = true;
+    button.classList.add("admin-loading");
+  } else {
+    button.textContent = button.dataset.originalText || button.textContent;
+    button.disabled = false;
+    button.classList.remove("admin-loading");
+    delete button.dataset.originalText;
+  }
 }
 
 function getToken() { return localStorage.getItem(TOKEN_KEY) || ""; }
@@ -139,23 +217,37 @@ function switchTab(tab) {
   document.getElementById("tab-" + tab).classList.remove("hidden");
 }
 
-async function loadAll() {
+async function loadAll(triggerButton = null, silent = false) {
   const token = getToken();
   if (!token) { setLoggedInState(false); return; }
-  showMessage("adminMessage", "載入中...", "info");
+  if (!silent) showMessage("adminMessage", "載入中...", "info");
+  const toast = silent ? null : showAdminToast("同步資料中...", "loading");
+  setButtonLoading(triggerButton, true, "同步中...");
   try {
     const res = await fetch(`${API_URL}?action=adminGetAll&token=${encodeURIComponent(token)}&_=${Date.now()}`);
     const data = await res.json();
     if (data.status !== "success") {
-      showMessage("adminMessage", data.message || "載入失敗。", "error");
+      if (!silent) showMessage("adminMessage", data.message || "載入失敗。", "error");
+      hideAdminToast(toast);
+      if (!silent) showAdminToast(data.message || "載入失敗。", "error");
       if ((data.message || "").includes("登入")) logoutAdmin();
       return;
     }
     adminData = data;
     renderAll();
-    showSuccessMessage("adminMessage", "資料已更新");
+    hideAdminToast(toast);
+    if (!silent) {
+      showSuccessMessage("adminMessage", "資料已更新");
+      showAdminToast("資料已同步完成", "success");
+    }
   } catch (err) {
-    showMessage("adminMessage", "載入失敗：" + err.message, "error");
+    hideAdminToast(toast);
+    if (!silent) {
+      showMessage("adminMessage", "載入失敗：" + err.message, "error");
+      showAdminToast("載入失敗：" + err.message, "error");
+    }
+  } finally {
+    setButtonLoading(triggerButton, false);
   }
 }
 
@@ -172,7 +264,7 @@ function renderAll() {
 
 function normalizePackageForSummary(packageName) {
   const raw = (packageName || "未命名包裝").toString().trim();
-  const match = raw.match(/^(.*?)(?:\s*[x×]\s*(\d+)\s*組)\s*$/i);
+  const match = raw.match(/^(.*?)(?:\s*[x×＊*]\s*(\d+)\s*(?:組)?)\s*$/i);
   if (match) {
     return {
       name: (match[1] || "未命名包裝").trim(),
@@ -230,7 +322,8 @@ function formatOrderDetailsAdmin(details) {
   });
 
   const packageLine = Object.entries(packageSummary)
-    .map(([name, qty]) => `${escapeHtml(name)} ×${qty}`)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, qty]) => `${escapeHtml(name)} ${qty}`)
     .join("、");
 
   const itemChips = Object.entries(itemSummary)
@@ -791,12 +884,12 @@ function orderCard(order) {
     </div>
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2">
       <div class="text-xs text-stone-400 font-bold">最後更新：${escapeHtml(order.lastUpdate || "-")}</div>
-      <button onclick="updateOrder('${escapeHtml(order.id)}')" class="h-11 rounded-xl bg-[#3E2D20] text-white px-5 font-black hover:bg-[#2B1F16]">儲存更新</button>
+      <button onclick="updateOrder('${escapeHtml(order.id)}', this)" class="h-11 rounded-xl bg-[#3E2D20] text-white px-5 font-black hover:bg-[#2B1F16]">儲存更新</button>
     </div>
   </article>`;
 }
 
-async function updateOrder(orderId) {
+async function updateOrder(orderId, triggerButton = null) {
   const card = document.querySelector(`[data-order-id="${CSS.escape(orderId)}"]`);
   if (!card) return;
   const payload = {
@@ -808,7 +901,7 @@ async function updateOrder(orderId) {
     trackingNo: card.querySelector(".admin-tracking").value.trim(),
     statusNote: card.querySelector(".admin-note").value.trim()
   };
-  await postAdmin(payload, `${orderId} 已更新。`);
+  await postAdmin(payload, `${orderId} 已更新。`, triggerButton);
 }
 
 function renderProducts() {
@@ -888,7 +981,7 @@ function renderSettings() {
           <h2 class="text-xl font-black text-stone-900">日期設定</h2>
           <p class="text-sm text-stone-500 mt-1">用區間新增可用日期。</p>
         </div>
-        <button onclick="saveSheet('settings','Settings')" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 日期設定</button>
+        <button onclick="saveSheet('settings','Settings', this)" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 日期設定</button>
       </div>
       <div data-edit-table="settings" data-keys="setting_name,value" class="space-y-5">
         ${settingsRows.map(row => settingDateBlock(row.setting_name, row.value)).join("")}
@@ -961,7 +1054,7 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
         </div>
         <div class="flex gap-2">
           <button onclick="addRow('${tab}')" class="h-10 rounded-xl border border-stone-200 px-4 font-black text-stone-600 bg-white hover:bg-stone-50">新增一列</button>
-          <button onclick="saveSheet('${tab}','${sheetName}')" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 ${sheetName}</button>
+          <button onclick="saveSheet('${tab}','${sheetName}', this)" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 ${sheetName}</button>
         </div>
       </div>
       ${productNamingNotice}
@@ -1121,24 +1214,35 @@ function collectRows(tab) {
   });
 }
 
-async function saveSheet(tab, sheetName) {
+async function saveSheet(tab, sheetName, triggerButton = null) {
   const rows = collectRows(tab);
-  await postAdmin({ action:"adminReplaceSheetRows", token:getToken(), sheetName, rows }, `${sheetName} 已儲存。`);
+  await postAdmin({ action:"adminReplaceSheetRows", token:getToken(), sheetName, rows }, `${sheetName} 已儲存。`, triggerButton);
 }
 
-async function postAdmin(payload, successMessage) {
+async function postAdmin(payload, successMessage, triggerButton = null) {
+  const actionText = successMessage ? successMessage.replace(/。$/, "") : "資料";
   showMessage("adminMessage", "儲存中...", "info");
+  const toast = showAdminToast("儲存中...", "loading");
+  setButtonLoading(triggerButton, true, "儲存中...");
   try {
     const res = await fetch(API_URL, { method:"POST", body: JSON.stringify(payload) });
     const data = await res.json();
     if (data.status !== "success") {
+      hideAdminToast(toast);
       showMessage("adminMessage", data.message || "儲存失敗。", "error");
+      showAdminToast(data.message || "儲存失敗。", "error");
       return;
     }
-    showSuccessMessage("adminMessage", (successMessage || data.message || "已儲存。").replace(/。$/, ""));
-    await loadAll();
+    await loadAll(null, true);
+    hideAdminToast(toast);
+    showSuccessMessage("adminMessage", actionText);
+    showAdminToast(actionText, "success");
   } catch (err) {
+    hideAdminToast(toast);
     showMessage("adminMessage", "儲存失敗：" + err.message, "error");
+    showAdminToast("儲存失敗：" + err.message, "error");
+  } finally {
+    setButtonLoading(triggerButton, false);
   }
 }
 
