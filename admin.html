@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Lilou Admin｜後台管理</title>
+  <meta name="robots" content="noindex,nofollow">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    input, select, textarea { -webkit-appearance:none; appearance:none; font-size:16px; }
+    textarea { min-height: 44px; }
+    .tab-active { background:#5B7290; color:#fff; }
+    .tab-idle { background:#fff; color:#57534e; }
+    .mono { font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
+  <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
+      <div>
+        <div class="text-[11px] tracking-[0.28em] font-black text-white/70">LILOU ADMIN</div>
+        <h1 class="text-lg md:text-2xl font-black tracking-wider">後台管理系統</h1>
+      </div>
+      <button id="logoutBtn" onclick="logoutAdmin()" class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10">登出</button>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-4 md:p-6">
+    <section id="loginPanel" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-5 md:p-8 max-w-md mx-auto mt-10 space-y-4">
+      <div>
+        <h2 class="text-xl font-black text-stone-900">後台登入</h2>
+        <p class="text-sm text-stone-500 mt-1">此頁不會顯示在前台，請輸入管理密碼。</p>
+      </div>
+      <div>
+        <label class="text-xs font-black text-stone-500 tracking-widest">管理密碼</label>
+        <input id="adminPassword" type="password" class="mt-1 w-full h-12 rounded-xl border border-stone-200 px-3 bg-stone-50 focus:outline-none focus:border-[#5B7290]" placeholder="請輸入密碼">
+      </div>
+      <button onclick="adminLogin()" class="w-full h-12 rounded-xl bg-[#5B7290] text-white font-black tracking-widest hover:bg-[#3E4F66]">登入</button>
+      <p id="loginMessage" class="hidden text-sm font-bold"></p>
+    </section>
+
+    <section id="adminPanel" class="hidden space-y-5">
+      <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-3 overflow-x-auto">
+        <div id="tabs" class="flex gap-2 min-w-max">
+          <button onclick="switchTab('dashboard')" data-tab="dashboard" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-active">Dashboard</button>
+          <button onclick="switchTab('orders')" data-tab="orders" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">訂單管理</button>
+          <button onclick="switchTab('products')" data-tab="products" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">產品</button>
+          <button onclick="switchTab('packaging')" data-tab="packaging" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">包裝</button>
+          <button onclick="switchTab('coupons')" data-tab="coupons" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">優惠券</button>
+          <button onclick="switchTab('settings')" data-tab="settings" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">日期設定</button>
+        </div>
+      </div>
+
+      <div class="flex flex-col md:flex-row md:items-center gap-3 justify-between">
+        <p id="adminMessage" class="hidden text-sm font-bold"></p>
+        <button onclick="loadAll()" class="h-11 rounded-xl bg-[#5B7290] text-white px-5 font-black hover:bg-[#3E4F66]">重新載入</button>
+      </div>
+
+      <section id="tab-dashboard" class="tab-page space-y-5"></section>
+      <section id="tab-orders" class="tab-page hidden space-y-5"></section>
+      <section id="tab-products" class="tab-page hidden space-y-5"></section>
+      <section id="tab-packaging" class="tab-page hidden space-y-5"></section>
+      <section id="tab-coupons" class="tab-page hidden space-y-5"></section>
+      <section id="tab-settings" class="tab-page hidden space-y-5"></section>
+    </section>
+  </main>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbyA3ovLtC-hDYGL-_9CMNKk9A--TcrU-W-mN6Hc0GaZ8eDrvAsew3ZdtYBLSyimuiU/exec";
+const TOKEN_KEY = "lilou_admin_token";
+let adminData = null;
+let currentTab = "dashboard";
+
+function escapeHtml(value) {
+  return (value ?? "").toString()
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function showMessage(id, text, type = "info") {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.classList.remove("hidden", "text-red-500", "text-emerald-600", "text-stone-500");
+  el.classList.add(type === "error" ? "text-red-500" : type === "success" ? "text-emerald-600" : "text-stone-500");
+}
+
+function getToken() { return localStorage.getItem(TOKEN_KEY) || ""; }
+
+function setLoggedInState(isLoggedIn) {
+  document.getElementById("loginPanel").classList.toggle("hidden", isLoggedIn);
+  document.getElementById("adminPanel").classList.toggle("hidden", !isLoggedIn);
+  document.getElementById("logoutBtn").classList.toggle("hidden", !isLoggedIn);
+}
+
+async function adminLogin() {
+  const password = document.getElementById("adminPassword").value.trim();
+  if (!password) { showMessage("loginMessage", "請輸入管理密碼。", "error"); return; }
+  showMessage("loginMessage", "登入中...", "info");
+  try {
+    const res = await fetch(`${API_URL}?action=adminLogin&password=${encodeURIComponent(password)}&_=${Date.now()}`);
+    const data = await res.json();
+    if (data.status !== "success") { showMessage("loginMessage", data.message || "登入失敗。", "error"); return; }
+    localStorage.setItem(TOKEN_KEY, data.token);
+    setLoggedInState(true);
+    await loadAll();
+  } catch (err) {
+    showMessage("loginMessage", "登入失敗：" + err.message, "error");
+  }
+}
+
+function logoutAdmin() {
+  localStorage.removeItem(TOKEN_KEY);
+  adminData = null;
+  setLoggedInState(false);
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    const active = btn.dataset.tab === tab;
+    btn.classList.toggle("tab-active", active);
+    btn.classList.toggle("tab-idle", !active);
+  });
+  document.querySelectorAll(".tab-page").forEach(page => page.classList.add("hidden"));
+  document.getElementById("tab-" + tab).classList.remove("hidden");
+}
+
+async function loadAll() {
+  const token = getToken();
+  if (!token) { setLoggedInState(false); return; }
+  showMessage("adminMessage", "載入中...", "info");
+  try {
+    const res = await fetch(`${API_URL}?action=adminGetAll&token=${encodeURIComponent(token)}&_=${Date.now()}`);
+    const data = await res.json();
+    if (data.status !== "success") {
+      showMessage("adminMessage", data.message || "載入失敗。", "error");
+      if ((data.message || "").includes("登入")) logoutAdmin();
+      return;
+    }
+    adminData = data;
+    renderAll();
+    showMessage("adminMessage", "資料已更新。", "success");
+  } catch (err) {
+    showMessage("adminMessage", "載入失敗：" + err.message, "error");
+  }
+}
+
+function renderAll() {
+  renderDashboard();
+  renderOrders();
+  renderProducts();
+  renderPackaging();
+  renderCoupons();
+  renderSettings();
+  switchTab(currentTab);
+}
+
+function summaryList(summary) {
+  const entries = Object.entries(summary || {}).sort((a,b) => b[1] - a[1]);
+  if (!entries.length) return `<p class="text-stone-400 font-bold">目前無資料</p>`;
+  return entries.map(([name, qty]) => `
+    <div class="flex items-center justify-between gap-3 bg-stone-50 rounded-xl px-3 py-2 border border-stone-100">
+      <span class="font-bold text-stone-700">${escapeHtml(name)}</span>
+      <span class="font-black text-[#5B7290] mono">${qty}</span>
+    </div>`).join("");
+}
+
+function renderDashboard() {
+  const d = adminData.dashboard || {};
+  document.getElementById("tab-dashboard").innerHTML = `
+    <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+      ${kpi("全部訂單", d.totalOrders || 0)}
+      ${kpi("待付款", d.pendingPayment || 0)}
+      ${kpi("付款已確認", d.paid || 0)}
+      ${kpi("可取貨", d.readyPickup || 0)}
+      ${kpi("已出貨", d.shipped || 0)}
+      ${kpi("總金額", "$" + (d.revenue || 0))}
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
+        <h3 class="font-black text-[#5B7290] tracking-widest mb-3">生產數量統計</h3>
+        <div class="space-y-2">${summaryList(adminData.productionSummary)}</div>
+      </div>
+      <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
+        <h3 class="font-black text-[#5B7290] tracking-widest mb-3">包材統計</h3>
+        <div class="space-y-2">${summaryList(adminData.packagingSummary)}</div>
+      </div>
+    </div>`;
+}
+
+function kpi(label, value) {
+  return `<div class="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+    <div class="text-[11px] font-black tracking-widest text-stone-400">${label}</div>
+    <div class="mt-1 text-xl md:text-2xl font-black text-stone-900 mono">${value}</div>
+  </div>`;
+}
+
+function statusClass(status) {
+  if (status === "已出貨") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  if (status === "付款已確認" || status === "可取貨") return "bg-blue-50 text-blue-700 border-blue-200";
+  if (status === "待付款") return "bg-amber-50 text-amber-700 border-amber-200";
+  return "bg-stone-50 text-stone-700 border-stone-200";
+}
+
+function renderOrders() {
+  const orders = adminData.orders || [];
+  document.getElementById("tab-orders").innerHTML = `
+    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-3">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <input id="orderSearch" oninput="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" placeholder="搜尋訂單編號、姓名、電話、日期">
+        <select id="orderStatusFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+          <option value="">全部狀態</option>
+          <option value="訂單確認中">訂單確認中</option>
+          <option value="可取貨">可取貨</option>
+          <option value="待付款">待付款</option>
+          <option value="付款已確認">付款已確認</option>
+          <option value="已出貨">已出貨</option>
+        </select>
+        <div id="orderCount" class="flex items-center text-sm font-black text-stone-500"></div>
+      </div>
+    </div>
+    <div id="ordersArea" class="space-y-4"></div>`;
+  filterOrders();
+}
+
+function filterOrders() {
+  const q = (document.getElementById("orderSearch")?.value || "").toLowerCase();
+  const status = document.getElementById("orderStatusFilter")?.value || "";
+  const orders = (adminData.orders || []).filter(o => {
+    const text = [o.id,o.name,o.phone,o.date,o.email,o.shippingMethod,o.address].join(" ").toLowerCase();
+    return (!q || text.includes(q)) && (!status || o.orderStatus === status);
+  });
+  document.getElementById("orderCount").textContent = `${orders.length} 筆訂單`;
+  const area = document.getElementById("ordersArea");
+  if (!orders.length) {
+    area.innerHTML = `<div class="bg-white rounded-3xl border border-stone-100 p-8 text-center text-stone-400 font-bold">目前沒有符合條件的訂單</div>`;
+    return;
+  }
+  area.innerHTML = orders.map(orderCard).join("");
+}
+
+function orderCard(order) {
+  const statuses = ["訂單確認中", "可取貨", "待付款", "付款已確認", "已出貨"];
+  return `<article class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4" data-order-id="${escapeHtml(order.id)}">
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 border-b border-stone-100 pb-3">
+      <div class="space-y-1">
+        <div class="text-[11px] font-black text-stone-400 tracking-widest">訂單編號</div>
+        <div class="text-lg font-black text-stone-900">${escapeHtml(order.id)}</div>
+        <div class="text-xs text-stone-500 font-bold">下單：${escapeHtml(order.timestamp || "-")}</div>
+        <div class="text-xs text-stone-500 font-bold">預定：${escapeHtml(order.date || "-")}</div>
+      </div>
+      <span class="inline-flex w-fit px-3 py-1 rounded-full border text-sm font-black ${statusClass(order.orderStatus)}">${escapeHtml(order.orderStatus || "未設定")}</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+      <div><strong>姓名：</strong>${escapeHtml(order.name)}</div>
+      <div><strong>電話：</strong><a href="tel:${escapeHtml(order.phone)}" class="text-[#5B7290] font-black">${escapeHtml(order.phone)}</a></div>
+      <div><strong>Email：</strong>${escapeHtml(order.email || "-")}</div>
+      <div><strong>總金額：</strong><span class="text-[#5B7290] font-black">$${escapeHtml(order.total)}</span></div>
+      <div><strong>配送方式：</strong>${escapeHtml(order.shippingMethod)}</div>
+      <div><strong>取貨／收件：</strong>${escapeHtml(order.address)}</div>
+    </div>
+    <div class="bg-stone-50 border border-stone-100 rounded-2xl p-3 text-sm leading-relaxed">
+      <div class="font-black text-stone-500 tracking-widest text-[11px] mb-1">商品明細</div>
+      <div class="whitespace-pre-wrap">${escapeHtml(order.details)}</div>
+    </div>
+    ${order.note ? `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-sm"><strong>訂單備註：</strong>${escapeHtml(order.note)}</div>` : ""}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+      <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">Order_Status</span><select class="admin-status mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">${statuses.map(s => `<option value="${s}" ${order.orderStatus === s ? "selected" : ""}>${s}</option>`).join("")}</select></label>
+      <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">Payment_Link</span><input class="admin-payment mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.paymentLink || "")}" placeholder="PChomePay 付款連結"></label>
+      <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">Tracking_No</span><input class="admin-tracking mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.trackingNo || "")}" placeholder="貨運編號"></label>
+      <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">Status_Note</span><input class="admin-note mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.statusNote || "")}" placeholder="狀態備註"></label>
+    </div>
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2">
+      <div class="text-xs text-stone-400 font-bold">最後更新：${escapeHtml(order.lastUpdate || "-")}</div>
+      <button onclick="updateOrder('${escapeHtml(order.id)}')" class="h-11 rounded-xl bg-[#3E2D20] text-white px-5 font-black hover:bg-[#2B1F16]">儲存更新</button>
+    </div>
+  </article>`;
+}
+
+async function updateOrder(orderId) {
+  const card = document.querySelector(`[data-order-id="${CSS.escape(orderId)}"]`);
+  if (!card) return;
+  const payload = {
+    action: "adminUpdateOrder",
+    token: getToken(),
+    orderId,
+    orderStatus: card.querySelector(".admin-status").value,
+    paymentLink: card.querySelector(".admin-payment").value.trim(),
+    trackingNo: card.querySelector(".admin-tracking").value.trim(),
+    statusNote: card.querySelector(".admin-note").value.trim()
+  };
+  await postAdmin(payload, `${orderId} 已更新。`);
+}
+
+function renderProducts() {
+  renderEditableTable("products", "Products", ["name","price","stock"], ["商品名稱","價格","庫存"], adminData.products || []);
+}
+function renderPackaging() {
+  renderEditableTable("packaging", "Packaging", ["name","extra_price"], ["包裝名稱","加價"], adminData.packaging || []);
+}
+function renderCoupons() {
+  renderEditableTable("coupons", "Coupons", ["code","type","value","min_spend","start_date","end_date"], ["折扣碼","類型 minus/discount","折扣值","低消","開始日","結束日"], adminData.coupons || []);
+}
+function renderSettings() {
+  renderEditableTable("settings", "Settings", ["setting_name","value"], ["設定名稱","設定內容"], adminData.settings || [], true);
+}
+
+function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = false) {
+  const id = "tab-" + tab;
+  document.getElementById(id).innerHTML = `
+    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-black text-stone-900">${sheetName}</h2>
+          <p class="text-sm text-stone-500 mt-1">修改後請按「儲存 ${sheetName}」。</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="addRow('${tab}')" class="h-10 rounded-xl border border-stone-200 px-4 font-black text-stone-600 bg-white hover:bg-stone-50">新增一列</button>
+          <button onclick="saveSheet('${tab}','${sheetName}')" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 ${sheetName}</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm min-w-[720px]" data-edit-table="${tab}" data-keys="${keys.join(",")}">
+          <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2">${l}</th>`).join("")}<th class="px-2 py-2">操作</th></tr></thead>
+          <tbody>${rows.map(row => editRowHtml(keys, row, textareaLong)).join("")}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function editRowHtml(keys, row = {}, textareaLong = false) {
+  return `<tr class="border-t border-stone-100">${keys.map((key, idx) => {
+    const val = row[key] || "";
+    const field = textareaLong && idx === 1
+      ? `<textarea data-key="${key}" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-stone-50">${escapeHtml(val)}</textarea>`
+      : `<input data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(val)}">`;
+    return `<td class="px-2 py-2 align-top">${field}</td>`;
+  }).join("")}<td class="px-2 py-2 align-top"><button onclick="this.closest('tr').remove()" class="h-10 rounded-xl bg-red-50 text-red-500 px-3 font-black">刪除</button></td></tr>`;
+}
+
+function addRow(tab) {
+  const table = document.querySelector(`[data-edit-table="${tab}"]`);
+  const keys = table.dataset.keys.split(",");
+  const textareaLong = tab === "settings";
+  table.querySelector("tbody").insertAdjacentHTML("beforeend", editRowHtml(keys, {}, textareaLong));
+}
+
+function collectRows(tab) {
+  const table = document.querySelector(`[data-edit-table="${tab}"]`);
+  const keys = table.dataset.keys.split(",");
+  return [...table.querySelectorAll("tbody tr")].map(tr => {
+    const obj = {};
+    keys.forEach(key => {
+      const input = tr.querySelector(`[data-key="${key}"]`);
+      obj[key] = input ? input.value.trim() : "";
+    });
+    return obj;
+  });
+}
+
+async function saveSheet(tab, sheetName) {
+  const rows = collectRows(tab);
+  await postAdmin({ action:"adminReplaceSheetRows", token:getToken(), sheetName, rows }, `${sheetName} 已儲存。`);
+}
+
+async function postAdmin(payload, successMessage) {
+  showMessage("adminMessage", "儲存中...", "info");
+  try {
+    const res = await fetch(API_URL, { method:"POST", body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (data.status !== "success") {
+      showMessage("adminMessage", data.message || "儲存失敗。", "error");
+      return;
+    }
+    showMessage("adminMessage", successMessage || data.message || "已儲存。", "success");
+    await loadAll();
+  } catch (err) {
+    showMessage("adminMessage", "儲存失敗：" + err.message, "error");
+  }
+}
+
+document.getElementById("adminPassword").addEventListener("keydown", e => { if (e.key === "Enter") adminLogin(); });
+if (getToken()) { setLoggedInState(true); loadAll(); }
+</script>
+</body>
+</html>
