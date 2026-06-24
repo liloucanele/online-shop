@@ -902,7 +902,7 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
   const id = "tab-" + tab;
   const productNamingNotice = tab === "products" ? `
       <p class="text-xs text-stone-500 font-bold leading-relaxed">
-        📌 （限）＝限定品項｜（自取）＝僅限門市自取｜例：開心果可麗露（限）、生乳捲（自取）、巴斯克蛋糕（限自取）
+        📌 （限）＝限定品項，僅顯示在「期間限定商品」內｜（自取）＝限門市自取｜例：開心果可麗露（限）、巴斯克蛋糕（限自取）
       </p>` : "";
 
   document.getElementById(id).innerHTML = `
