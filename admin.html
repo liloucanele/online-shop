@@ -346,6 +346,93 @@ function formatOrderDetailsAdmin(details) {
 }
 
 
+
+function parseOrderDetailGroupsForAdmin(details) {
+  const text = (details || "").toString().trim();
+  const groups = [];
+  const itemSummary = {};
+  const regex = /【第(\d+)組:\s*([^】]+)】([\s\S]*?)(?=\s*｜\s*【第\d+組:|$)/g;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    const groupNo = match[1];
+    const packageInfo = normalizePackageForSummary(match[2]);
+    const packageName = packageInfo.name;
+    const itemsText = (match[3] || "").trim().replace(/^｜\s*/, "");
+    const items = itemsText
+      .split(/、/)
+      .map(item => item.trim())
+      .filter(Boolean);
+
+    groups.push({ groupNo, packageName, items });
+
+    items.forEach(item => {
+      const itemMatch = item.match(/^(.+?)[(（](\d+)/);
+      if (itemMatch) {
+        const itemName = itemMatch[1].trim();
+        const qty = parseInt(itemMatch[2], 10) || 0;
+        if (itemName && qty) itemSummary[itemName] = (itemSummary[itemName] || 0) + qty;
+      }
+    });
+  }
+
+  if (!groups.length && text) {
+    const itemRegex = /([^、｜()（）]+)[(（](\d+)/g;
+    let itemMatch;
+    while ((itemMatch = itemRegex.exec(text)) !== null) {
+      const itemName = itemMatch[1].trim();
+      const qty = parseInt(itemMatch[2], 10) || 0;
+      if (itemName && qty) itemSummary[itemName] = (itemSummary[itemName] || 0) + qty;
+    }
+  }
+
+  return { text, groups, itemSummary };
+}
+
+function renderOrderItemSummaryOnly(details) {
+  const parsed = parseOrderDetailGroupsForAdmin(details);
+  if (!parsed.text) return `<p class="text-stone-400 font-bold">無商品明細</p>`;
+
+  const entries = Object.entries(parsed.itemSummary).sort((a, b) => b[1] - a[1]);
+  const itemChips = entries
+    .map(([name, qty]) => `<span class="inline-flex items-center rounded-full bg-white border border-stone-200 px-2.5 py-1 text-xs font-black text-stone-700">${escapeHtml(name)} × ${qty}</span>`)
+    .join("");
+
+  if (!parsed.groups.length) {
+    return `<div class="bg-white border border-stone-200 rounded-2xl p-3 text-stone-700 font-bold leading-relaxed">${itemChips || escapeHtml(parsed.text)}</div>`;
+  }
+
+  return `<div class="bg-white border border-stone-200 rounded-2xl p-3 space-y-2">
+    <div class="font-black text-stone-800">共 ${parsed.groups.length} 組</div>
+    <div class="flex flex-wrap gap-1.5">${itemChips || `<span class="text-xs text-stone-400 font-bold">無品項統計</span>`}</div>
+  </div>`;
+}
+
+function renderOrderGroupDetailsOnly(details) {
+  const parsed = parseOrderDetailGroupsForAdmin(details);
+  if (!parsed.text) return `<p class="text-stone-400 font-bold">無商品明細</p>`;
+
+  if (!parsed.groups.length) {
+    return `<div class="whitespace-pre-wrap text-stone-700 font-bold leading-relaxed bg-white border border-stone-200 rounded-2xl p-3">${escapeHtml(parsed.text)}</div>`;
+  }
+
+  return `<div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+    ${parsed.groups.map(group => `
+      <div class="bg-white border border-stone-200 rounded-2xl p-3">
+        <div class="flex flex-wrap items-center gap-2 mb-2">
+          <span class="inline-flex items-center justify-center rounded-full bg-[#5B7290] text-white text-[11px] font-black px-2 py-0.5">第${escapeHtml(group.groupNo)}組</span>
+          <span class="font-black text-stone-800">${escapeHtml(group.packageName)}</span>
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          ${group.items.length
+            ? group.items.map(item => `<span class="inline-flex rounded-lg bg-stone-50 border border-stone-100 px-2 py-1 text-xs text-stone-700 font-bold">${escapeHtml(item)}</span>`).join("")
+            : `<span class="text-sm text-stone-400 font-bold">無品項資料</span>`}
+        </div>
+      </div>
+    `).join("")}
+  </div>`;
+}
+
 function renderCompactItemSummary(details) {
   const text = (details || "").toString().trim();
   if (!text) return `<p class="text-stone-400 font-bold text-sm">無品項資料</p>`;
@@ -897,9 +984,14 @@ function orderCard(order) {
       </div>
     </div>
 
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+      <div><strong>Email：</strong>${escapeHtml(order.email || "-")}</div>
+      <div class="md:col-span-2"><strong>取貨／收件：</strong>${escapeHtml(order.address)}</div>
+    </div>
+
     <div class="bg-stone-50 border border-stone-100 rounded-2xl p-3 text-sm leading-relaxed">
-      <div class="font-black text-stone-500 tracking-widest text-[11px] mb-2">品項總數量</div>
-      ${renderCompactItemSummary(order.details)}
+      <div class="font-black text-stone-500 tracking-widest text-[11px] mb-2">完整商品明細</div>
+      ${renderOrderItemSummaryOnly(order.details)}
     </div>
 
     <details class="group">
@@ -909,14 +1001,9 @@ function orderCard(order) {
         <span class="text-xs text-stone-400 hidden group-open:inline">收合</span>
       </summary>
       <div class="mt-3 space-y-4 border-t border-stone-100 pt-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-          <div><strong>Email：</strong>${escapeHtml(order.email || "-")}</div>
-          <div><strong>配送方式：</strong><span class="inline-flex px-2 py-0.5 rounded-lg border text-xs font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span></div>
-          <div class="md:col-span-2"><strong>取貨／收件：</strong>${escapeHtml(order.address)}</div>
-        </div>
         <div class="bg-stone-50 border border-stone-100 rounded-2xl p-3 text-sm leading-relaxed">
-          <div class="font-black text-stone-500 tracking-widest text-[11px] mb-2">完整商品明細</div>
-          ${formatOrderDetailsAdmin(order.details)}
+          <div class="font-black text-stone-500 tracking-widest text-[11px] mb-2">每組完整明細</div>
+          ${renderOrderGroupDetailsOnly(order.details)}
         </div>
         ${order.note ? `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-sm"><strong>客人備註：</strong>${escapeHtml(order.note)}</div>` : ""}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
