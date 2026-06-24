@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Lilou Admin｜後台管理</title>
+  <title>Lilou｜後台管理系統</title>
   <meta name="robots" content="noindex,nofollow">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <style>
@@ -18,7 +18,7 @@
   <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
       <div>
-        <h1 class="text-lg md:text-2xl font-black tracking-wider">LILOU｜後台管理系統</h1>
+        <h1 class="text-base md:text-xl font-black tracking-wide">LILOU｜後台管理系統</h1>
       </div>
       <button id="logoutBtn" onclick="logoutAdmin()" class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10">登出</button>
     </div>
@@ -83,6 +83,20 @@ function showMessage(id, text, type = "info") {
   el.classList.add(type === "error" ? "text-red-500" : type === "success" ? "text-emerald-600" : "text-stone-500");
 }
 
+function formatAdminNow() {
+  const now = new Date();
+  return now.getFullYear() + "/" +
+    String(now.getMonth() + 1).padStart(2, "0") + "/" +
+    String(now.getDate()).padStart(2, "0") + " " +
+    String(now.getHours()).padStart(2, "0") + ":" +
+    String(now.getMinutes()).padStart(2, "0") + ":" +
+    String(now.getSeconds()).padStart(2, "0");
+}
+
+function showSuccessMessage(id, text) {
+  showMessage(id, `✅ ${text}（${formatAdminNow()}）`, "success");
+}
+
 function getToken() { return localStorage.getItem(TOKEN_KEY) || ""; }
 
 function setLoggedInState(isLoggedIn) {
@@ -138,7 +152,7 @@ async function loadAll() {
     }
     adminData = data;
     renderAll();
-    showMessage("adminMessage", "資料已更新。", "success");
+    showSuccessMessage("adminMessage", "資料已更新");
   } catch (err) {
     showMessage("adminMessage", "載入失敗：" + err.message, "error");
   }
@@ -307,6 +321,128 @@ function summarizeDetailsFromOrders(orders) {
   return { production, packaging };
 }
 
+
+function addDaysToDateInput(dateInput, days) {
+  const date = new Date(dateInput + "T00:00:00");
+  if (isNaN(date.getTime())) return "";
+  date.setDate(date.getDate() + days);
+  return formatDateInputValue(date);
+}
+
+function formatMonthDayWithWeekday(value) {
+  const normalized = normalizeOrderDateForCompare(value);
+  if (!normalized) return "-";
+  const date = new Date(normalized + "T00:00:00");
+  const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${mm}/${dd}（${weekdays[date.getDay()]}）`;
+}
+
+function renderTodayPickupCard() {
+  const today = getTodayDateInputValue();
+  const orders = (adminData.orders || []).filter(o =>
+    normalizeOrderDateForCompare(o.date) === today &&
+    getOrderMethodType(o) === "store" &&
+    o.orderStatus !== "已取貨"
+  );
+
+  return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
+    <div class="flex items-center justify-between gap-3 mb-3">
+      <h3 class="font-black text-[#5B7290] tracking-widest">🏪 今日待取貨</h3>
+      <span class="text-xl font-black text-stone-900 mono">${orders.length}</span>
+    </div>
+    ${orders.length ? `<div class="space-y-2">${orders.slice(0, 6).map(o => `
+      <div class="flex items-center justify-between gap-3 rounded-xl bg-stone-50 border border-stone-100 px-3 py-2 text-sm">
+        <div class="font-black text-stone-800">${escapeHtml(o.id)}</div>
+        <div class="text-stone-500 font-bold">${escapeHtml(o.name || "-")}</div>
+        <div class="inline-flex rounded-full border px-2 py-0.5 text-xs font-black ${statusClass(o.orderStatus)}">${escapeHtml(o.orderStatus || "未設定")}</div>
+      </div>`).join("")}</div>` : `<p class="text-stone-400 font-bold">今天沒有未完成的門市自取訂單。</p>`}
+  </div>`;
+}
+
+function renderFutureSevenDayPreview() {
+  const today = getTodayDateInputValue();
+  const endDate = addDaysToDateInput(today, 6);
+  const rows = [];
+
+  for (let i = 0; i < 7; i++) {
+    const date = addDaysToDateInput(today, i);
+    const dayOrders = (adminData.orders || []).filter(o => normalizeOrderDateForCompare(o.date) === date && o.orderStatus !== "已取貨");
+    rows.push({
+      date,
+      store: dayOrders.filter(o => getOrderMethodType(o) === "store").length,
+      delivery: dayOrders.filter(o => getOrderMethodType(o) === "delivery").length,
+      total: dayOrders.length
+    });
+  }
+
+  return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+      <h3 class="font-black text-[#5B7290] tracking-widest">📦 未來 7 天訂單預覽</h3>
+      <div class="text-xs text-stone-400 font-bold">依客人選擇日期統計｜${escapeHtml(today)}～${escapeHtml(endDate)}</div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-7 gap-2">
+      ${rows.map(row => `
+        <div class="rounded-2xl border border-stone-100 bg-stone-50 p-3 space-y-2">
+          <div class="font-black text-stone-800 text-sm">${formatMonthDayWithWeekday(row.date)}</div>
+          <div class="text-xs font-bold text-blue-700">門市自取 ${row.store}</div>
+          <div class="text-xs font-bold text-amber-700">7-11店到店 ${row.delivery}</div>
+          <div class="pt-1 border-t border-stone-200 text-xs font-black text-stone-500">合計 ${row.total}</div>
+        </div>`).join("")}
+    </div>
+  </div>`;
+}
+
+function normalizeCouponDate(value) {
+  return normalizeOrderDateForCompare(value) || "";
+}
+
+function formatCouponDate(value) {
+  const d = normalizeCouponDate(value);
+  return d ? d.replace(/-/g, "/") : "未設定";
+}
+
+function couponTypeText(type, value) {
+  const t = (type || "").toString().toLowerCase();
+  if (t === "minus") return `現折 $${escapeHtml(value || 0)}`;
+  if (t === "discount") return `${escapeHtml(value || "")} 折扣比例`;
+  return escapeHtml(type || "未設定");
+}
+
+function couponStatusBadge(coupon) {
+  const today = getTodayDateInputValue();
+  const start = normalizeCouponDate(coupon.start_date);
+  const end = normalizeCouponDate(coupon.end_date);
+
+  if (start && today < start) return `<span class="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-black text-blue-700">尚未開始</span>`;
+  if (end && today > end) return `<span class="rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 text-xs font-black text-stone-500">已結束</span>`;
+  if (end) {
+    const diff = Math.ceil((new Date(end + "T00:00:00") - new Date(today + "T00:00:00")) / (24 * 60 * 60 * 1000));
+    if (diff <= 7) return `<span class="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-black text-amber-700">剩 ${diff} 天</span>`;
+  }
+  return `<span class="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-black text-emerald-700">進行中</span>`;
+}
+
+function renderDashboardCoupons() {
+  const coupons = (adminData.coupons || [])
+    .filter(c => (c.code || "").toString().trim())
+    .slice()
+    .sort((a, b) => (normalizeCouponDate(a.end_date) || "9999-12-31").localeCompare(normalizeCouponDate(b.end_date) || "9999-12-31"));
+
+  return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
+    <h3 class="font-black text-[#5B7290] tracking-widest mb-3">🎟️ 近期優惠券</h3>
+    ${coupons.length ? `<div class="space-y-2">${coupons.map(c => `
+      <div class="rounded-2xl bg-stone-50 border border-stone-100 px-3 py-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div>
+          <div class="font-black text-stone-800">${escapeHtml(c.code)}</div>
+          <div class="text-xs font-bold text-stone-500">${couponTypeText(c.type, c.value)}｜${formatCouponDate(c.start_date)}～${formatCouponDate(c.end_date)}</div>
+        </div>
+        ${couponStatusBadge(c)}
+      </div>`).join("")}</div>` : `<p class="text-stone-400 font-bold">目前沒有折扣碼。</p>`}
+  </div>`;
+}
+
 function renderDashboard() {
   const today = formatDateInputValue(new Date());
   document.getElementById("tab-dashboard").innerHTML = `
@@ -387,6 +523,11 @@ function filterDashboard() {
       ${kpi("已取貨", d.pickedUp || 0)}
       ${kpi("總金額", "$" + (d.revenue || 0))}
     </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      ${renderTodayPickupCard()}
+      ${renderDashboardCoupons()}
+    </div>
+    ${renderFutureSevenDayPreview()}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
         <h3 class="font-black text-[#5B7290] tracking-widest mb-3">生產數量統計</h3>
@@ -760,16 +901,9 @@ function renderSettingDateTags(dates) {
 function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = false) {
   const id = "tab-" + tab;
   const productNamingNotice = tab === "products" ? `
-      <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 leading-relaxed">
-        <div class="font-black mb-1">📌 商品命名規則</div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 font-bold">
-          <div>（限）＝ 限定品項</div>
-          <div>（自取）＝ 僅限門市自取</div>
-        </div>
-        <div class="mt-2 text-xs md:text-sm font-bold text-amber-800">
-          可單獨或同時使用｜例：開心果可麗露（限）、生乳捲（自取）、巴斯克蛋糕（限自取）
-        </div>
-      </div>` : "";
+      <p class="text-xs text-stone-500 font-bold leading-relaxed">
+        📌 （限）＝限定品項｜（自取）＝僅限門市自取｜例：開心果可麗露（限）、生乳捲（自取）、巴斯克蛋糕（限自取）
+      </p>` : "";
 
   document.getElementById(id).innerHTML = `
     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4">
@@ -954,7 +1088,7 @@ async function postAdmin(payload, successMessage) {
       showMessage("adminMessage", data.message || "儲存失敗。", "error");
       return;
     }
-    showMessage("adminMessage", successMessage || data.message || "已儲存。", "success");
+    showSuccessMessage("adminMessage", (successMessage || data.message || "已儲存。").replace(/。$/, ""));
     await loadAll();
   } catch (err) {
     showMessage("adminMessage", "儲存失敗：" + err.message, "error");
