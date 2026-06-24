@@ -501,6 +501,7 @@ function filterDashboard() {
 
   const d = {
     totalOrders: activeOrders.length,
+    confirming: activeOrders.filter(o => o.orderStatus === "訂單確認中").length,
     pendingPayment: activeOrders.filter(o => o.orderStatus === "待付款").length,
     paid: activeOrders.filter(o => o.orderStatus === "付款已確認").length,
     readyPickup: activeOrders.filter(o => o.orderStatus === "可取貨").length,
@@ -518,8 +519,9 @@ function filterDashboard() {
 
   document.getElementById("dashboardStatsArea").innerHTML = `
     <div class="text-sm font-black text-stone-500">${label}</div>
-    <div class="grid grid-cols-2 md:grid-cols-7 gap-3">
+    <div class="grid grid-cols-2 md:grid-cols-9 gap-3">
       ${kpi("全部訂單", d.totalOrders || 0)}
+      ${kpi("訂單確認中", d.confirming || 0)}
       ${kpi("待付款", d.pendingPayment || 0)}
       ${kpi("付款已確認", d.paid || 0)}
       ${kpi("可取貨", d.readyPickup || 0)}
