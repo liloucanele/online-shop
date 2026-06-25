@@ -187,6 +187,7 @@
           <button onclick="switchTab('packaging')" data-tab="packaging" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">包裝</button>
           <button onclick="switchTab('coupons')" data-tab="coupons" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">優惠券</button>
           <button onclick="switchTab('settings')" data-tab="settings" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">日期設定</button>
+          <button onclick="switchTab('revenue')" data-tab="revenue" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">分潤統計</button>
         </div>
       </div>
 
@@ -198,6 +199,7 @@
       <section id="tab-packaging" class="tab-page hidden space-y-5"></section>
       <section id="tab-coupons" class="tab-page hidden space-y-5"></section>
       <section id="tab-settings" class="tab-page hidden space-y-5"></section>
+      <section id="tab-revenue" class="tab-page hidden space-y-5"></section>
     </section>
   </main>
   <div id="adminToastArea" class="fixed right-4 bottom-4 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
@@ -371,6 +373,7 @@ function renderAll() {
   renderPackaging();
   renderCoupons();
   renderSettings();
+  renderRevenueShare();
   switchTab(currentTab);
 }
 
@@ -1436,6 +1439,245 @@ function uniqueSortedDateList(value) {
 
 function serializeDateList(dates) {
   return Array.from(new Set((dates || []).map(formatDateHyphenFromInput).filter(Boolean))).sort().join(",");
+}
+
+
+function getRevenueSettingsRows() {
+  return adminData?.revenueSettings || [];
+}
+
+function getRevenueSettingByMonth(month) {
+  const rows = getRevenueSettingsRows();
+  return rows.find(row => (row.month || "").toString().trim() === month) || null;
+}
+
+function getRevenueRateForOrder(order) {
+  const date = normalizeOrderDateForCompare(order.date || order.timestamp || "");
+  const month = date ? date.slice(0, 7) : "";
+  const setting = getRevenueSettingByMonth(month);
+  const methodType = getOrderMethodType(order);
+  const rawRate = methodType === "delivery" ? setting?.deliveryRate : setting?.storeRate;
+  const rate = Number(rawRate);
+  return {
+    month,
+    rate: isNaN(rate) ? 0 : rate,
+    missing: !setting
+  };
+}
+
+function renderRevenueShare() {
+  const today = getTodayDateInputValue();
+  const now = new Date(today + "T00:00:00");
+  const start = formatDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1));
+  const end = formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+
+  document.getElementById("tab-revenue").innerHTML = `
+    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-black text-stone-900">分潤統計</h2>
+          <p class="text-sm text-stone-500 mt-1">依 Revenue_Settings 每月比例計算，已作廢訂單會自動排除。</p>
+        </div>
+        <button type="button" onclick="exportRevenueShareCsv()" class="h-10 rounded-xl border border-stone-200 bg-white px-4 font-black text-stone-600 hover:bg-stone-50">匯出 CSV</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <label class="block">
+          <span class="text-xs font-black text-stone-500 tracking-widest">開始日期</span>
+          <input id="revenueStartDate" type="date" value="${escapeHtml(start)}" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        </label>
+        <label class="block">
+          <span class="text-xs font-black text-stone-500 tracking-widest">結束日期</span>
+          <input id="revenueEndDate" type="date" value="${escapeHtml(end)}" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        </label>
+        <label class="block">
+          <span class="text-xs font-black text-stone-500 tracking-widest">出貨方式</span>
+          <select id="revenueMethodFilter" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+            <option value="">全部</option>
+            <option value="store">門市自取</option>
+            <option value="delivery">7-11 店到店</option>
+          </select>
+        </label>
+        <div class="md:col-span-2 flex items-end gap-2">
+          <button type="button" onclick="setRevenueCurrentMonth()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50">本月</button>
+          <button type="button" onclick="filterRevenueShare()" class="flex-1 h-11 rounded-xl bg-[#5B7290] text-white px-3 font-black hover:bg-[#3E4F66]">查詢</button>
+        </div>
+      </div>
+
+      <div id="revenueRateNote" class="rounded-2xl bg-stone-50 border border-stone-100 p-3 text-sm font-bold text-stone-600"></div>
+    </div>
+
+    <div id="revenueShareResult" class="space-y-4"></div>`;
+
+  filterRevenueShare();
+}
+
+function getRevenueShareRows() {
+  const startDate = document.getElementById("revenueStartDate")?.value || "";
+  const endDate = document.getElementById("revenueEndDate")?.value || "";
+  const methodFilter = document.getElementById("revenueMethodFilter")?.value || "";
+
+  return (adminData.orders || [])
+    .filter(order => {
+      if (normalizeAdminStatus(order.orderStatus) === "已作廢") return false;
+      const orderDate = normalizeOrderDateForCompare(order.date || order.timestamp || "");
+      if (startDate && (!orderDate || orderDate < startDate)) return false;
+      if (endDate && (!orderDate || orderDate > endDate)) return false;
+      const methodType = getOrderMethodType(order);
+      if (methodFilter && methodType !== methodFilter) return false;
+      return true;
+    })
+    .map(order => {
+      const rateInfo = getRevenueRateForOrder(order);
+      const amount = parseMoneyNumber(order.total);
+      const commission = amount * rateInfo.rate / 100;
+      return {
+        id: order.id || "",
+        date: normalizeOrderDateForCompare(order.date || order.timestamp || ""),
+        name: order.name || "",
+        methodType: getOrderMethodType(order),
+        methodLabel: getOrderMethodLabel(order),
+        status: normalizeAdminStatus(order.orderStatus || ""),
+        amount,
+        month: rateInfo.month,
+        rate: rateInfo.rate,
+        commission,
+        missingRate: rateInfo.missing
+      };
+    })
+    .sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.id || "").localeCompare(b.id || ""));
+}
+
+function filterRevenueShare() {
+  const rows = getRevenueShareRows();
+  const area = document.getElementById("revenueShareResult");
+  const note = document.getElementById("revenueRateNote");
+  if (!area || !note) return;
+
+  const settings = getRevenueSettingsRows();
+  const months = Array.from(new Set(rows.map(row => row.month).filter(Boolean))).sort();
+  const noteRows = months.map(month => {
+    const setting = getRevenueSettingByMonth(month);
+    if (!setting) return `${month}：未設定比例`;
+    return `${month}：門市 ${setting.storeRate || 0}%｜店到店 ${setting.deliveryRate || 0}%`;
+  });
+  note.textContent = noteRows.length ? `套用比例：${noteRows.join("；")}` : (settings.length ? "此區間目前沒有可計算訂單。" : "尚未讀取到 Revenue_Settings，請確認試算表分頁名稱與欄位。");
+
+  const summary = {
+    store: { label: "門市自取", count: 0, amount: 0, commission: 0 },
+    delivery: { label: "7-11 店到店", count: 0, amount: 0, commission: 0 }
+  };
+  rows.forEach(row => {
+    const target = summary[row.methodType] || summary.store;
+    target.count += 1;
+    target.amount += row.amount;
+    target.commission += row.commission;
+  });
+
+  const totalAmount = rows.reduce((sum, row) => sum + row.amount, 0);
+  const totalCommission = rows.reduce((sum, row) => sum + row.commission, 0);
+  const missingCount = rows.filter(row => row.missingRate).length;
+
+  area.innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+      ${revenueShareKpi("訂單數", rows.length + " 筆", "不含已作廢")}
+      ${revenueShareKpi("總營業額", formatCurrency(totalAmount), "依篩選區間")}
+      ${revenueShareKpi("預估分潤", formatCurrency(totalCommission), "依每月比例")}
+      ${revenueShareKpi("缺少比例", missingCount + " 筆", "請補 Revenue_Settings")}
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      ${revenueMethodCard(summary.store)}
+      ${revenueMethodCard(summary.delivery)}
+    </div>
+
+    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <h3 class="font-black text-[#5B7290] tracking-widest">分潤明細</h3>
+        <span class="text-xs font-black text-stone-400">${rows.length} 筆</span>
+      </div>
+      ${rows.length ? `
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="text-xs text-stone-400 tracking-widest border-b border-stone-100">
+              <tr>
+                <th class="text-left py-2 pr-3 font-black">訂單</th>
+                <th class="text-left py-2 pr-3 font-black">日期</th>
+                <th class="text-left py-2 pr-3 font-black">出貨方式</th>
+                <th class="text-right py-2 pr-3 font-black">金額</th>
+                <th class="text-right py-2 pr-3 font-black">比例</th>
+                <th class="text-right py-2 font-black">分潤</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-stone-100">
+              ${rows.map(row => `
+                <tr>
+                  <td class="py-2 pr-3 font-bold text-stone-800 whitespace-nowrap">${escapeHtml(row.id)}</td>
+                  <td class="py-2 pr-3 text-stone-600 whitespace-nowrap">${escapeHtml(row.date || "-")}</td>
+                  <td class="py-2 pr-3 text-stone-600 whitespace-nowrap">${escapeHtml(row.methodLabel)}</td>
+                  <td class="py-2 pr-3 text-right mono text-stone-800">${formatCurrency(row.amount)}</td>
+                  <td class="py-2 pr-3 text-right mono ${row.missingRate ? "text-red-500 font-black" : "text-stone-600"}">${row.rate}%</td>
+                  <td class="py-2 text-right mono font-black text-[#5B7290]">${formatCurrency(row.commission)}</td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>` : `<p class="text-stone-400 font-bold">目前沒有符合條件的訂單。</p>`}
+    </div>`;
+}
+
+function revenueShareKpi(label, value, note) {
+  return `<div class="bg-white rounded-3xl border border-stone-100 p-4 shadow-sm min-w-0">
+    <div class="dashboard-kpi-label font-black text-stone-400">${escapeHtml(label)}</div>
+    <div class="dashboard-money-value mt-1.5 font-black text-stone-900 mono whitespace-nowrap">${escapeHtml(value)}</div>
+    <div class="mt-1 text-xs font-bold text-stone-400">${escapeHtml(note || "")}</div>
+  </div>`;
+}
+
+function revenueMethodCard(item) {
+  return `<div class="bg-white rounded-3xl border border-stone-100 p-4 md:p-5 shadow-sm">
+    <div class="flex items-center justify-between gap-3 mb-3">
+      <h3 class="font-black text-[#5B7290] tracking-widest">${escapeHtml(item.label)}</h3>
+      <span class="text-xs font-black text-stone-400">${item.count} 筆</span>
+    </div>
+    <div class="space-y-2 text-sm">
+      <div class="flex justify-between gap-3"><span class="font-bold text-stone-500">銷售額</span><span class="font-black text-stone-900 mono">${formatCurrency(item.amount)}</span></div>
+      <div class="flex justify-between gap-3"><span class="font-bold text-stone-500">分潤</span><span class="font-black text-[#5B7290] mono">${formatCurrency(item.commission)}</span></div>
+    </div>
+  </div>`;
+}
+
+function setRevenueCurrentMonth() {
+  const today = getTodayDateInputValue();
+  const now = new Date(today + "T00:00:00");
+  const start = formatDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1));
+  const end = formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  const startInput = document.getElementById("revenueStartDate");
+  const endInput = document.getElementById("revenueEndDate");
+  if (startInput) startInput.value = start;
+  if (endInput) endInput.value = end;
+  filterRevenueShare();
+}
+
+function exportRevenueShareCsv() {
+  const rows = getRevenueShareRows();
+  if (!rows.length) {
+    showAdminToast("目前沒有可匯出的分潤資料。", "info");
+    return;
+  }
+  const header = ["訂單編號", "日期", "出貨方式", "金額", "比例", "分潤"];
+  const body = rows.map(row => [row.id, row.date, row.methodLabel, Math.round(row.amount), row.rate, Math.round(row.commission)]);
+  const csv = [header].concat(body).map(row => row.map(value => `"${(value ?? "").toString().replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const start = document.getElementById("revenueStartDate")?.value || "revenue";
+  const end = document.getElementById("revenueEndDate")?.value || "share";
+  a.href = url;
+  a.download = `${start}_${end}_分潤統計.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 function settingValueByLabel(label) {
