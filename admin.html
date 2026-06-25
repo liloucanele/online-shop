@@ -2318,24 +2318,27 @@ async function postAdmin(payload, successMessage) {
   }
 }
 
-  function updateOrderRangeButtons(mode){
+function updateOrderRangeButtons(mode) {
 
-    document
-        .querySelectorAll(".order-range-btn")
-        .forEach(btn=>{
+    document.querySelectorAll(".order-range-btn").forEach(btn => {
 
-            const active =
-                btn.dataset.orderRange===mode;
+        const active = btn.dataset.orderRange === mode;
 
-            btn.classList.toggle("bg-[#5B7290]",active);
-            btn.classList.toggle("border-[#5B7290]",active);
-            btn.classList.toggle("text-white",active);
+        if (active) {
 
-            btn.classList.toggle("bg-white",!active);
-            btn.classList.toggle("border-stone-200",!active);
-            btn.classList.toggle("text-stone-600",!active);
+            btn.style.backgroundColor = "#5B7290";
+            btn.style.borderColor = "#5B7290";
+            btn.style.color = "#ffffff";
 
-        });
+        } else {
+
+            btn.style.backgroundColor = "#ffffff";
+            btn.style.borderColor = "#E7E5E4";
+            btn.style.color = "#57534E";
+
+        }
+
+    });
 
 }
   
