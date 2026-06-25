@@ -986,13 +986,13 @@ function sumRevenueByCreatedDate(orders, startDate, endDate) {
 }
 
 function renderRevenueLineChart(rows) {
-  if (!rows || !rows.length) return `<p class="text-stone-400 font-bold">目前無資料</p>`;
-  const width = 640;
+  if (!rows || !rows.length) return `<p class="text-stone-400 font-medium">目前無資料</p>`;
+  const width = Math.max(640, rows.length * 34 + 96);
   const height = 220;
-  const left = 54;
-  const right = 18;
+  const left = 58;
+  const right = 24;
   const top = 24;
-  const bottom = 42;
+  const bottom = 44;
   const chartWidth = width - left - right;
   const chartHeight = height - top - bottom;
   const maxRevenue = Math.max(...rows.map(row => row.revenue), 1);
@@ -1004,19 +1004,20 @@ function renderRevenueLineChart(rows) {
   const pointLine = points.map(point => `${point.x},${point.y}`).join(" ");
   const areaLine = `${left},${top + chartHeight} ${pointLine} ${left + chartWidth},${top + chartHeight}`;
   const midValue = Math.round(maxRevenue / 2);
+  const labelStep = rows.length <= 10 ? 1 : Math.ceil(rows.length / 7);
 
-  return `<div class="overflow-x-auto">
-    <svg viewBox="0 0 ${width} ${height}" class="w-full min-w-[520px] h-[240px]" role="img" aria-label="近 7 日每日營業額曲線圖">
+  return `<div class="overflow-x-auto pb-1">
+    <svg viewBox="0 0 ${width} ${height}" class="w-full min-w-[520px] h-[240px]" role="img" aria-label="每日營業額曲線圖">
       <line x1="${left}" y1="${top}" x2="${left}" y2="${top + chartHeight}" stroke="#E7E5E4" stroke-width="1" />
       <line x1="${left}" y1="${top + chartHeight}" x2="${left + chartWidth}" y2="${top + chartHeight}" stroke="#E7E5E4" stroke-width="1" />
       <line x1="${left}" y1="${top + chartHeight / 2}" x2="${left + chartWidth}" y2="${top + chartHeight / 2}" stroke="#F1F0EE" stroke-width="1" />
-      <text x="${left - 8}" y="${top + 4}" text-anchor="end" font-size="11" fill="#A8A29E" font-weight="700">${formatCurrency(maxRevenue)}</text>
-      <text x="${left - 8}" y="${top + chartHeight / 2 + 4}" text-anchor="end" font-size="11" fill="#A8A29E" font-weight="700">${formatCurrency(midValue)}</text>
-      <text x="${left - 8}" y="${top + chartHeight + 4}" text-anchor="end" font-size="11" fill="#A8A29E" font-weight="700">NT$0</text>
+      <text x="${left - 8}" y="${top + 4}" text-anchor="end" font-size="11" fill="#A8A29E" font-weight="500">${formatCurrency(maxRevenue)}</text>
+      <text x="${left - 8}" y="${top + chartHeight / 2 + 4}" text-anchor="end" font-size="11" fill="#A8A29E" font-weight="500">${formatCurrency(midValue)}</text>
+      <text x="${left - 8}" y="${top + chartHeight + 4}" text-anchor="end" font-size="11" fill="#A8A29E" font-weight="500">NT$0</text>
       <polygon points="${areaLine}" fill="#5B7290" opacity="0.08"></polygon>
       <polyline points="${pointLine}" fill="none" stroke="#5B7290" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
       ${points.map(point => `<circle cx="${point.x}" cy="${point.y}" r="4" fill="#5B7290"><title>${escapeHtml(point.label)}：${formatCurrency(point.revenue)}</title></circle>`).join("")}
-      ${points.map(point => `<text x="${point.x}" y="${top + chartHeight + 24}" text-anchor="middle" font-size="12" fill="#78716C" font-weight="700">${escapeHtml(point.label)}</text>`).join("")}
+      ${points.map((point, index) => (index % labelStep === 0 || index === points.length - 1) ? `<text x="${point.x}" y="${top + chartHeight + 24}" text-anchor="middle" font-size="11" fill="#78716C" font-weight="500">${escapeHtml(point.label)}</text>` : "").join("")}
     </svg>
   </div>`;
 }
@@ -1069,15 +1070,15 @@ function renderSalesRankingChart(productionSummary) {
   </div>`;
 }
 
-function renderDailyRevenueChart(rows, totalRevenue) {
+function renderDailyRevenueChart(rows, totalRevenue, rangeLabel = "目前篩選") {
   return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
     <div class="flex items-center justify-between gap-3 mb-3">
       <div>
         <h3 class="font-semibold text-[#5B7290] tracking-wide">每日營業額</h3>
-        <p class="text-xs text-stone-400 font-bold mt-1">近 7 日｜依下單日期統計</p>
+        <p class="text-xs text-stone-400 font-medium mt-1">${escapeHtml(rangeLabel)}｜依下單日期統計</p>
       </div>
       <div class="text-right">
-        <div class="text-[11px] font-black tracking-widest text-stone-400">近 7 日</div>
+        <div class="text-[11px] font-medium tracking-wider text-stone-400">${escapeHtml(rangeLabel)}</div>
         <div class="text-xl font-semibold text-stone-900 mono">${formatCurrency(totalRevenue)}</div>
       </div>
     </div>
@@ -1206,6 +1207,19 @@ function getDashboardStatusLabel(statusMode) {
   return labels[statusMode] || labels.active;
 }
 
+function formatDashboardChartRangeLabel(filters) {
+  const start = filters?.startDate || "";
+  const end = filters?.endDate || "";
+  if (!start && !end) return "全部日期";
+  if (start && end) {
+    const startShort = start.replace(/^\d{4}-/, "").replace("-", "/");
+    const endShort = end.replace(/^\d{4}-/, "").replace("-", "/");
+    return start === end ? startShort : `${startShort}–${endShort}`;
+  }
+  if (start) return `${start.replace(/^\d{4}-/, "").replace("-", "/")} 之後`;
+  return `${end.replace(/^\d{4}-/, "").replace("-", "/")} 以前`;
+}
+
 function renderDashboardContent() {
   const filters = getDashboardFilters();
   const filteredOrders = getDashboardFilteredOrders();
@@ -1268,7 +1282,7 @@ function renderDashboardContent() {
     ${renderFutureSevenDayPreview(filteredOrders)}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       ${renderSalesRankingChart(summary.production)}
-      ${renderDailyRevenueChart(revenueRows, totalRevenue)}
+      ${renderDailyRevenueChart(revenueRows, totalRevenue, formatDashboardChartRangeLabel(filters))}
     </div>`;
 }
 
