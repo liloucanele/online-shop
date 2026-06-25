@@ -114,13 +114,13 @@
     .order-group-item-chip {
       font-size: 14px !important;
       line-height: 1.4 !important;
-      font-weight: 800 !important;
-      padding: 6px 10px !important;
+      font-weight: 600 !important;
+      padding: 5px 9px !important;
     }
     .order-group-title {
       font-size: 16px !important;
       line-height: 1.35 !important;
-      font-weight: 900 !important;
+      font-weight: 800 !important;
     }
     .order-detail-title {
       font-size: 13px !important;
@@ -456,12 +456,32 @@ function formatOrderDetailsAdmin(details) {
   </div>`;
 }
 
+function normalizeProductLookupKey(value) {
+  return (value || "").toString()
+    .toLowerCase()
+    .replace(/[\s\u3000]/g, "")
+    .replace(/[()（）【】\[\]・·,，、\/／\-＿_]/g, "")
+    .replace(/限自取|限定|限/g, "")
+    .replace(/迷你可麗露|大顆可麗露|可麗露|迷你露|口味|兩入袋|兩入|袋裝|袋/g, "")
+    .trim();
+}
+
 function getProductUnitPriceByName(itemName) {
   const target = (itemName || "").toString().trim();
   if (!target) return 0;
   const products = adminData?.products || [];
-  const found = products.find(p => (p.name || "").toString().trim() === target)
-    || products.find(p => target.includes((p.name || "").toString().trim()) || (p.name || "").toString().trim().includes(target));
+
+  const exact = products.find(p => (p.name || "").toString().trim() === target);
+  if (exact) return parseMoneyNumber(exact.price || 0);
+
+  const targetKey = normalizeProductLookupKey(target);
+  const found = products.find(p => {
+    const productName = (p.name || "").toString().trim();
+    const productKey = normalizeProductLookupKey(productName);
+    if (!productName || !productKey || !targetKey) return false;
+    return productName.includes(target) || target.includes(productName) ||
+      productKey === targetKey || productKey.includes(targetKey) || targetKey.includes(productKey);
+  });
   return parseMoneyNumber(found?.price || 0);
 }
 
@@ -483,38 +503,80 @@ function calculateGroupAmount(group) {
   }, 0);
 }
 
-function formatOrderGroupDetailsAdmin(details) {
+function getOrderSubtotalForGroupAmount(order) {
+  if (!order) return 0;
+  const total = parseMoneyNumber(order.total);
+  const shipping = parseMoneyNumber(order.shippingFee);
+  const discount = parseMoneyNumber(order.discountAmount);
+  let subtotal = parseMoneyNumber(order.productSubtotal);
+  if (!subtotal && total) subtotal = Math.max(0, total - shipping + discount);
+  return subtotal;
+}
+
+function buildGroupAmountMap(groups, order) {
+  const amounts = (groups || []).map(group => calculateGroupAmount(group));
+  const subtotal = getOrderSubtotalForGroupAmount(order);
+  const knownSum = amounts.reduce((sum, value) => sum + value, 0);
+  const unknownIndexes = amounts
+    .map((value, index) => value > 0 ? -1 : index)
+    .filter(index => index >= 0);
+
+  if (subtotal > 0 && unknownIndexes.length && knownSum < subtotal) {
+    const remaining = subtotal - knownSum;
+    if (unknownIndexes.length === 1) {
+      amounts[unknownIndexes[0]] = remaining;
+    } else {
+      const weights = unknownIndexes.map(index => {
+        const qty = (groups[index].items || []).reduce((sum, item) => sum + (parseGroupItemForAmount(item).qty || 0), 0);
+        return qty || 1;
+      });
+      const weightSum = weights.reduce((sum, value) => sum + value, 0) || unknownIndexes.length;
+      let assigned = 0;
+      unknownIndexes.forEach((index, position) => {
+        const value = position === unknownIndexes.length - 1
+          ? remaining - assigned
+          : Math.round(remaining * weights[position] / weightSum);
+        amounts[index] = value;
+        assigned += value;
+      });
+    }
+  }
+  return amounts;
+}
+
+function formatOrderGroupDetailsAdmin(details, order) {
   const { text, groups } = parseOrderDetailGroups(details);
   if (!text) return `<p class="text-stone-400 font-bold">無商品明細</p>`;
 
   if (!groups.length) {
-    return `<div class="whitespace-pre-wrap text-stone-700 font-bold leading-relaxed bg-white border border-stone-200 rounded-2xl p-3">${escapeHtml(text)}</div>`;
+    return `<div class="whitespace-pre-wrap text-stone-700 font-semibold leading-relaxed bg-white border border-stone-200 rounded-2xl p-3">${escapeHtml(text)}</div>`;
   }
 
+  const groupAmounts = buildGroupAmountMap(groups, order);
+
   return `<div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-    ${groups.map(group => {
-      const groupAmount = calculateGroupAmount(group);
+    ${groups.map((group, index) => {
+      const groupAmount = groupAmounts[index] || 0;
       return `
-      <div class="bg-white border border-stone-200 rounded-2xl p-3">
+      <div class="bg-white border border-stone-200 rounded-2xl p-2.5">
         <div class="flex items-start justify-between gap-3 mb-2">
           <div class="min-w-0 flex flex-wrap items-center gap-2">
-            <span class="inline-flex items-center justify-center rounded-full bg-[#5B7290] text-white text-[11px] font-black px-2 py-0.5">
+            <span class="inline-flex items-center justify-center rounded-full bg-[#5B7290] text-white text-[11px] font-bold px-2 py-0.5">
               第${escapeHtml(group.groupNo)}組
             </span>
             <span class="order-group-title text-stone-900">${escapeHtml(group.packageName)}</span>
           </div>
-          ${groupAmount ? `<div class="shrink-0 text-base font-black text-stone-900 mono">${formatMoneyForOrder(groupAmount)}</div>` : ""}
+          ${groupAmount ? `<div class="shrink-0 text-sm font-bold text-stone-900 mono pt-0.5">${formatMoneyForOrder(groupAmount)}</div>` : `<div class="shrink-0 text-xs font-semibold text-stone-400 pt-1">金額未存</div>`}
         </div>
         <div class="flex flex-wrap gap-1.5">
           ${group.items.length
-            ? group.items.map(item => `<span class="order-group-item-chip inline-flex rounded-lg bg-stone-50 border border-stone-100 text-stone-800">${escapeHtml(item)}</span>`).join("")
-            : `<span class="text-sm text-stone-400 font-bold">無品項資料</span>`}
+            ? group.items.map(item => `<span class="order-group-item-chip inline-flex rounded-lg bg-stone-50 border border-stone-100 text-stone-700">${escapeHtml(item)}</span>`).join("")
+            : `<span class="text-sm text-stone-400 font-semibold">無品項資料</span>`}
         </div>
       </div>`;
     }).join("")}
   </div>`;
 }
-
 
 function renderCompactItemSummary(details) {
   const text = (details || "").toString().trim();
@@ -591,9 +653,9 @@ function renderAdminAmountDetails(order) {
     subtotal = Math.max(0, total - shipping + discount);
   }
 
-  return `<div class="bg-white border border-stone-200 rounded-xl px-3 py-2 text-sm font-black text-left leading-relaxed">
+  return `<div class="bg-white border border-stone-200 rounded-xl px-3 py-1.5 text-sm font-semibold text-left leading-relaxed">
     <span class="text-stone-500">總額</span>
-    <span class="text-red-500 mono ml-1">${formatMoneyForOrder(total)}</span>
+    <span class="text-red-500 mono ml-1 font-bold">${formatMoneyForOrder(total)}</span>
     <span class="text-stone-300 mx-1">（</span>
     <span class="text-stone-500">商品</span>
     <span class="text-stone-800 mono ml-1">${formatMoneyForOrder(subtotal)}</span>
@@ -1287,7 +1349,7 @@ function orderCard(order) {
       <div class="mt-2 space-y-3 border-t border-stone-100 pt-3">
         <div class="bg-stone-50 border border-stone-100 rounded-xl p-3 text-sm leading-relaxed">
           <div class="order-detail-title font-black text-stone-500 tracking-widest mb-2">每組完整明細</div>
-          ${formatOrderGroupDetailsAdmin(order.details)}
+          ${formatOrderGroupDetailsAdmin(order.details, order)}
         </div>
         ${renderAdminAmountDetails(order)}
         ${order.note ? `<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm"><strong>客人備註：</strong>${escapeHtml(order.note)}</div>` : ""}
