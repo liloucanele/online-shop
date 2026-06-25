@@ -105,9 +105,9 @@
     }
 
     .order-item-chip {
-      font-size: 14px !important;
+      font-size: 13px !important;
       line-height: 1.35 !important;
-      font-weight: 800 !important;
+      font-weight: 650 !important;
       padding: 5px 10px !important;
       border-radius: 999px;
     }
@@ -546,10 +546,11 @@ function buildGroupAmountMap(groups, order) {
 
 function formatOrderGroupDetailsAdmin(details, order) {
   const { text, groups } = parseOrderDetailGroups(details);
-  if (!text) return `<p class="text-stone-400 font-bold">無商品明細</p>`;
+  const amountSummary = renderAdminAmountDetails(order);
+  if (!text) return `<p class="text-stone-400 font-medium">無商品明細</p>${amountSummary}`;
 
   if (!groups.length) {
-    return `<div class="whitespace-pre-wrap text-stone-700 font-semibold leading-relaxed bg-white border border-stone-200 rounded-2xl p-3">${escapeHtml(text)}</div>`;
+    return `<div class="whitespace-pre-wrap text-stone-700 font-medium leading-relaxed bg-white border border-stone-200 rounded-2xl p-3">${escapeHtml(text)}</div>${amountSummary}`;
   }
 
   const groupAmounts = buildGroupAmountMap(groups, order);
@@ -561,21 +562,21 @@ function formatOrderGroupDetailsAdmin(details, order) {
       <div class="bg-white border border-stone-200 rounded-2xl p-2.5">
         <div class="flex items-start justify-between gap-3 mb-2">
           <div class="min-w-0 flex flex-wrap items-center gap-2">
-            <span class="inline-flex items-center justify-center rounded-full bg-[#5B7290] text-white text-[11px] font-bold px-2 py-0.5">
+            <span class="inline-flex items-center justify-center rounded-full bg-[#5B7290] text-white text-[11px] font-semibold px-2 py-0.5">
               第${escapeHtml(group.groupNo)}組
             </span>
             <span class="order-group-title text-stone-900">${escapeHtml(group.packageName)}</span>
           </div>
-          ${groupAmount ? `<div class="shrink-0 text-sm font-bold text-stone-900 mono pt-0.5">${formatMoneyForOrder(groupAmount)}</div>` : `<div class="shrink-0 text-xs font-semibold text-stone-400 pt-1">金額未存</div>`}
+          <div class="shrink-0 text-sm font-semibold text-stone-800 mono pt-0.5">${formatMoneyForOrder(groupAmount)}</div>
         </div>
         <div class="flex flex-wrap gap-1.5">
           ${group.items.length
             ? group.items.map(item => `<span class="order-group-item-chip inline-flex rounded-lg bg-stone-50 border border-stone-100 text-stone-700">${escapeHtml(item)}</span>`).join("")
-            : `<span class="text-sm text-stone-400 font-semibold">無品項資料</span>`}
+            : `<span class="text-sm text-stone-400 font-medium">無品項資料</span>`}
         </div>
       </div>`;
     }).join("")}
-  </div>`;
+  </div>${amountSummary}`;
 }
 
 function renderCompactItemSummary(details) {
@@ -653,18 +654,18 @@ function renderAdminAmountDetails(order) {
     subtotal = Math.max(0, total - shipping + discount);
   }
 
-  return `<div class="bg-white border border-stone-200 rounded-xl px-3 py-1.5 text-sm font-semibold text-left leading-relaxed">
-    <span class="text-stone-500">總額</span>
-    <span class="text-red-500 mono ml-1 font-bold">${formatMoneyForOrder(total)}</span>
+  return `<div class="mt-2 pt-2 border-t border-stone-200 text-left text-xs md:text-sm leading-relaxed">
+    <span class="text-stone-500 font-medium">總額</span>
+    <span class="text-red-500 mono ml-1 font-semibold">${formatMoneyForOrder(total)}</span>
     <span class="text-stone-300 mx-1">（</span>
     <span class="text-stone-500">商品</span>
-    <span class="text-stone-800 mono ml-1">${formatMoneyForOrder(subtotal)}</span>
+    <span class="text-stone-700 mono ml-1">${formatMoneyForOrder(subtotal)}</span>
     <span class="text-stone-300 mx-1">｜</span>
     <span class="text-stone-500">折扣</span>
-    <span class="text-stone-800 mono ml-1">${discount ? "-" : ""}${formatMoneyForOrder(discount)}</span>
+    <span class="text-stone-700 mono ml-1">${discount ? "-" : ""}${formatMoneyForOrder(discount)}</span>
     <span class="text-stone-300 mx-1">｜</span>
     <span class="text-stone-500">運費</span>
-    <span class="text-stone-800 mono ml-1">${formatMoneyForOrder(shipping)}</span>
+    <span class="text-stone-700 mono ml-1">${formatMoneyForOrder(shipping)}</span>
     <span class="text-stone-300 mx-1">）</span>
   </div>`;
 }
@@ -1341,17 +1342,16 @@ function orderCard(order) {
     </div>
 
     <details class="group">
-      <summary class="cursor-pointer list-none rounded-xl bg-stone-50 border border-stone-200 px-3 py-2 font-black text-[#5B7290] flex items-center justify-between gap-3 text-sm">
+      <summary class="cursor-pointer list-none rounded-xl bg-stone-50 border border-stone-200 px-3 py-1.5 font-semibold text-[#5B7290] flex items-center justify-between gap-3 text-xs md:text-sm">
         <span>展開完整資料／更新狀態</span>
-        <span class="text-xs group-open:hidden">展開</span>
-        <span class="text-xs text-stone-400 hidden group-open:inline">收合</span>
+        <span class="text-[11px] group-open:hidden text-stone-400">展開</span>
+        <span class="text-[11px] text-stone-400 hidden group-open:inline">收合</span>
       </summary>
       <div class="mt-2 space-y-3 border-t border-stone-100 pt-3">
         <div class="bg-stone-50 border border-stone-100 rounded-xl p-3 text-sm leading-relaxed">
           <div class="order-detail-title font-black text-stone-500 tracking-widest mb-2">每組完整明細</div>
           ${formatOrderGroupDetailsAdmin(order.details, order)}
         </div>
-        ${renderAdminAmountDetails(order)}
         ${order.note ? `<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm"><strong>客人備註：</strong>${escapeHtml(order.note)}</div>` : ""}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
           ${statusFields}
