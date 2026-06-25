@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Lilou｜後台管理系統</title>
   <meta name="robots" content="noindex,nofollow">
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4">
+window.addEventListener("resize", syncOrderFilterDetails);
+</script>
   <!--Developed by TylerChen Design 2026-->
   <style>
     :root {
@@ -142,18 +144,15 @@
         font-size: 16px !important;
       }
     }
-      .order-group-item-chip {
-        font-size: 14px !important;
-      }
-      .order-group-title {
-        font-size: 16px !important;
-      }
-    }
-    .dashboard-filter-panel summary::-webkit-details-marker { display: none; }
-    .dashboard-filter-panel summary { list-style: none; }
+    .dashboard-filter-panel summary::-webkit-details-marker,
+    .admin-filter-panel summary::-webkit-details-marker { display: none; }
+    .dashboard-filter-panel summary,
+    .admin-filter-panel summary { list-style: none; }
     @media (min-width: 768px) {
-      .dashboard-filter-panel summary { display: none; }
+      .dashboard-filter-panel summary,
+      .admin-filter-panel summary { display: none; }
     }
+
     .admin-toast {
       transform: translateY(16px);
       opacity: 0;
@@ -1503,88 +1502,155 @@ function normalizeOrderDateForCompare(value) {
   return `${y}-${m}-${d}`;
 }
 
+function normalizeOrderDateTimeForCompare(value) {
+  const raw = (value || "").toString().trim();
+  if (!raw) return "";
+
+  const match = raw.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (!match) return normalizeOrderDateForCompare(raw);
+
+  const y = match[1];
+  const m = String(match[2]).padStart(2, "0");
+  const d = String(match[3]).padStart(2, "0");
+  const hh = String(match[4] || "0").padStart(2, "0");
+  const mm = String(match[5] || "0").padStart(2, "0");
+  const ss = String(match[6] || "0").padStart(2, "0");
+
+  return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+}
+
+function getOrderCreatedDateTime(order) {
+  const timestampDateTime = normalizeOrderDateTimeForCompare(order.timestamp || "");
+  if (timestampDateTime) return timestampDateTime;
+  const createdDate = getOrderCreatedDate(order);
+  return createdDate ? `${createdDate} 00:00:00` : "";
+}
+
+
 function setOrderDateDefaultMonth() {
   const range = getDefaultMonthRange();
   const startInput = document.getElementById("orderStartDate");
   const endInput = document.getElementById("orderEndDate");
-
-  if (startInput) startInput.value = range.start;
-  if (endInput) endInput.value = range.end;
-
-  filterOrders();
+  if (!startInput || !endInput) return;
+  startInput.value = range.start;
+  endInput.value = range.end;
   updateOrderRangeButtons("month");
+  filterOrders();
 }
 
 function clearOrderDateFilter() {
   const startInput = document.getElementById("orderStartDate");
   const endInput = document.getElementById("orderEndDate");
-
-  if (startInput) startInput.value = "";
-  if (endInput) endInput.value = "";
-
-  filterOrders();
+  if (!startInput || !endInput) return;
+  startInput.value = "";
+  endInput.value = "";
   updateOrderRangeButtons("all");
+  filterOrders();
 }
 
 function renderOrders() {
   const orders = adminData.orders || [];
   document.getElementById("tab-orders").innerHTML = `
-    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-3">
-      <div class="grid grid-cols-1 md:grid-cols-10 gap-3">
-        <input id="orderSearch" oninput="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2" placeholder="搜尋訂單編號、姓名、電話、日期">
-        <select id="orderStatusFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          <option value="">全部狀態</option>
-          <option value="訂單確認中">訂單確認中</option>
-          <option value="可取貨">可取貨</option>
-          <option value="待付款">待付款</option>
-          <option value="待出貨">待出貨</option>
-          <option value="已出貨">已出貨</option>
-          <option value="已取貨">已取貨</option>
-          <option value="已作廢">已作廢</option>
-        </select>
-        <select id="orderMethodFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          <option value="">全部配送</option>
-          <option value="store">門市自取</option>
-          <option value="delivery">7-11 店到店</option>
-        </select>
-        <select id="orderSortFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
-          <option value="arrivalAsc">取貨／到貨日期近到遠</option>
-          <option value="arrivalDesc">取貨／到貨日期遠到近</option>
-          <option value="orderDesc">訂單日期近到遠</option>
-          <option value="orderAsc">訂單日期遠到近</option>
-          <option value="amountDesc">金額高到低</option>
-          <option value="amountAsc">金額低到高</option>
-        </select>
-        <input id="orderStartDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        <input id="orderEndDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-<div class="flex gap-2 md:col-span-2">
-  <button
-      data-order-range="future"
-      onclick="setOrderDateFutureDefault()"
-      class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">
-      未來
-  </button>
+    <details id="orderFilterDetails" open class="admin-filter-panel bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-5 space-y-3">
+      <summary class="cursor-pointer rounded-2xl px-1 py-1">
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-sm font-semibold text-stone-900">篩選與排序</div>
+            <div id="orderMobileFilterSummary" class="text-xs font-medium text-stone-400 mt-0.5 truncate">全部日期｜全部配送｜取貨／到貨日期近到遠</div>
+          </div>
+          <span class="admin-filter-toggle-icon shrink-0 text-xs font-semibold text-[#5B7290]">展開</span>
+        </div>
+      </summary>
 
-  <button
-      data-order-range="month"
-      onclick="setOrderDateDefaultMonth()"
-      class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">
-      本月
-  </button>
+      <div class="admin-filter-body pt-3 md:pt-0 space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-10 gap-3">
+          <input id="orderSearch" oninput="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2" placeholder="搜尋訂單編號、姓名、電話、日期">
 
-  <button
-      data-order-range="all"
-      onclick="clearOrderDateFilter()"
-      class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">
-      全部
-  </button>
-</div>
+          <select id="orderStatusFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+            <option value="">全部狀態</option>
+            <option value="訂單確認中">訂單確認中</option>
+            <option value="可取貨">可取貨</option>
+            <option value="待付款">待付款</option>
+            <option value="待出貨">待出貨</option>
+            <option value="已出貨">已出貨</option>
+            <option value="已取貨">已取貨</option>
+            <option value="已作廢">已作廢</option>
+          </select>
+
+          <select id="orderMethodFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+            <option value="">全部配送</option>
+            <option value="store">門市自取</option>
+            <option value="delivery">7-11 店到店</option>
+          </select>
+
+          <select id="orderSortFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
+            <option value="arrivalAsc">取貨／到貨日期近到遠</option>
+            <option value="arrivalDesc">取貨／到貨日期遠到近</option>
+            <option value="orderDesc">訂單日期近到遠</option>
+            <option value="orderAsc">訂單日期遠到近</option>
+            <option value="amountDesc">金額高到低</option>
+            <option value="amountAsc">金額低到高</option>
+          </select>
+
+          <input id="orderStartDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+          <input id="orderEndDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+
+          <div class="flex gap-2 md:col-span-2">
+            <button data-order-range="future" onclick="setOrderDateFutureDefault()" class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">未來</button>
+            <button data-order-range="month" onclick="setOrderDateDefaultMonth()" class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">本月</button>
+            <button data-order-range="all" onclick="clearOrderDateFilter()" class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">全部</button>
+          </div>
+        </div>
+        <div id="orderCount" class="text-sm font-medium text-stone-500"></div>
       </div>
-      <div id="orderCount" class="text-sm font-black text-stone-500"></div>
-    </div>
-  <div id="ordersArea" class="space-y-4"></div>`;
-    clearOrderDateFilter();
+    </details>
+
+    <div id="ordersArea" class="space-y-4"></div>`;
+  syncOrderFilterDetails();
+  clearOrderDateFilter();
 }
+
+
+function syncOrderFilterDetails() {
+  const details = document.getElementById("orderFilterDetails");
+  if (!details) return;
+  details.open = !!(window.matchMedia && window.matchMedia("(min-width: 768px)").matches);
+}
+
+function getOrderRangeLabel(startDate, endDate) {
+  if (!startDate && !endDate) return "全部日期";
+  const month = getDefaultMonthRange();
+  if (startDate === getTodayDateInputValue() && !endDate) return "未來";
+  if (startDate === month.start && endDate === month.end) return "本月";
+  if (startDate && endDate) return `${startDate.replace(/-/g, "/")}～${endDate.replace(/-/g, "/")}`;
+  if (startDate && !endDate) return `${startDate.replace(/-/g, "/")} 之後`;
+  return `${endDate.replace(/-/g, "/")} 以前`;
+}
+
+function updateOrderFilterSummary(startDate, endDate, method, sortMode) {
+  const el = document.getElementById("orderMobileFilterSummary");
+  if (!el) return;
+  const methodText = method === "store" ? "門市自取" : method === "delivery" ? "7-11 店到店" : "全部配送";
+  el.textContent = `${getOrderRangeLabel(startDate, endDate)}｜${methodText}｜${getOrderSortLabel(sortMode)}`;
+}
+
+function updateOrderRangeButtons(mode) {
+  document.querySelectorAll(".order-range-btn").forEach(btn => {
+    const active = mode && btn.dataset.orderRange === mode;
+    btn.style.backgroundColor = active ? "#5B7290" : "#ffffff";
+    btn.style.borderColor = active ? "#5B7290" : "#E7E5E4";
+    btn.style.color = active ? "#ffffff" : "#57534E";
+  });
+}
+
+function getOrderRangeMode(startDate, endDate) {
+  const month = getDefaultMonthRange();
+  if (!startDate && !endDate) return "all";
+  if (startDate === getTodayDateInputValue() && !endDate) return "future";
+  if (startDate === month.start && endDate === month.end) return "month";
+  return "";
+}
+
 
 function getOrderSortLabel(sortMode) {
   const labels = {
@@ -1627,8 +1693,8 @@ function filterOrders() {
     const arrivalB = normalizeOrderDateForCompare(b.date) || "9999-12-31";
     const orderDateA = getOrderCreatedDate(a) || "0000-00-00";
     const orderDateB = getOrderCreatedDate(b) || "0000-00-00";
-    const timestampA = (a.timestamp || "").toString();
-    const timestampB = (b.timestamp || "").toString();
+    const timestampA = getOrderCreatedDateTime(a) || "0000-00-00 00:00:00";
+    const timestampB = getOrderCreatedDateTime(b) || "0000-00-00 00:00:00";
     const amountA = parseMoneyNumber(a.total);
     const amountB = parseMoneyNumber(b.total);
 
@@ -1649,7 +1715,7 @@ function filterOrders() {
     const arrivalCompare = compareTextValue(arrivalA, arrivalB);
     if (arrivalCompare !== 0) return sortMode === "arrivalDesc" ? -arrivalCompare : arrivalCompare;
     const timeCompare = compareTextValue(timestampA, timestampB);
-    if (timeCompare !== 0) return sortMode === "arrivalDesc" ? -timeCompare : timeCompare;
+    if (timeCompare !== 0) return -timeCompare;
     return compareTextValue(a.id, b.id);
   });
   const effectiveOrders = orders.filter(o => o.orderStatus !== "已作廢");
@@ -1658,6 +1724,8 @@ function filterOrders() {
   const deliveryCount = effectiveOrders.filter(o => getOrderMethodType(o) === "delivery").length;
   const rangeText = startDate && !endDate ? `｜日期：${startDate} 之後` : startDate && endDate ? `｜日期：${startDate}～${endDate}` : !startDate && endDate ? `｜日期：${endDate} 以前` : "｜日期：全部";
   const voidText = voidCount > 0 ? `｜已作廢 ${voidCount}` : "";
+  updateOrderFilterSummary(startDate, endDate, method, sortMode);
+  updateOrderRangeButtons(getOrderRangeMode(startDate, endDate));
   document.getElementById("orderCount").textContent = `${effectiveOrders.length} 筆有效訂單｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}${voidText}${rangeText}｜排序：${getOrderSortLabel(sortMode)}`;
   const area = document.getElementById("ordersArea");
   if (!orders.length) {
@@ -2353,34 +2421,11 @@ async function postAdmin(payload, successMessage) {
   }
 }
 
-function updateOrderRangeButtons(mode) {
-
-    document.querySelectorAll(".order-range-btn").forEach(btn => {
-
-        const active =
-            mode &&
-            btn.dataset.orderRange === mode;
-
-        if (active) {
-
-            btn.style.backgroundColor = "#5B7290";
-            btn.style.borderColor = "#5B7290";
-            btn.style.color = "#fff";
-
-        } else {
-
-            btn.style.backgroundColor = "#fff";
-            btn.style.borderColor = "#E7E5E4";
-            btn.style.color = "#57534E";
-
-        }
-
-    });
-
-}
   
 document.getElementById("adminPassword").addEventListener("keydown", e => { if (e.key === "Enter") adminLogin(); });
 if (getToken()) { setLoggedInState(true); loadAll(); }
+
+window.addEventListener("resize", syncOrderFilterDetails);
 </script>
 </body>
 </html>
