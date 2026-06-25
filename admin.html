@@ -76,19 +76,22 @@
       font-size: var(--admin-text-sm) !important;
     }
     .dashboard-kpi-label {
-      font-size: 12px;
-      line-height: 1.3;
-      letter-spacing: .06em;
+      font-size: 13px;
+      line-height: 1.35;
+      letter-spacing: .02em;
+      font-weight: 500 !important;
     }
     .dashboard-kpi-value {
-      font-size: 28px;
+      font-size: 30px;
       line-height: 1.15;
-      letter-spacing: -.02em;
+      letter-spacing: -.015em;
+      font-weight: 600 !important;
     }
     .dashboard-money-value {
-      font-size: 30px;
+      font-size: 31px;
       line-height: 1.12;
-      letter-spacing: -.03em;
+      letter-spacing: -.025em;
+      font-weight: 600 !important;
     }
     @media (max-width: 640px) {
       /* 手機保留 16px，避免 iOS 輸入時自動放大 */
@@ -135,25 +138,10 @@
         font-size: 16px !important;
       }
     }
-
-    .admin-filter-panel > summary {
-      list-style: none;
-      border-radius: 1.25rem;
-      border: 1px solid #E7E5E4;
-      background: #FAFAF9;
-      padding: 10px 12px;
-    }
-    .admin-filter-panel > summary::-webkit-details-marker { display: none; }
-    .admin-filter-toggle-icon::after { content: "展開篩選"; }
-    .admin-filter-panel[open] .admin-filter-toggle-icon::after { content: "收合"; }
-    .admin-filter-body { display: block; }
-    @media (max-width: 767px) {
-      .admin-filter-panel:not([open]) .admin-filter-body { display: none !important; }
-      .admin-filter-panel[open] .admin-filter-body { display: block !important; }
-    }
+    .dashboard-filter-panel summary::-webkit-details-marker { display: none; }
+    .dashboard-filter-panel summary { list-style: none; }
     @media (min-width: 768px) {
-      .admin-filter-panel > summary { display: none; }
-      .admin-filter-body { display: block !important; }
+      .dashboard-filter-panel summary { display: none; }
     }
     .admin-toast {
       transform: translateY(16px);
@@ -169,53 +157,6 @@
       animation: adminSpin .75s linear infinite;
     }
     @keyframes adminSpin { to { transform: rotate(360deg); } }
-
-    /* Dashboard 視覺降噪：降低數字與卡片字重，讓統計區更耐看 */
-    #tab-dashboard .dashboard-kpi-label {
-      font-size: 13px !important;
-      line-height: 1.35 !important;
-      letter-spacing: .035em !important;
-      font-weight: 500 !important;
-      color: #78716C !important;
-    }
-    #tab-dashboard .dashboard-kpi-value {
-      font-size: 30px !important;
-      line-height: 1.1 !important;
-      letter-spacing: -.02em !important;
-      font-weight: 600 !important;
-      color: #1C1917 !important;
-    }
-    #tab-dashboard .dashboard-money-value {
-      font-size: 30px !important;
-      line-height: 1.12 !important;
-      letter-spacing: -.025em !important;
-      font-weight: 600 !important;
-      color: #1C1917 !important;
-    }
-    #tab-dashboard h3 {
-      font-weight: 600 !important;
-      letter-spacing: .04em !important;
-    }
-    #tab-dashboard .font-black {
-      font-weight: 600 !important;
-    }
-    #tab-dashboard .font-bold {
-      font-weight: 500 !important;
-    }
-    #tab-dashboard .text-xl.font-black,
-    #tab-dashboard .text-2xl.font-black,
-    #tab-dashboard .text-3xl.font-black {
-      font-weight: 600 !important;
-    }
-    #tab-dashboard .rounded-2xl,
-    #tab-dashboard .rounded-3xl {
-      box-shadow: 0 1px 3px rgba(28, 25, 23, .04) !important;
-    }
-    @media (max-width: 640px) {
-      #tab-dashboard .dashboard-kpi-value { font-size: 26px !important; }
-      #tab-dashboard .dashboard-money-value { font-size: 27px !important; }
-    }
-
   </style>
 </head>
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
@@ -401,31 +342,7 @@ function switchTab(tab) {
   });
   document.querySelectorAll(".tab-page").forEach(page => page.classList.add("hidden"));
   document.getElementById("tab-" + tab).classList.remove("hidden");
-  syncAdminFilterPanels();
 }
-
-function syncAdminFilterPanels() {
-  const isMobile = window.matchMedia("(max-width: 767px)").matches;
-  document.querySelectorAll(".admin-filter-panel").forEach(panel => {
-    if (isMobile) {
-      if (!panel.dataset.userTouched) panel.removeAttribute("open");
-    } else {
-      panel.setAttribute("open", "");
-    }
-  });
-}
-
-document.addEventListener("toggle", function(event) {
-  const panel = event.target;
-  if (panel && panel.classList && panel.classList.contains("admin-filter-panel")) {
-    panel.dataset.userTouched = "1";
-  }
-}, true);
-
-window.addEventListener("resize", function() {
-  document.querySelectorAll(".admin-filter-panel").forEach(panel => delete panel.dataset.userTouched);
-  syncAdminFilterPanels();
-});
 
 async function loadAll() {
   const token = getToken();
@@ -545,7 +462,7 @@ function formatOrderDetailsAdmin(details) {
   }
 
   return `<div class="bg-white border border-stone-200 rounded-xl px-3 py-2 space-y-1.5">
-    <div class="font-semibold text-stone-800 text-sm">共 ${groups.length || "-"} 組</div>
+    <div class="font-black text-stone-800 text-sm">共 ${groups.length || "-"} 組</div>
     <div class="flex flex-wrap gap-1.5">${itemChips || `<span class="text-xs text-stone-400 font-bold">無品項統計</span>`}</div>
   </div>`;
 }
@@ -598,13 +515,7 @@ function calculateGroupAmount(group) {
 }
 
 function getOrderSubtotalForGroupAmount(order) {
-  if (!order) return 0;
-  const total = parseMoneyNumber(order.total);
-  const shipping = parseMoneyNumber(order.shippingFee);
-  const discount = parseMoneyNumber(order.discountAmount);
-  let subtotal = parseMoneyNumber(order.productSubtotal);
-  if (!subtotal && total) subtotal = Math.max(0, total - shipping + discount);
-  return subtotal;
+  return getOrderAmountNumbers(order).subtotal;
 }
 
 function buildGroupAmountMap(groups, order) {
@@ -719,8 +630,8 @@ function summaryList(summary) {
   if (!entries.length) return `<p class="text-stone-400 font-bold">目前無資料</p>`;
   return entries.map(([name, qty]) => `
     <div class="flex items-center justify-between gap-3 bg-stone-50 rounded-xl px-3 py-2 border border-stone-100">
-      <span class="font-medium text-stone-700">${escapeHtml(name)}</span>
-      <span class="font-semibold text-[#5B7290] mono">${qty}</span>
+      <span class="font-bold text-stone-700">${escapeHtml(name)}</span>
+      <span class="font-black text-[#5B7290] mono">${qty}</span>
     </div>`).join("");
 }
 
@@ -734,32 +645,58 @@ function formatMoneyForOrder(value) {
   return "NT$" + Math.round(n).toLocaleString("zh-TW");
 }
 
-function normalizeAdminStatus(status) {
-  return status === "付款已確認" ? "待出貨" : (status || "");
+function formatSignedMoneyForOrder(value, forceMinus = false) {
+  const n = parseMoneyNumber(value);
+  const absValue = Math.abs(n);
+  if (!absValue) return "NT$0";
+  const sign = forceMinus || n < 0 ? "-" : "+";
+  return sign + "NT$" + Math.round(absValue).toLocaleString("zh-TW");
 }
 
-function renderAdminAmountDetails(order) {
-  const total = parseMoneyNumber(order.total);
-  const shipping = parseMoneyNumber(order.shippingFee);
-  const discount = parseMoneyNumber(order.discountAmount);
-  let subtotal = parseMoneyNumber(order.productSubtotal);
+function firstAmountValue(order, keys) {
+  if (!order) return 0;
+  for (const key of keys) {
+    if (order[key] !== undefined && order[key] !== null && order[key] !== "") {
+      return parseMoneyNumber(order[key]);
+    }
+  }
+  return 0;
+}
+
+function getOrderAmountNumbers(order) {
+  const total = firstAmountValue(order, ["total", "totalPrice", "Total_Price", "total_price", "Total"]);
+  const shipping = firstAmountValue(order, ["shippingFee", "shipping_fee", "Shipping_Fee", "ShippingFee"]);
+  const discountRaw = firstAmountValue(order, ["discountAmount", "discount_amount", "Discount_Amount", "DiscountAmount"]);
+  const discount = Math.abs(discountRaw);
+  let subtotal = firstAmountValue(order, ["productSubtotal", "subtotalAmount", "subtotal_amount", "Subtotal_Amount", "SubtotalAmount"]);
 
   if (!subtotal && total) {
     subtotal = Math.max(0, total - shipping + discount);
   }
 
+  const finalTotal = total || Math.max(0, subtotal + shipping - discount);
+  return { subtotal, discount, shipping, total: finalTotal };
+}
+
+function normalizeAdminStatus(status) {
+  return status === "付款已確認" ? "待出貨" : (status || "");
+}
+
+function renderAdminAmountDetails(order) {
+  const amount = getOrderAmountNumbers(order);
+
   return `<div class="mt-2 pt-2 border-t border-stone-200 text-left text-xs md:text-sm leading-relaxed">
     <span class="text-stone-500 font-medium">總額</span>
-    <span class="text-red-500 mono ml-1 font-semibold">${formatMoneyForOrder(total)}</span>
+    <span class="text-red-500 mono ml-1 font-semibold">${formatMoneyForOrder(amount.total)}</span>
     <span class="text-stone-300 mx-1">（</span>
     <span class="text-stone-500">商品</span>
-    <span class="text-stone-700 mono ml-1">${formatMoneyForOrder(subtotal)}</span>
+    <span class="text-stone-700 mono ml-1">${formatMoneyForOrder(amount.subtotal)}</span>
     <span class="text-stone-300 mx-1">｜</span>
     <span class="text-stone-500">折扣</span>
-    <span class="text-stone-700 mono ml-1">${discount ? "-" : ""}${formatMoneyForOrder(discount)}</span>
+    <span class="text-stone-700 mono ml-1">${amount.discount ? formatSignedMoneyForOrder(amount.discount, true) : "NT$0"}</span>
     <span class="text-stone-300 mx-1">｜</span>
     <span class="text-stone-500">運費</span>
-    <span class="text-stone-700 mono ml-1">${formatMoneyForOrder(shipping)}</span>
+    <span class="text-stone-700 mono ml-1">${amount.shipping ? formatSignedMoneyForOrder(amount.shipping, false) : "NT$0"}</span>
     <span class="text-stone-300 mx-1">）</span>
   </div>`;
 }
@@ -831,10 +768,9 @@ function formatMonthDayWithWeekday(value) {
   return `${mm}/${dd}（${weekdays[date.getDay()]}）`;
 }
 
-function renderTodayPickupCard(sourceOrders = null) {
+function renderTodayPickupCard() {
   const today = getTodayDateInputValue();
-  const baseOrders = sourceOrders || (adminData.orders || []);
-  const orders = baseOrders.filter(o =>
+  const orders = (adminData.orders || []).filter(o =>
     normalizeOrderDateForCompare(o.date) === today &&
     getOrderMethodType(o) === "store" &&
     o.orderStatus !== "已取貨" &&
@@ -843,27 +779,26 @@ function renderTodayPickupCard(sourceOrders = null) {
 
   return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
     <div class="flex items-center justify-between gap-3 mb-3">
-      <h3 class="font-semibold text-[#5B7290] tracking-wide">🏪 今日待取貨</h3>
-      <span class="text-xl font-semibold text-stone-900 mono">${orders.length}</span>
+      <h3 class="font-black text-[#5B7290] tracking-widest">🏪 今日待取貨</h3>
+      <span class="text-xl font-black text-stone-900 mono">${orders.length}</span>
     </div>
     ${orders.length ? `<div class="space-y-2">${orders.slice(0, 6).map(o => `
       <div class="flex items-center justify-between gap-3 rounded-xl bg-stone-50 border border-stone-100 px-3 py-2 text-sm">
-        <div class="font-semibold text-stone-800">${escapeHtml(o.id)}</div>
+        <div class="font-black text-stone-800">${escapeHtml(o.id)}</div>
         <div class="text-stone-500 font-bold">${escapeHtml(o.name || "-")}</div>
         <div class="inline-flex rounded-full border px-2 py-0.5 text-xs font-black ${statusClass(o.orderStatus)}">${escapeHtml(o.orderStatus || "未設定")}</div>
       </div>`).join("")}</div>` : `<p class="text-stone-400 font-bold">今天沒有未完成的門市自取訂單。</p>`}
   </div>`;
 }
 
-function renderFutureSevenDayPreview(sourceOrders = null) {
+function renderFutureSevenDayPreview() {
   const today = getTodayDateInputValue();
-  const baseOrders = sourceOrders || (adminData.orders || []);
   const endDate = addDaysToDateInput(today, 6);
   const rows = [];
 
   for (let i = 0; i < 7; i++) {
     const date = addDaysToDateInput(today, i);
-    const dayOrders = baseOrders.filter(o => normalizeOrderDateForCompare(o.date) === date && o.orderStatus !== "已取貨" && o.orderStatus !== "已作廢");
+    const dayOrders = (adminData.orders || []).filter(o => normalizeOrderDateForCompare(o.date) === date && o.orderStatus !== "已取貨" && o.orderStatus !== "已作廢");
     rows.push({
       date,
       store: dayOrders.filter(o => getOrderMethodType(o) === "store").length,
@@ -874,13 +809,13 @@ function renderFutureSevenDayPreview(sourceOrders = null) {
 
   return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
-      <h3 class="font-semibold text-[#5B7290] tracking-wide">📦 未來 7 天訂單預覽</h3>
+      <h3 class="font-black text-[#5B7290] tracking-widest">📦 未來 7 天訂單預覽</h3>
       <div class="text-xs text-stone-400 font-bold">依客人選擇日期統計｜${escapeHtml(today)}～${escapeHtml(endDate)}</div>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-7 gap-2">
       ${rows.map(row => `
         <div class="rounded-2xl border border-stone-100 bg-stone-50 p-3 space-y-2">
-          <div class="font-semibold text-stone-800 text-sm">${formatMonthDayWithWeekday(row.date)}</div>
+          <div class="font-black text-stone-800 text-sm">${formatMonthDayWithWeekday(row.date)}</div>
           <div class="text-xs font-bold text-blue-700">門市自取 ${row.store}</div>
           <div class="text-xs font-bold text-amber-700">7-11店到店 ${row.delivery}</div>
           <div class="pt-1 border-t border-stone-200 text-xs font-black text-stone-500">合計 ${row.total}</div>
@@ -926,12 +861,12 @@ function renderDashboardCoupons() {
     .sort((a, b) => (normalizeCouponDate(a.end_date) || "9999-12-31").localeCompare(normalizeCouponDate(b.end_date) || "9999-12-31"));
 
   return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
-    <h3 class="font-semibold text-[#5B7290] tracking-wide mb-3">🎟️ 近期優惠券</h3>
+    <h3 class="font-black text-[#5B7290] tracking-widest mb-3">🎟️ 近期優惠券</h3>
     ${coupons.length ? `<div class="space-y-2">${coupons.map(c => `
       <div class="rounded-2xl bg-stone-50 border border-stone-100 px-3 py-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div>
-          <div class="font-semibold text-stone-800">${escapeHtml(c.code)}</div>
-          <div class="text-xs font-medium text-stone-500">${couponTypeText(c.type, c.value)}｜${formatCouponDate(c.start_date)}～${formatCouponDate(c.end_date)}</div>
+          <div class="font-black text-stone-800">${escapeHtml(c.code)}</div>
+          <div class="text-xs font-bold text-stone-500">${couponTypeText(c.type, c.value)}｜${formatCouponDate(c.start_date)}～${formatCouponDate(c.end_date)}</div>
         </div>
         ${couponStatusBadge(c)}
       </div>`).join("")}</div>` : `<p class="text-stone-400 font-bold">目前沒有折扣碼。</p>`}
@@ -986,13 +921,13 @@ function sumRevenueByCreatedDate(orders, startDate, endDate) {
 }
 
 function renderRevenueLineChart(rows) {
-  if (!rows || !rows.length) return `<p class="text-stone-400 font-medium">目前無資料</p>`;
-  const width = Math.max(640, rows.length * 34 + 96);
+  if (!rows || !rows.length) return `<p class="text-stone-400 font-bold">目前無資料</p>`;
+  const width = 640;
   const height = 220;
-  const left = 58;
-  const right = 24;
+  const left = 54;
+  const right = 18;
   const top = 24;
-  const bottom = 44;
+  const bottom = 42;
   const chartWidth = width - left - right;
   const chartHeight = height - top - bottom;
   const maxRevenue = Math.max(...rows.map(row => row.revenue), 1);
@@ -1004,20 +939,19 @@ function renderRevenueLineChart(rows) {
   const pointLine = points.map(point => `${point.x},${point.y}`).join(" ");
   const areaLine = `${left},${top + chartHeight} ${pointLine} ${left + chartWidth},${top + chartHeight}`;
   const midValue = Math.round(maxRevenue / 2);
-  const labelStep = rows.length <= 10 ? 1 : Math.ceil(rows.length / 7);
 
-  return `<div class="overflow-x-auto pb-1">
-    <svg viewBox="0 0 ${width} ${height}" class="w-full min-w-[520px] h-[240px]" role="img" aria-label="每日營業額曲線圖">
+  return `<div class="overflow-x-auto">
+    <svg viewBox="0 0 ${width} ${height}" class="w-full min-w-[520px] h-[240px]" role="img" aria-label="近 7 日每日營業額曲線圖">
       <line x1="${left}" y1="${top}" x2="${left}" y2="${top + chartHeight}" stroke="#E7E5E4" stroke-width="1" />
       <line x1="${left}" y1="${top + chartHeight}" x2="${left + chartWidth}" y2="${top + chartHeight}" stroke="#E7E5E4" stroke-width="1" />
       <line x1="${left}" y1="${top + chartHeight / 2}" x2="${left + chartWidth}" y2="${top + chartHeight / 2}" stroke="#F1F0EE" stroke-width="1" />
-      <text x="${left - 8}" y="${top + 4}" text-anchor="end" font-size="11" fill="#A8A29E" font-weight="500">${formatCurrency(maxRevenue)}</text>
-      <text x="${left - 8}" y="${top + chartHeight / 2 + 4}" text-anchor="end" font-size="11" fill="#A8A29E" font-weight="500">${formatCurrency(midValue)}</text>
-      <text x="${left - 8}" y="${top + chartHeight + 4}" text-anchor="end" font-size="11" fill="#A8A29E" font-weight="500">NT$0</text>
+      <text x="${left - 8}" y="${top + 4}" text-anchor="end" font-size="11" fill="#A8A29E" font-weight="700">${formatCurrency(maxRevenue)}</text>
+      <text x="${left - 8}" y="${top + chartHeight / 2 + 4}" text-anchor="end" font-size="11" fill="#A8A29E" font-weight="700">${formatCurrency(midValue)}</text>
+      <text x="${left - 8}" y="${top + chartHeight + 4}" text-anchor="end" font-size="11" fill="#A8A29E" font-weight="700">NT$0</text>
       <polygon points="${areaLine}" fill="#5B7290" opacity="0.08"></polygon>
       <polyline points="${pointLine}" fill="none" stroke="#5B7290" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
       ${points.map(point => `<circle cx="${point.x}" cy="${point.y}" r="4" fill="#5B7290"><title>${escapeHtml(point.label)}：${formatCurrency(point.revenue)}</title></circle>`).join("")}
-      ${points.map((point, index) => (index % labelStep === 0 || index === points.length - 1) ? `<text x="${point.x}" y="${top + chartHeight + 24}" text-anchor="middle" font-size="11" fill="#78716C" font-weight="500">${escapeHtml(point.label)}</text>` : "").join("")}
+      ${points.map(point => `<text x="${point.x}" y="${top + chartHeight + 24}" text-anchor="middle" font-size="12" fill="#78716C" font-weight="700">${escapeHtml(point.label)}</text>`).join("")}
     </svg>
   </div>`;
 }
@@ -1029,7 +963,7 @@ function renderSalesRankingChart(productionSummary) {
 
   if (!rawEntries.length) {
     return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
-      <h3 class="font-semibold text-[#5B7290] tracking-wide mb-3">銷售排行</h3>
+      <h3 class="font-black text-[#5B7290] tracking-widest mb-3">銷售排行</h3>
       <p class="text-stone-400 font-bold">目前無銷售資料。</p>
     </div>`;
   }
@@ -1049,8 +983,8 @@ function renderSalesRankingChart(productionSummary) {
 
   return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
     <div class="flex items-center justify-between gap-3 mb-4">
-      <h3 class="font-semibold text-[#5B7290] tracking-wide">銷售排行</h3>
-      <span class="text-xs font-medium text-stone-400">依售出數量</span>
+      <h3 class="font-black text-[#5B7290] tracking-widest">銷售排行</h3>
+      <span class="text-xs font-black text-stone-400">依售出數量</span>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-4 items-center">
       <div class="mx-auto w-40 h-40 rounded-full border border-stone-100 shadow-inner" style="background: conic-gradient(${segments});"></div>
@@ -1060,9 +994,9 @@ function renderSalesRankingChart(productionSummary) {
           return `<div class="flex items-center justify-between gap-3 rounded-xl bg-stone-50 border border-stone-100 px-3 py-2">
             <div class="min-w-0 flex items-center gap-2">
               <span class="inline-block w-3 h-3 rounded-full shrink-0" style="background:${colors[index % colors.length]}"></span>
-              <span class="font-medium text-stone-700 truncate">${escapeHtml(name)}</span>
+              <span class="font-bold text-stone-700 truncate">${escapeHtml(name)}</span>
             </div>
-            <div class="shrink-0 font-semibold text-[#5B7290] mono">${qty}｜${percent}%</div>
+            <div class="shrink-0 font-black text-[#5B7290] mono">${qty}｜${percent}%</div>
           </div>`;
         }).join("")}
       </div>
@@ -1070,15 +1004,15 @@ function renderSalesRankingChart(productionSummary) {
   </div>`;
 }
 
-function renderDailyRevenueChart(rows, totalRevenue, rangeLabel = "目前篩選") {
+function renderDailyRevenueChart(rows, totalRevenue, periodLabel = "近 7 日") {
   return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
     <div class="flex items-center justify-between gap-3 mb-3">
       <div>
         <h3 class="font-semibold text-[#5B7290] tracking-wide">每日營業額</h3>
-        <p class="text-xs text-stone-400 font-medium mt-1">${escapeHtml(rangeLabel)}｜依下單日期統計</p>
+        <p class="text-xs text-stone-400 font-normal mt-1">${escapeHtml(periodLabel)}｜依下單日期統計</p>
       </div>
       <div class="text-right">
-        <div class="text-[11px] font-medium tracking-wider text-stone-400">${escapeHtml(rangeLabel)}</div>
+        <div class="text-[11px] font-medium tracking-wide text-stone-400">${escapeHtml(periodLabel)}</div>
         <div class="text-xl font-semibold text-stone-900 mono">${formatCurrency(totalRevenue)}</div>
       </div>
     </div>
@@ -1086,180 +1020,248 @@ function renderDailyRevenueChart(rows, totalRevenue, rangeLabel = "目前篩選"
   </div>`;
 }
 
-function renderDashboard() {
+function getDateRangeRowsBetween(startDate, endDate) {
+  const start = normalizeOrderDateForCompare(startDate);
+  const end = normalizeOrderDateForCompare(endDate);
+  if (!start || !end) return getDateRangeRows(getTodayDateInputValue(), 7);
+  const rows = [];
+  const startObj = new Date(start + "T00:00:00");
+  const endObj = new Date(end + "T00:00:00");
+  if (isNaN(startObj.getTime()) || isNaN(endObj.getTime()) || startObj > endObj) return [];
+  const maxDays = 62;
+  let current = new Date(startObj);
+  let count = 0;
+  while (current <= endObj && count < maxDays) {
+    const date = formatDateInputValue(current);
+    const parts = date.split("-");
+    rows.push({ date, label: `${Number(parts[1])}/${Number(parts[2])}`, revenue: 0 });
+    current.setDate(current.getDate() + 1);
+    count++;
+  }
+  return rows;
+}
+
+function getRevenueRowsForRange(orders, startDate, endDate) {
+  const rows = getDateRangeRowsBetween(startDate, endDate);
+  const rowMap = Object.fromEntries(rows.map(row => [row.date, row]));
+  orders.forEach(order => {
+    const createdDate = getOrderCreatedDate(order);
+    if (rowMap[createdDate]) rowMap[createdDate].revenue += parseMoneyNumber(order.total);
+  });
+  return rows;
+}
+
+function getDashboardDefaultRange() {
+  return { start: "", end: "" };
+}
+
+function getDashboardSevenDayRange() {
   const today = getTodayDateInputValue();
+  return { start: addDaysToDateInput(today, -6), end: today };
+}
+
+function getDashboardFilterState() {
+  const fallback = getDashboardDefaultRange();
+  const start = document.getElementById("dashboardStartDate")?.value || fallback.start;
+  const end = document.getElementById("dashboardEndDate")?.value || fallback.end;
+  const method = document.getElementById("dashboardMethodFilter")?.value || "";
+  return { start, end, method };
+}
+
+function getDashboardPeriodLabel(start, end) {
+  const seven = getDashboardSevenDayRange();
+  if (!start && !end) return "全部期間";
+  if (start === seven.start && end === seven.end) return "近 7 日";
+  if (start && end) return `${start.replace(/-/g, "/")}～${end.replace(/-/g, "/")}`;
+  if (start && !end) return `${start.replace(/-/g, "/")} 之後`;
+  if (!start && end) return `${end.replace(/-/g, "/")} 以前`;
+  return "全部期間";
+}
+
+function getDashboardRangeMode(start, end) {
+  const today = getTodayDateInputValue();
+  const seven = getDashboardSevenDayRange();
   const now = new Date(today + "T00:00:00");
   const monthStart = formatDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1));
   const monthEnd = formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0));
-  document.getElementById("tab-dashboard").innerHTML = `
-    <details open class="admin-filter-panel bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-5 space-y-3">
-      <summary class="cursor-pointer rounded-2xl px-1 py-1">
-        <div class="flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <div class="text-sm font-semibold text-stone-900">Dashboard 篩選</div>
-            <div id="dashboardMobileFilterSummary" class="text-xs font-medium text-stone-400 mt-0.5 truncate">本月｜全部配送｜排除已作廢｜點擊展開</div>
-          </div>
-          <span class="admin-filter-toggle-icon shrink-0 text-xs font-semibold text-[#5B7290]"></span>
-        </div>
-      </summary>
-      <div class="admin-filter-body pt-3 md:pt-0 space-y-3">
-        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-          <div>
-            <h2 class="text-base md:text-lg font-semibold text-stone-900 tracking-wide">Dashboard 篩選</h2>
-            <p class="text-xs font-medium text-stone-400 mt-0.5">依下單日期統計，圖表與數字會一起更新。</p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <button onclick="setDashboardPreset('today')" class="h-9 rounded-xl border border-stone-200 px-3 font-medium text-stone-600 bg-white hover:bg-stone-50 text-xs">今天</button>
-            <button onclick="setDashboardPreset('7days')" class="h-9 rounded-xl border border-stone-200 px-3 font-medium text-stone-600 bg-white hover:bg-stone-50 text-xs">近 7 天</button>
-            <button onclick="setDashboardPreset('month')" class="h-9 rounded-xl border border-stone-200 px-3 font-medium text-stone-600 bg-white hover:bg-stone-50 text-xs">本月</button>
-            <button onclick="setDashboardPreset('all')" class="h-9 rounded-xl border border-stone-200 px-3 font-medium text-stone-600 bg-white hover:bg-stone-50 text-xs">全部</button>
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-8 gap-3">
-          <input id="dashboardStartDate" type="date" value="${monthStart}" onchange="filterDashboard()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
-          <input id="dashboardEndDate" type="date" value="${monthEnd}" onchange="filterDashboard()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
-          <select id="dashboardMethodFilter" onchange="filterDashboard()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
-            <option value="">全部配送</option>
-            <option value="store">門市自取</option>
-            <option value="delivery">7-11 店到店</option>
-          </select>
-          <select id="dashboardStatusFilter" onchange="filterDashboard()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
-            <option value="active" selected>排除已作廢</option>
-            <option value="completed">只看已完成</option>
-            <option value="unfinished">只看未完成</option>
-            <option value="voided">只看已作廢</option>
-            <option value="all">全部狀態</option>
-          </select>
-        </div>
-        <div id="dashboardFilterSummary" class="text-sm font-medium text-stone-500"></div>
+  if (!start && !end) return "all";
+  if (start === today && end === today) return "today";
+  if (start === seven.start && end === seven.end) return "seven";
+  if (start === monthStart && end === monthEnd) return "month";
+  return "custom";
+}
+
+function dashboardRangeButton(mode, label) {
+  return `<button data-dashboard-range="${mode}" onclick="setDashboardRange('${mode}')" class="dashboard-range-btn flex-1 h-11 rounded-xl border px-3 font-semibold text-xs transition-colors">${label}</button>`;
+}
+
+function orderPassDashboardFilter(order, state) {
+  const createdDate = getOrderCreatedDate(order);
+  const startOk = !state.start || (createdDate && createdDate >= state.start);
+  const endOk = !state.end || (createdDate && createdDate <= state.end);
+  const methodOk = !state.method || getOrderMethodType(order) === state.method;
+  return startOk && endOk && methodOk;
+}
+
+function isDashboardUnfinishedOrder(order) {
+  const status = normalizeAdminStatus(order.orderStatus);
+  return status === "訂單確認中" || status === "待付款" || status === "待出貨" || status === "可取貨";
+}
+
+function renderDashboardOpenOrdersReminder(allOrders) {
+  const openOrders = (allOrders || [])
+    .filter(o => o.orderStatus !== "已作廢" && isDashboardUnfinishedOrder(o))
+    .sort((a, b) => compareTextValue(normalizeOrderDateForCompare(a.date) || "9999-12-31", normalizeOrderDateForCompare(b.date) || "9999-12-31"));
+  if (!openOrders.length) return "";
+
+  const statusCounts = openOrders.reduce((acc, order) => {
+    const status = normalizeAdminStatus(order.orderStatus) || "未設定";
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+  const countText = Object.entries(statusCounts).map(([status, count]) => `${status} ${count}`).join("｜");
+
+  return `<div class="bg-amber-50 border border-amber-200 rounded-3xl p-4 md:p-5 shadow-sm">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+      <div>
+        <h3 class="font-semibold text-amber-900 tracking-wide">待處理訂單提醒</h3>
+        <p class="text-sm text-amber-800/80 mt-1">不受 Dashboard 日期篩選影響，避免漏掉跨月或區間外尚未完成的訂單。</p>
       </div>
-    </details>
-    <div id="dashboardStatsArea" class="space-y-5"></div>`;
-  renderDashboardContent();
+      <div class="text-sm font-medium text-amber-900">共 ${openOrders.length} 筆｜${escapeHtml(countText)}</div>
+    </div>
+    <div class="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+      ${openOrders.slice(0, 6).map(order => `
+        <div class="rounded-2xl bg-white/70 border border-amber-100 px-3 py-2 text-sm flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="font-semibold text-stone-800 truncate">${escapeHtml(order.id)}｜${escapeHtml(order.name || "-")}</div>
+            <div class="text-xs text-stone-500 mt-0.5">取貨／到貨 ${escapeHtml(formatDateDisplayWithWeekday(order.date) || order.date || "-")}</div>
+          </div>
+          <span class="shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${statusClass(normalizeAdminStatus(order.orderStatus))}">${escapeHtml(normalizeAdminStatus(order.orderStatus) || "未設定")}</span>
+        </div>`).join("")}
+    </div>
+    ${openOrders.length > 6 ? `<div class="mt-2 text-xs text-amber-800/70 font-medium">另有 ${openOrders.length - 6} 筆未顯示，請至「訂單管理」查看完整清單。</div>` : ""}
+  </div>`;
 }
 
-function getDashboardFilters() {
-  const today = getTodayDateInputValue();
-  const now = new Date(today + "T00:00:00");
-  const monthStart = formatDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1));
-  const monthEnd = formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0));
-  return {
-    startDate: document.getElementById("dashboardStartDate")?.value || monthStart,
-    endDate: document.getElementById("dashboardEndDate")?.value || monthEnd,
-    method: document.getElementById("dashboardMethodFilter")?.value || "",
-    statusMode: document.getElementById("dashboardStatusFilter")?.value || "active"
-  };
+function renderDashboardFilterPanel() {
+  const fallback = getDashboardDefaultRange();
+  return `<details id="dashboardFilterDetails" class="dashboard-filter-panel bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-4" open>
+    <summary class="cursor-pointer flex items-center justify-between gap-3 px-1 py-1">
+      <div>
+        <div class="font-semibold text-[#5B7290]">篩選 Dashboard</div>
+        <div id="dashboardFilterMobileSummary" class="text-xs text-stone-400 mt-0.5">近 7 日｜全部配送</div>
+      </div>
+      <span class="text-xs font-semibold text-stone-400">展開</span>
+    </summary>
+    <div class="grid grid-cols-1 md:grid-cols-8 gap-3 pt-3 md:pt-0">
+      <input id="dashboardStartDate" type="date" onchange="filterDashboard()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${fallback.start}">
+      <input id="dashboardEndDate" type="date" onchange="filterDashboard()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${fallback.end}">
+      <select id="dashboardMethodFilter" onchange="filterDashboard()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
+        <option value="">全部配送</option>
+        <option value="store">門市自取</option>
+        <option value="delivery">7-11 店到店</option>
+      </select>
+      <div class="flex gap-2 md:col-span-4">
+        ${dashboardRangeButton("today", "今天")}
+        ${dashboardRangeButton("seven", "近7天")}
+        ${dashboardRangeButton("month", "本月")}
+        ${dashboardRangeButton("all", "全部")}
+      </div>
+    </div>
+  </details>`;
 }
 
-function setDashboardPreset(preset) {
+function setDashboardRange(mode) {
   const today = getTodayDateInputValue();
-  const now = new Date(today + "T00:00:00");
-  const monthStart = formatDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1));
-  const monthEnd = formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0));
   const startInput = document.getElementById("dashboardStartDate");
   const endInput = document.getElementById("dashboardEndDate");
   if (!startInput || !endInput) return;
-
-  if (preset === "today") {
+  if (mode === "today") {
     startInput.value = today;
     endInput.value = today;
-  } else if (preset === "7days") {
-    startInput.value = addDaysToDateInput(today, -6);
-    endInput.value = today;
-  } else if (preset === "month") {
-    startInput.value = monthStart;
-    endInput.value = monthEnd;
-  } else if (preset === "all") {
+  } else if (mode === "seven") {
+    const seven = getDashboardSevenDayRange();
+    startInput.value = seven.start;
+    endInput.value = seven.end;
+  } else if (mode === "month") {
+    const now = new Date(today + "T00:00:00");
+    startInput.value = formatDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1));
+    endInput.value = formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  } else if (mode === "all") {
     startInput.value = "";
     endInput.value = "";
   }
   filterDashboard();
 }
 
-function dashboardStatusMatch(order, statusMode) {
-  const status = normalizeAdminStatus(order.orderStatus || "");
-  if (statusMode === "all") return true;
-  if (statusMode === "voided") return status === "已作廢";
-  if (statusMode === "completed") return status === "已出貨" || status === "已取貨";
-  if (statusMode === "unfinished") return status !== "已作廢" && status !== "已出貨" && status !== "已取貨";
-  return status !== "已作廢";
+function updateDashboardFilterSummary(state) {
+  const el = document.getElementById("dashboardFilterMobileSummary");
+  if (!el) return;
+  const methodText = state.method === "store" ? "門市自取" : state.method === "delivery" ? "7-11 店到店" : "全部配送";
+  el.textContent = `${getDashboardPeriodLabel(state.start, state.end)}｜${methodText}`;
 }
 
-function getDashboardFilteredOrders() {
-  const filters = getDashboardFilters();
-  return (adminData.orders || []).filter(order => {
-    const createdDate = getOrderCreatedDate(order);
-    const methodOk = !filters.method || getOrderMethodType(order) === filters.method;
-    const startOk = !filters.startDate || (createdDate && createdDate >= filters.startDate);
-    const endOk = !filters.endDate || (createdDate && createdDate <= filters.endDate);
-    return methodOk && startOk && endOk && dashboardStatusMatch(order, filters.statusMode);
+function updateDashboardRangeButtons(state) {
+  const activeMode = getDashboardRangeMode(state.start, state.end);
+  document.querySelectorAll(".dashboard-range-btn").forEach(btn => {
+    const active = btn.dataset.dashboardRange === activeMode;
+    btn.classList.toggle("bg-[#5B7290]", active);
+    btn.classList.toggle("border-[#5B7290]", active);
+    btn.classList.toggle("text-white", active);
+    btn.classList.toggle("bg-white", !active);
+    btn.classList.toggle("border-stone-200", !active);
+    btn.classList.toggle("text-stone-600", !active);
+    btn.classList.toggle("hover:bg-stone-50", !active);
   });
 }
 
-function getDashboardStatusLabel(statusMode) {
-  const labels = {
-    active: "排除已作廢",
-    completed: "只看已完成",
-    unfinished: "只看未完成",
-    voided: "只看已作廢",
-    all: "全部狀態"
-  };
-  return labels[statusMode] || labels.active;
+function syncDashboardFilterDetails() {
+  const details = document.getElementById("dashboardFilterDetails");
+  if (!details) return;
+  if (window.matchMedia && window.matchMedia("(min-width: 768px)").matches) details.open = true;
+  else details.open = false;
 }
 
-function formatDashboardChartRangeLabel(filters) {
-  const start = filters?.startDate || "";
-  const end = filters?.endDate || "";
-  if (!start && !end) return "全部日期";
-  if (start && end) {
-    const startShort = start.replace(/^\d{4}-/, "").replace("-", "/");
-    const endShort = end.replace(/^\d{4}-/, "").replace("-", "/");
-    return start === end ? startShort : `${startShort}–${endShort}`;
-  }
-  if (start) return `${start.replace(/^\d{4}-/, "").replace("-", "/")} 之後`;
-  return `${end.replace(/^\d{4}-/, "").replace("-", "/")} 以前`;
+function renderDashboard() {
+  document.getElementById("tab-dashboard").innerHTML = `
+    ${renderDashboardFilterPanel()}
+    <div id="dashboardStatsArea" class="space-y-5"></div>`;
+  syncDashboardFilterDetails();
+  renderDashboardContent();
 }
 
 function renderDashboardContent() {
-  const filters = getDashboardFilters();
-  const filteredOrders = getDashboardFilteredOrders();
-  const allOrdersInRange = (adminData.orders || []).filter(order => {
-    const createdDate = getOrderCreatedDate(order);
-    const methodOk = !filters.method || getOrderMethodType(order) === filters.method;
-    const startOk = !filters.startDate || (createdDate && createdDate >= filters.startDate);
-    const endOk = !filters.endDate || (createdDate && createdDate <= filters.endDate);
-    return methodOk && startOk && endOk;
-  });
-  const summary = summarizeDetailsFromOrders(filteredOrders.filter(o => normalizeAdminStatus(o.orderStatus) !== "已作廢"));
-  const startForChart = filters.startDate || addDaysToDateInput(getTodayDateInputValue(), -6);
-  const endForChart = filters.endDate || getTodayDateInputValue();
-  const chartDays = Math.min(31, Math.max(1, Math.round((new Date(endForChart + "T00:00:00") - new Date(startForChart + "T00:00:00")) / 86400000) + 1 || 7));
-  const revenueRows = getRevenueRowsByCreatedDate(filteredOrders, endForChart, chartDays);
+  const state = getDashboardFilterState();
+  updateDashboardFilterSummary(state);
+  updateDashboardRangeButtons(state);
+  const today = getTodayDateInputValue();
+  const allOrders = adminData.orders || [];
+  const activeOrders = allOrders.filter(o => o.orderStatus !== "已作廢");
+  const filteredActiveOrders = activeOrders.filter(o => orderPassDashboardFilter(o, state));
+  const methodStoreOrders = filteredActiveOrders.filter(o => getOrderMethodType(o) === "store");
+  const methodDeliveryOrders = filteredActiveOrders.filter(o => getOrderMethodType(o) === "delivery");
+  const summary = summarizeDetailsFromOrders(filteredActiveOrders);
+  const revenueRows = getRevenueRowsForRange(filteredActiveOrders, state.start, state.end);
+  const periodLabel = getDashboardPeriodLabel(state.start, state.end);
 
-  const totalRevenue = filteredOrders.reduce((sum, order) => sum + parseMoneyNumber(order.total), 0);
-  const storeRevenue = filteredOrders.filter(o => getOrderMethodType(o) === "store").reduce((sum, order) => sum + parseMoneyNumber(order.total), 0);
-  const deliveryRevenue = filteredOrders.filter(o => getOrderMethodType(o) === "delivery").reduce((sum, order) => sum + parseMoneyNumber(order.total), 0);
+  const rangeRevenue = filteredActiveOrders.reduce((sum, order) => sum + parseMoneyNumber(order.total), 0);
+  const storeRevenue = methodStoreOrders.reduce((sum, order) => sum + parseMoneyNumber(order.total), 0);
+  const deliveryRevenue = methodDeliveryOrders.reduce((sum, order) => sum + parseMoneyNumber(order.total), 0);
 
   const d = {
-    totalOrders: filteredOrders.length,
-    confirming: filteredOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "訂單確認中").length,
-    pendingPayment: filteredOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "待付款").length,
-    waitingShipping: filteredOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "待出貨").length,
-    readyPickup: filteredOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "可取貨").length,
-    shipped: filteredOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "已出貨").length,
-    pickedUp: filteredOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "已取貨").length,
-    voided: allOrdersInRange.filter(o => normalizeAdminStatus(o.orderStatus) === "已作廢").length
+    totalOrders: filteredActiveOrders.length,
+    confirming: filteredActiveOrders.filter(o => o.orderStatus === "訂單確認中").length,
+    pendingPayment: filteredActiveOrders.filter(o => o.orderStatus === "待付款").length,
+    waitingShipping: filteredActiveOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "待出貨").length,
+    readyPickup: filteredActiveOrders.filter(o => o.orderStatus === "可取貨").length,
+    shipped: filteredActiveOrders.filter(o => o.orderStatus === "已出貨").length,
+    pickedUp: filteredActiveOrders.filter(o => o.orderStatus === "已取貨").length,
+    voided: allOrders.filter(o => o.orderStatus === "已作廢" && orderPassDashboardFilter(o, state)).length
   };
 
-  const methodLabel = filters.method === "store" ? "門市自取" : filters.method === "delivery" ? "7-11 店到店" : "全部配送";
-  const rangeLabel = filters.startDate && filters.endDate ? `${filters.startDate}～${filters.endDate}` : filters.startDate ? `${filters.startDate} 之後` : filters.endDate ? `${filters.endDate} 以前` : "全部日期";
-  const summaryText = `${rangeLabel}｜${methodLabel}｜${getDashboardStatusLabel(filters.statusMode)}｜${filteredOrders.length} 筆訂單`;
-  const summaryEl = document.getElementById("dashboardFilterSummary");
-  if (summaryEl) summaryEl.textContent = summaryText;
-  const mobileSummaryEl = document.getElementById("dashboardMobileFilterSummary");
-  if (mobileSummaryEl) mobileSummaryEl.textContent = summaryText;
-
   document.getElementById("dashboardStatsArea").innerHTML = `
+    <div class="text-xs md:text-sm font-medium text-stone-500 -mt-1">目前顯示：${escapeHtml(periodLabel)}｜${state.method === "store" ? "門市自取" : state.method === "delivery" ? "7-11 店到店" : "全部配送"}｜依下單日期統計</div>
+    ${renderDashboardOpenOrdersReminder(allOrders)}
     <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
       ${kpi("全部訂單", d.totalOrders || 0)}
       ${kpi("訂單確認中", d.confirming || 0)}
@@ -1271,39 +1273,40 @@ function renderDashboardContent() {
       ${kpi("已作廢", d.voided || 0)}
     </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      ${revenueKpi("篩選營業額", formatCurrency(totalRevenue), "依下單日期與目前條件計算")}
+      ${revenueKpi(periodLabel === "全部期間" ? "總營業額" : periodLabel === "近 7 日" ? "近7天營業額" : "區間營業額", formatCurrency(rangeRevenue), "依下單日期｜目前篩選條件")}
       ${revenueKpi("門市自取營業額", formatCurrency(storeRevenue), "目前篩選條件內")}
       ${revenueKpi("7-11 店到店營業額", formatCurrency(deliveryRevenue), "目前篩選條件內")}
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      ${renderTodayPickupCard(filteredOrders)}
+      ${renderTodayPickupCard()}
       ${renderDashboardCoupons()}
     </div>
-    ${renderFutureSevenDayPreview(filteredOrders)}
+    ${renderFutureSevenDayPreview()}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       ${renderSalesRankingChart(summary.production)}
-      ${renderDailyRevenueChart(revenueRows, totalRevenue, formatDashboardChartRangeLabel(filters))}
+      ${renderDailyRevenueChart(revenueRows, rangeRevenue, periodLabel)}
     </div>`;
 }
 
 function applyDashboardSingleDate() { renderDashboardContent(); }
-function clearDashboardFilter() { setDashboardPreset("month"); }
+function clearDashboardFilter() { setDashboardRange("all"); }
 function filterDashboard() { renderDashboardContent(); }
+
 
 function kpi(label, value) {
   return `<div class="bg-white rounded-2xl border border-stone-100 p-3 shadow-sm min-w-0">
-    <div class="dashboard-kpi-label font-medium text-stone-400 break-words">${label}</div>
-    <div class="dashboard-kpi-value mt-1 font-semibold text-stone-900 mono truncate">${value}</div>
+    <div class="dashboard-kpi-label text-stone-400 break-words">${label}</div>
+    <div class="dashboard-kpi-value mt-1 text-stone-900 mono truncate">${value}</div>
   </div>`;
 }
 
 function revenueKpi(label, value, note) {
   return `<div class="bg-white rounded-3xl border border-stone-100 p-4 shadow-sm min-w-0">
     <div class="min-w-0">
-      <div class="dashboard-kpi-label font-medium text-stone-400">${label}</div>
-      <div class="dashboard-money-value mt-1.5 font-semibold text-stone-900 mono whitespace-nowrap">${value}</div>
+      <div class="dashboard-kpi-label text-stone-400">${label}</div>
+      <div class="dashboard-money-value mt-1.5 text-stone-900 mono whitespace-nowrap">${value}</div>
     </div>
-    <div class="mt-1.5 text-xs font-bold text-stone-400 leading-snug">${note}</div>
+    <div class="mt-1.5 text-xs font-normal text-stone-400 leading-snug">${note}</div>
   </div>`;
 }
 
@@ -1404,53 +1407,42 @@ function clearOrderDateFilter() {
 function renderOrders() {
   const orders = adminData.orders || [];
   document.getElementById("tab-orders").innerHTML = `
-    <details open class="admin-filter-panel bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-5 space-y-3">
-      <summary class="cursor-pointer rounded-2xl px-1 py-1">
-        <div class="flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <div class="text-sm font-semibold text-stone-900">篩選與排序</div>
-            <div id="orderMobileFilterSummary" class="text-xs font-medium text-stone-400 mt-0.5 truncate">未來｜全部配送｜取貨近到遠｜點擊展開</div>
-          </div>
-          <span class="admin-filter-toggle-icon shrink-0 text-xs font-semibold text-[#5B7290]"></span>
+    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-3">
+      <div class="grid grid-cols-1 md:grid-cols-10 gap-3">
+        <input id="orderSearch" oninput="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2" placeholder="搜尋訂單編號、姓名、電話、日期">
+        <select id="orderStatusFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+          <option value="">全部狀態</option>
+          <option value="訂單確認中">訂單確認中</option>
+          <option value="可取貨">可取貨</option>
+          <option value="待付款">待付款</option>
+          <option value="待出貨">待出貨</option>
+          <option value="已出貨">已出貨</option>
+          <option value="已取貨">已取貨</option>
+          <option value="已作廢">已作廢</option>
+        </select>
+        <select id="orderMethodFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+          <option value="">全部配送</option>
+          <option value="store">門市自取</option>
+          <option value="delivery">7-11 店到店</option>
+        </select>
+        <select id="orderSortFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
+          <option value="arrivalAsc">取貨／到貨日期近到遠</option>
+          <option value="arrivalDesc">取貨／到貨日期遠到近</option>
+          <option value="orderDesc">訂單日期近到遠</option>
+          <option value="orderAsc">訂單日期遠到近</option>
+          <option value="amountDesc">金額高到低</option>
+          <option value="amountAsc">金額低到高</option>
+        </select>
+        <input id="orderStartDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        <input id="orderEndDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        <div class="flex gap-2 md:col-span-2">
+          <button onclick="setOrderDateFutureDefault()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">未來</button>
+          <button onclick="setOrderDateDefaultMonth()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">本月</button>
+          <button onclick="clearOrderDateFilter()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">全部</button>
         </div>
-      </summary>
-      <div class="admin-filter-body pt-3 md:pt-0 space-y-3">
-        <div class="grid grid-cols-1 md:grid-cols-10 gap-3">
-          <input id="orderSearch" oninput="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2" placeholder="搜尋訂單編號、姓名、電話、日期">
-          <select id="orderStatusFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-            <option value="">全部狀態</option>
-            <option value="訂單確認中">訂單確認中</option>
-            <option value="可取貨">可取貨</option>
-            <option value="待付款">待付款</option>
-            <option value="待出貨">待出貨</option>
-            <option value="已出貨">已出貨</option>
-            <option value="已取貨">已取貨</option>
-            <option value="已作廢">已作廢</option>
-          </select>
-          <select id="orderMethodFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-            <option value="">全部配送</option>
-            <option value="store">門市自取</option>
-            <option value="delivery">7-11 店到店</option>
-          </select>
-          <select id="orderSortFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
-            <option value="arrivalAsc">取貨／到貨日期近到遠</option>
-            <option value="arrivalDesc">取貨／到貨日期遠到近</option>
-            <option value="orderDesc">訂單日期近到遠</option>
-            <option value="orderAsc">訂單日期遠到近</option>
-            <option value="amountDesc">金額高到低</option>
-            <option value="amountAsc">金額低到高</option>
-          </select>
-          <input id="orderStartDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          <input id="orderEndDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          <div class="flex gap-2 md:col-span-2">
-            <button onclick="setOrderDateFutureDefault()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">未來</button>
-            <button onclick="setOrderDateDefaultMonth()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">本月</button>
-            <button onclick="clearOrderDateFilter()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">全部</button>
-          </div>
-        </div>
-        <div id="orderCount" class="text-sm font-semibold text-stone-500"></div>
       </div>
-    </details>
+      <div id="orderCount" class="text-sm font-black text-stone-500"></div>
+    </div>
     <div id="ordersArea" class="space-y-4"></div>`;
   setOrderDateFutureDefault();
 }
@@ -1527,10 +1519,7 @@ function filterOrders() {
   const deliveryCount = effectiveOrders.filter(o => getOrderMethodType(o) === "delivery").length;
   const rangeText = startDate && !endDate ? `｜日期：${startDate} 之後` : startDate && endDate ? `｜日期：${startDate}～${endDate}` : !startDate && endDate ? `｜日期：${endDate} 以前` : "｜日期：全部";
   const voidText = voidCount > 0 ? `｜已作廢 ${voidCount}` : "";
-  const orderSummaryText = `${effectiveOrders.length} 筆有效訂單｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}${voidText}${rangeText}｜排序：${getOrderSortLabel(sortMode)}`;
-  document.getElementById("orderCount").textContent = orderSummaryText;
-  const orderMobileSummary = document.getElementById("orderMobileFilterSummary");
-  if (orderMobileSummary) orderMobileSummary.textContent = orderSummaryText;
+  document.getElementById("orderCount").textContent = `${effectiveOrders.length} 筆有效訂單｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}${voidText}${rangeText}｜排序：${getOrderSortLabel(sortMode)}`;
   const area = document.getElementById("ordersArea");
   if (!orders.length) {
     area.innerHTML = `<div class="bg-white rounded-3xl border border-stone-100 p-8 text-center text-stone-400 font-bold">目前沒有符合條件的訂單</div>`;
@@ -1558,6 +1547,7 @@ function orderCard(order) {
   const isDelivery = methodType === "delivery";
   const dateDisplay = formatDateDisplayWithWeekday(order.date) || escapeHtml(order.date || "-");
   const displayStatus = normalizeAdminStatus(order.orderStatus);
+  const amount = getOrderAmountNumbers(order);
   const timestampDisplay = formatOrderTimestampMinute(order.timestamp);
   const statusFields = `
     <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">訂單狀態</span><select class="admin-status mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">${statuses.map(s => `<option value="${s}" ${displayStatus === s ? "selected" : ""}>${s}</option>`).join("")}</select></label>
@@ -1569,14 +1559,14 @@ function orderCard(order) {
     <div class="border-b border-stone-100 pb-2">
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0 text-base md:text-lg font-black text-stone-900 break-all leading-tight">${escapeHtml(order.id)}</div>
-        <div class="shrink-0 text-base md:text-lg font-semibold text-stone-900 mono whitespace-nowrap">NT$${escapeHtml(order.total || 0)}</div>
+        <div class="shrink-0 text-base md:text-lg font-semibold text-stone-900 mono whitespace-nowrap">${formatMoneyForOrder(amount.total)}</div>
       </div>
       <div class="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <div class="flex flex-wrap items-center gap-1.5">
           <span class="inline-flex w-fit px-2 py-0.5 rounded-full border text-[11px] font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span>
           <span class="inline-flex w-fit px-2 py-0.5 rounded-full border text-[11px] font-black ${statusClass(displayStatus)}">${escapeHtml(displayStatus || "未設定")}</span>
         </div>
-        <div class="min-w-0 text-sm font-medium text-stone-700 md:text-right">
+        <div class="min-w-0 text-sm font-bold text-stone-700 md:text-right">
           <span class="font-black text-stone-900">${escapeHtml(order.name || "-")}</span>
           <span class="text-stone-300">｜</span>
           <a href="tel:${escapeHtml(order.phone)}" class="text-[#5B7290] font-black">${escapeHtml(order.phone || "-")}</a>
@@ -1584,7 +1574,7 @@ function orderCard(order) {
       </div>
     </div>
 
-    <div class="space-y-1 text-sm font-medium text-stone-700">
+    <div class="space-y-1 text-sm font-bold text-stone-700">
       <div class="min-w-0"><span class="text-stone-400 font-black">取貨／到貨：</span><span class="text-stone-900 font-black">${escapeHtml(dateDisplay)}</span><span class="text-stone-300 mx-1">｜</span><span class="text-stone-400 font-black">下單時間：</span><span class="text-stone-900 font-black">${escapeHtml(timestampDisplay)}</span></div>
       <div class="min-w-0 break-words"><span class="text-stone-400 font-black">${isDelivery ? "收件地點：" : "取貨地點："}</span>${escapeHtml(order.address || "-")}</div>
       <div class="min-w-0 break-all"><span class="text-stone-400 font-black">Email：</span>${escapeHtml(order.email || "-")}</div>
@@ -1723,51 +1713,40 @@ function renderRevenueShare() {
   const end = formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 
   document.getElementById("tab-revenue").innerHTML = `
-    <details open class="admin-filter-panel bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-5 space-y-4">
-      <summary class="cursor-pointer rounded-2xl px-1 py-1">
-        <div class="flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <div class="text-sm font-semibold text-stone-900">分潤統計篩選</div>
-            <div id="revenueMobileFilterSummary" class="text-xs font-medium text-stone-400 mt-0.5 truncate">本月｜全部出貨方式｜點擊展開</div>
-          </div>
-          <span class="admin-filter-toggle-icon shrink-0 text-xs font-semibold text-[#5B7290]"></span>
+    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-black text-stone-900">分潤統計</h2>
+          <p class="text-sm text-stone-500 mt-1">依 Revenue_Settings 每月比例計算，已作廢訂單會自動排除。</p>
         </div>
-      </summary>
-      <div class="admin-filter-body pt-3 md:pt-0 space-y-4">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <h2 class="text-xl font-semibold text-stone-900">分潤統計</h2>
-            <p class="text-sm text-stone-500 mt-1">依 Revenue_Settings 每月比例計算，已作廢訂單會自動排除。</p>
-          </div>
-          <button type="button" onclick="exportRevenueShareCsv()" class="h-10 rounded-xl border border-stone-200 bg-white px-4 font-semibold text-stone-600 hover:bg-stone-50">匯出 CSV</button>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <label class="block">
-            <span class="text-xs font-semibold text-stone-500 tracking-widest">開始日期</span>
-            <input id="revenueStartDate" type="date" value="${escapeHtml(start)}" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          </label>
-          <label class="block">
-            <span class="text-xs font-semibold text-stone-500 tracking-widest">結束日期</span>
-            <input id="revenueEndDate" type="date" value="${escapeHtml(end)}" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          </label>
-          <label class="block">
-            <span class="text-xs font-semibold text-stone-500 tracking-widest">出貨方式</span>
-            <select id="revenueMethodFilter" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-              <option value="">全部</option>
-              <option value="store">門市自取</option>
-              <option value="delivery">7-11 店到店</option>
-            </select>
-          </label>
-          <div class="md:col-span-2 flex items-end gap-2">
-            <button type="button" onclick="setRevenueCurrentMonth()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50">本月</button>
-            <button type="button" onclick="filterRevenueShare()" class="flex-1 h-11 rounded-xl bg-[#5B7290] text-white px-3 font-semibold hover:bg-[#3E4F66]">查詢</button>
-          </div>
-        </div>
-
-        <div id="revenueRateNote" class="rounded-2xl bg-stone-50 border border-stone-100 p-3 text-sm font-medium text-stone-600"></div>
+        <button type="button" onclick="exportRevenueShareCsv()" class="h-10 rounded-xl border border-stone-200 bg-white px-4 font-black text-stone-600 hover:bg-stone-50">匯出 CSV</button>
       </div>
-    </details>
+
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <label class="block">
+          <span class="text-xs font-black text-stone-500 tracking-widest">開始日期</span>
+          <input id="revenueStartDate" type="date" value="${escapeHtml(start)}" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        </label>
+        <label class="block">
+          <span class="text-xs font-black text-stone-500 tracking-widest">結束日期</span>
+          <input id="revenueEndDate" type="date" value="${escapeHtml(end)}" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        </label>
+        <label class="block">
+          <span class="text-xs font-black text-stone-500 tracking-widest">出貨方式</span>
+          <select id="revenueMethodFilter" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+            <option value="">全部</option>
+            <option value="store">門市自取</option>
+            <option value="delivery">7-11 店到店</option>
+          </select>
+        </label>
+        <div class="md:col-span-2 flex items-end gap-2">
+          <button type="button" onclick="setRevenueCurrentMonth()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50">本月</button>
+          <button type="button" onclick="filterRevenueShare()" class="flex-1 h-11 rounded-xl bg-[#5B7290] text-white px-3 font-black hover:bg-[#3E4F66]">查詢</button>
+        </div>
+      </div>
+
+      <div id="revenueRateNote" class="rounded-2xl bg-stone-50 border border-stone-100 p-3 text-sm font-bold text-stone-600"></div>
+    </div>
 
     <div id="revenueShareResult" class="space-y-4"></div>`;
 
@@ -1855,8 +1834,8 @@ function filterRevenueShare() {
 
     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
       <div class="flex items-center justify-between gap-3 mb-3">
-        <h3 class="font-semibold text-[#5B7290] tracking-wide">分潤明細</h3>
-        <span class="text-xs font-medium text-stone-400">${rows.length} 筆</span>
+        <h3 class="font-black text-[#5B7290] tracking-widest">分潤明細</h3>
+        <span class="text-xs font-black text-stone-400">${rows.length} 筆</span>
       </div>
       ${rows.length ? `
         <div class="overflow-x-auto">
@@ -1889,8 +1868,8 @@ function filterRevenueShare() {
 
 function revenueShareKpi(label, value, note) {
   return `<div class="bg-white rounded-3xl border border-stone-100 p-4 shadow-sm min-w-0">
-    <div class="dashboard-kpi-label font-medium text-stone-400">${escapeHtml(label)}</div>
-    <div class="dashboard-money-value mt-1.5 font-semibold text-stone-900 mono whitespace-nowrap">${escapeHtml(value)}</div>
+    <div class="dashboard-kpi-label font-black text-stone-400">${escapeHtml(label)}</div>
+    <div class="dashboard-money-value mt-1.5 font-black text-stone-900 mono whitespace-nowrap">${escapeHtml(value)}</div>
     <div class="mt-1 text-xs font-bold text-stone-400">${escapeHtml(note || "")}</div>
   </div>`;
 }
@@ -1898,12 +1877,12 @@ function revenueShareKpi(label, value, note) {
 function revenueMethodCard(item) {
   return `<div class="bg-white rounded-3xl border border-stone-100 p-4 md:p-5 shadow-sm">
     <div class="flex items-center justify-between gap-3 mb-3">
-      <h3 class="font-semibold text-[#5B7290] tracking-wide">${escapeHtml(item.label)}</h3>
-      <span class="text-xs font-medium text-stone-400">${item.count} 筆</span>
+      <h3 class="font-black text-[#5B7290] tracking-widest">${escapeHtml(item.label)}</h3>
+      <span class="text-xs font-black text-stone-400">${item.count} 筆</span>
     </div>
     <div class="space-y-2 text-sm">
-      <div class="flex justify-between gap-3"><span class="font-medium text-stone-500">銷售額</span><span class="font-semibold text-stone-900 mono">${formatCurrency(item.amount)}</span></div>
-      <div class="flex justify-between gap-3"><span class="font-medium text-stone-500">分潤</span><span class="font-semibold text-[#5B7290] mono">${formatCurrency(item.commission)}</span></div>
+      <div class="flex justify-between gap-3"><span class="font-bold text-stone-500">銷售額</span><span class="font-black text-stone-900 mono">${formatCurrency(item.amount)}</span></div>
+      <div class="flex justify-between gap-3"><span class="font-bold text-stone-500">分潤</span><span class="font-black text-[#5B7290] mono">${formatCurrency(item.commission)}</span></div>
     </div>
   </div>`;
 }
@@ -1998,7 +1977,7 @@ function settingDateBlock(label, value) {
     <div class="bg-white rounded-2xl border border-stone-100 p-3 space-y-3">
       <div class="flex items-center justify-between gap-3">
         <div class="text-xs font-black text-stone-500 tracking-widest">已設定日期</div>
-        <div class="text-xs font-semibold text-[#5B7290] mono"><span class="setting-date-count">${cleanDates.length}</span> 天</div>
+        <div class="text-xs font-black text-[#5B7290] mono"><span class="setting-date-count">${cleanDates.length}</span> 天</div>
       </div>
       <div class="setting-date-tags flex flex-wrap gap-2 min-h-[44px]">
         ${renderSettingDateTags(cleanDates)}
