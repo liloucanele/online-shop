@@ -1034,9 +1034,9 @@ function renderOrders() {
   const orders = adminData.orders || [];
   document.getElementById("tab-orders").innerHTML = `
     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-3">
-      <div class="grid grid-cols-1 md:grid-cols-9 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-10 gap-3">
         <input id="orderSearch" oninput="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2" placeholder="搜尋訂單編號、姓名、電話、日期">
-        <select id="orderStatusFilter" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        <select id="orderStatusFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
           <option value="">全部狀態</option>
           <option value="訂單確認中">訂單確認中</option>
           <option value="可取貨">可取貨</option>
@@ -1046,28 +1046,48 @@ function renderOrders() {
           <option value="已取貨">已取貨</option>
           <option value="已作廢">已作廢</option>
         </select>
-        <select id="orderMethodFilter" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        <select id="orderMethodFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
           <option value="">全部配送</option>
           <option value="store">門市自取</option>
           <option value="delivery">7-11 店到店</option>
         </select>
-        <select id="orderSortFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          <option value="dateAsc">日期近到遠</option>
-          <option value="dateDesc">日期遠到近</option>
+        <select id="orderSortFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
+          <option value="arrivalAsc">取貨／到貨日期近到遠</option>
+          <option value="arrivalDesc">取貨／到貨日期遠到近</option>
+          <option value="orderDesc">訂單日期近到遠</option>
+          <option value="orderAsc">訂單日期遠到近</option>
+          <option value="amountDesc">金額高到低</option>
+          <option value="amountAsc">金額低到高</option>
         </select>
-        <input id="orderStartDate" type="date" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        <input id="orderEndDate" type="date" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        <input id="orderStartDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        <input id="orderEndDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
         <div class="flex gap-2 md:col-span-2">
-          <button onclick="filterOrders()" class="flex-1 h-11 rounded-xl bg-[#5B7290] text-white px-3 font-black hover:bg-[#3E4F66] text-xs">篩選</button>
           <button onclick="setOrderDateFutureDefault()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">未來</button>
           <button onclick="setOrderDateDefaultMonth()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">本月</button>
           <button onclick="clearOrderDateFilter()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">全部</button>
         </div>
       </div>
+      <p class="text-xs text-stone-400 font-bold">搜尋、狀態、配送、排序與日期會自動套用；不用再按篩選。</p>
       <div id="orderCount" class="text-sm font-black text-stone-500"></div>
     </div>
     <div id="ordersArea" class="space-y-4"></div>`;
   setOrderDateFutureDefault();
+}
+
+function getOrderSortLabel(sortMode) {
+  const labels = {
+    arrivalAsc: "取貨／到貨日期近到遠",
+    arrivalDesc: "取貨／到貨日期遠到近",
+    orderDesc: "訂單日期近到遠",
+    orderAsc: "訂單日期遠到近",
+    amountDesc: "金額高到低",
+    amountAsc: "金額低到高"
+  };
+  return labels[sortMode] || labels.arrivalAsc;
+}
+
+function compareTextValue(a, b) {
+  return (a || "").toString().localeCompare((b || "").toString());
 }
 
 function filterOrders() {
@@ -1076,7 +1096,7 @@ function filterOrders() {
   const method = document.getElementById("orderMethodFilter")?.value || "";
   const startDate = document.getElementById("orderStartDate")?.value || "";
   const endDate = document.getElementById("orderEndDate")?.value || "";
-  const sortMode = document.getElementById("orderSortFilter")?.value || "dateAsc";
+  const sortMode = document.getElementById("orderSortFilter")?.value || "arrivalAsc";
 
   const orders = (adminData.orders || []).filter(o => {
     const text = [o.id,o.name,o.phone,o.date,o.email,o.shippingMethod,o.address].join(" ").toLowerCase();
@@ -1091,28 +1111,42 @@ function filterOrders() {
 
     return keywordOk && statusOk && methodOk && startOk && endOk;
   }).sort((a, b) => {
-    const dateA = normalizeOrderDateForCompare(a.date) || "9999-12-31";
-    const dateB = normalizeOrderDateForCompare(b.date) || "9999-12-31";
-    const dateCompare = dateA.localeCompare(dateB);
-    if (dateCompare !== 0) {
-      return sortMode === "dateDesc" ? -dateCompare : dateCompare;
+    const arrivalA = normalizeOrderDateForCompare(a.date) || "9999-12-31";
+    const arrivalB = normalizeOrderDateForCompare(b.date) || "9999-12-31";
+    const orderDateA = getOrderCreatedDate(a) || "0000-00-00";
+    const orderDateB = getOrderCreatedDate(b) || "0000-00-00";
+    const timestampA = (a.timestamp || "").toString();
+    const timestampB = (b.timestamp || "").toString();
+    const amountA = parseMoneyNumber(a.total);
+    const amountB = parseMoneyNumber(b.total);
+
+    if (sortMode === "amountDesc" || sortMode === "amountAsc") {
+      const amountCompare = amountA - amountB;
+      if (amountCompare !== 0) return sortMode === "amountDesc" ? -amountCompare : amountCompare;
+      const arrivalCompare = compareTextValue(arrivalA, arrivalB);
+      if (arrivalCompare !== 0) return arrivalCompare;
     }
-    const timeA = (a.timestamp || "").toString();
-    const timeB = (b.timestamp || "").toString();
-    const timeCompare = timeA.localeCompare(timeB);
-    if (timeCompare !== 0) {
-      return sortMode === "dateDesc" ? -timeCompare : timeCompare;
+
+    if (sortMode === "orderDesc" || sortMode === "orderAsc") {
+      const dateCompare = compareTextValue(orderDateA, orderDateB);
+      if (dateCompare !== 0) return sortMode === "orderDesc" ? -dateCompare : dateCompare;
+      const timeCompare = compareTextValue(timestampA, timestampB);
+      if (timeCompare !== 0) return sortMode === "orderDesc" ? -timeCompare : timeCompare;
     }
-    return (a.id || "").toString().localeCompare((b.id || "").toString());
+
+    const arrivalCompare = compareTextValue(arrivalA, arrivalB);
+    if (arrivalCompare !== 0) return sortMode === "arrivalDesc" ? -arrivalCompare : arrivalCompare;
+    const timeCompare = compareTextValue(timestampA, timestampB);
+    if (timeCompare !== 0) return sortMode === "arrivalDesc" ? -timeCompare : timeCompare;
+    return compareTextValue(a.id, b.id);
   });
   const effectiveOrders = orders.filter(o => o.orderStatus !== "已作廢");
   const voidCount = orders.length - effectiveOrders.length;
   const storeCount = effectiveOrders.filter(o => getOrderMethodType(o) === "store").length;
   const deliveryCount = effectiveOrders.filter(o => getOrderMethodType(o) === "delivery").length;
   const rangeText = startDate && !endDate ? `｜日期：${startDate} 之後` : startDate && endDate ? `｜日期：${startDate}～${endDate}` : !startDate && endDate ? `｜日期：${endDate} 以前` : "｜日期：全部";
-  const sortText = sortMode === "dateDesc" ? "遠到近" : "近到遠";
   const voidText = voidCount > 0 ? `｜已作廢 ${voidCount}` : "";
-  document.getElementById("orderCount").textContent = `${effectiveOrders.length} 筆有效訂單｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}${voidText}${rangeText}｜排序：${sortText}`;
+  document.getElementById("orderCount").textContent = `${effectiveOrders.length} 筆有效訂單｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}${voidText}${rangeText}｜排序：${getOrderSortLabel(sortMode)}`;
   const area = document.getElementById("ordersArea");
   if (!orders.length) {
     area.innerHTML = `<div class="bg-white rounded-3xl border border-stone-100 p-8 text-center text-stone-400 font-bold">目前沒有符合條件的訂單</div>`;
