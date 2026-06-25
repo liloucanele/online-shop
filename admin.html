@@ -1457,12 +1457,11 @@ function getTodayDateInputValue() {
 function setOrderDateFutureDefault() {
   const startInput = document.getElementById("orderStartDate");
   const endInput = document.getElementById("orderEndDate");
-
-  if (startInput) startInput.value = getTodayDateInputValue();
-  if (endInput) endInput.value = "";
-
-  filterOrders();
+  if (!startInput || !endInput) return;
+  startInput.value = getTodayDateInputValue();
+  endInput.value = "";
   updateOrderRangeButtons("future");
+  filterOrders();
 }
 
 function normalizeOrderDateForCompare(value) {
