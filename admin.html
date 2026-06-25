@@ -130,7 +130,13 @@
       letter-spacing: .08em;
     }
     @media (max-width: 640px) {
-      .order-item-chip,
+      ..order-item-chip {
+        font-size: 14px !important;
+        line-height: 1.35 !important;
+        font-weight: 500 !important;
+        padding: 5px 10px !important;
+        border-radius: 999px;
+      }
       .order-group-item-chip {
         font-size: 14px !important;
       }
@@ -450,20 +456,25 @@ function summarizeOrderItems(details) {
 
 function formatOrderDetailsAdmin(details) {
   const { text, groups, itemSummary } = summarizeOrderItems(details);
-  if (!text) return `<p class="text-stone-400 font-bold">無商品明細</p>`;
+  if (!text) return `<p class="text-stone-400 font-medium">無商品明細</p>`;
 
   const itemChips = Object.entries(itemSummary)
     .sort((a, b) => b[1] - a[1])
-    .map(([name, qty]) => `<span class="order-item-chip inline-flex items-center rounded-full bg-white border border-stone-200 text-stone-800">${escapeHtml(name)} × ${qty}</span>`)
+    .map(([name, qty]) => `
+      <span class="order-item-chip inline-flex items-center rounded-full bg-white border border-stone-200 text-stone-800 !font-medium">
+        <span>${escapeHtml(name)}</span>
+        <span class="ml-1 !font-semibold">× ${qty}</span>
+      </span>
+    `)
     .join("");
 
   if (!groups.length && !itemChips) {
-    return `<div class="whitespace-pre-wrap text-stone-700 font-bold leading-relaxed bg-white border border-stone-200 rounded-2xl p-3">${escapeHtml(text)}</div>`;
+    return `<div class="whitespace-pre-wrap text-stone-700 font-medium leading-relaxed bg-white border border-stone-200 rounded-2xl p-3">${escapeHtml(text)}</div>`;
   }
 
   return `<div class="bg-white border border-stone-200 rounded-xl px-3 py-2 space-y-1.5">
-    <div class="font-black text-stone-800 text-sm">共 ${groups.length || "-"} 組</div>
-    <div class="flex flex-wrap gap-1.5">${itemChips || `<span class="text-xs text-stone-400 font-bold">無品項統計</span>`}</div>
+    <div class="font-semibold text-stone-800 text-sm">共 ${groups.length || "-"} 組</div>
+    <div class="flex flex-wrap gap-1.5">${itemChips || `<span class="text-xs text-stone-400 font-medium">無品項統計</span>`}</div>
   </div>`;
 }
 
