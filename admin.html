@@ -540,6 +540,42 @@ function parseMoneyNumber(value) {
   return isNaN(n) ? 0 : n;
 }
 
+function formatMoneyForOrder(value) {
+  const n = parseMoneyNumber(value);
+  return "NT$" + Math.round(n).toLocaleString("zh-TW");
+}
+
+function normalizeAdminStatus(status) {
+  return status === "付款已確認" ? "待出貨" : (status || "");
+}
+
+function renderAdminAmountDetails(order) {
+  const total = parseMoneyNumber(order.total);
+  const shipping = parseMoneyNumber(order.shippingFee);
+  const discount = parseMoneyNumber(order.discountAmount);
+  let subtotal = parseMoneyNumber(order.productSubtotal);
+
+  if (!subtotal && total) {
+    subtotal = Math.max(0, total - shipping + discount);
+  }
+
+  const hasDetails = subtotal || shipping || discount;
+  if (!hasDetails) {
+    return `<div class="flex items-center justify-between gap-3 border-t border-stone-100 pt-2 mt-2 text-sm">
+      <span class="font-black text-stone-500">應付總額</span>
+      <span class="font-black text-[#5B7290] mono">${formatMoneyForOrder(total)}</span>
+    </div>`;
+  }
+
+  return `<div class="bg-stone-50 border border-stone-100 rounded-xl p-3 space-y-1.5 text-sm">
+    <div class="order-detail-title font-black text-stone-500 tracking-widest mb-1">金額明細</div>
+    <div class="flex items-center justify-between gap-3"><span class="font-bold text-stone-500">商品小計</span><span class="font-black text-stone-800 mono">${formatMoneyForOrder(subtotal)}</span></div>
+    <div class="flex items-center justify-between gap-3"><span class="font-bold text-stone-500">運費</span><span class="font-black text-stone-800 mono">${shipping ? "+" : ""}${formatMoneyForOrder(shipping)}</span></div>
+    <div class="flex items-center justify-between gap-3"><span class="font-bold text-stone-500">折扣</span><span class="font-black text-red-500 mono">${discount ? "-" : ""}${formatMoneyForOrder(discount)}</span></div>
+    <div class="flex items-center justify-between gap-3 border-t border-stone-200 pt-1.5 mt-1"><span class="font-black text-stone-800">應付總額</span><span class="font-black text-[#5B7290] mono">${formatMoneyForOrder(total)}</span></div>
+  </div>`;
+}
+
 function getOrdersByDateRange(startDate, endDate) {
   return (adminData.orders || []).filter(o => {
     const orderDate = normalizeOrderDateForCompare(o.date);
@@ -882,7 +918,7 @@ function renderDashboardContent() {
     totalOrders: activeOrders.length,
     confirming: activeOrders.filter(o => o.orderStatus === "訂單確認中").length,
     pendingPayment: activeOrders.filter(o => o.orderStatus === "待付款").length,
-    paid: activeOrders.filter(o => o.orderStatus === "付款已確認").length,
+    waitingShipping: activeOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "待出貨").length,
     readyPickup: activeOrders.filter(o => o.orderStatus === "可取貨").length,
     shipped: activeOrders.filter(o => o.orderStatus === "已出貨").length,
     pickedUp: activeOrders.filter(o => o.orderStatus === "已取貨").length,
@@ -894,7 +930,7 @@ function renderDashboardContent() {
       ${kpi("全部訂單", d.totalOrders || 0)}
       ${kpi("訂單確認中", d.confirming || 0)}
       ${kpi("待付款", d.pendingPayment || 0)}
-      ${kpi("付款已確認", d.paid || 0)}
+      ${kpi("待出貨", d.waitingShipping || 0)}
       ${kpi("可取貨", d.readyPickup || 0)}
       ${kpi("已出貨", d.shipped || 0)}
       ${kpi("已取貨", d.pickedUp || 0)}
@@ -962,10 +998,11 @@ function methodCardClass(order) {
 }
 
 function statusClass(status) {
+  status = normalizeAdminStatus(status);
   if (status === "已作廢") return "bg-red-50 text-red-700 border-red-200";
   if (status === "已取貨") return "bg-emerald-100 text-emerald-800 border-emerald-300";
   if (status === "已出貨") return "bg-emerald-50 text-emerald-700 border-emerald-200";
-  if (status === "付款已確認" || status === "可取貨") return "bg-blue-50 text-blue-700 border-blue-200";
+  if (status === "待出貨" || status === "可取貨") return "bg-blue-50 text-blue-700 border-blue-200";
   if (status === "待付款") return "bg-amber-50 text-amber-700 border-amber-200";
   return "bg-stone-50 text-stone-700 border-stone-200";
 }
@@ -1041,7 +1078,7 @@ function renderOrders() {
           <option value="訂單確認中">訂單確認中</option>
           <option value="可取貨">可取貨</option>
           <option value="待付款">待付款</option>
-          <option value="付款已確認">付款已確認</option>
+          <option value="待出貨">待出貨</option>
           <option value="已出貨">已出貨</option>
           <option value="已取貨">已取貨</option>
           <option value="已作廢">已作廢</option>
@@ -1168,13 +1205,14 @@ function formatOrderTimestampMinute(value) {
 }
 
 function orderCard(order) {
-  const statuses = ["訂單確認中", "可取貨", "待付款", "付款已確認", "已出貨", "已取貨", "已作廢"];
+  const statuses = ["訂單確認中", "可取貨", "待付款", "待出貨", "已出貨", "已取貨", "已作廢"];
   const methodType = getOrderMethodType(order);
   const isDelivery = methodType === "delivery";
   const dateDisplay = formatDateDisplayWithWeekday(order.date) || escapeHtml(order.date || "-");
+  const displayStatus = normalizeAdminStatus(order.orderStatus);
   const timestampDisplay = formatOrderTimestampMinute(order.timestamp);
   const statusFields = `
-    <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">訂單狀態</span><select class="admin-status mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">${statuses.map(s => `<option value="${s}" ${order.orderStatus === s ? "selected" : ""}>${s}</option>`).join("")}</select></label>
+    <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">訂單狀態</span><select class="admin-status mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">${statuses.map(s => `<option value="${s}" ${displayStatus === s ? "selected" : ""}>${s}</option>`).join("")}</select></label>
     ${isDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">PChomePay 付款連結</span><input class="admin-payment mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.paymentLink || "")}" placeholder="PChomePay 付款連結"></label>` : `<input type="hidden" class="admin-payment" value="${escapeHtml(order.paymentLink || "")}">`}
     ${isDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">貨運編號</span><input class="admin-tracking mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.trackingNo || "")}" placeholder="貨運編號"></label>` : `<input type="hidden" class="admin-tracking" value="${escapeHtml(order.trackingNo || "")}">`}
     <label class="block ${isDelivery ? "" : "md:col-span-1"}"><span class="text-xs font-black text-stone-500 tracking-widest">訂單備註</span><input class="admin-note mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.statusNote || "")}" placeholder="給客人看的訂單備註"></label>`;
@@ -1188,7 +1226,7 @@ function orderCard(order) {
       <div class="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <div class="flex flex-wrap items-center gap-1.5">
           <span class="inline-flex w-fit px-2 py-0.5 rounded-full border text-[11px] font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span>
-          <span class="inline-flex w-fit px-2 py-0.5 rounded-full border text-[11px] font-black ${statusClass(order.orderStatus)}">${escapeHtml(order.orderStatus || "未設定")}</span>
+          <span class="inline-flex w-fit px-2 py-0.5 rounded-full border text-[11px] font-black ${statusClass(displayStatus)}">${escapeHtml(displayStatus || "未設定")}</span>
         </div>
         <div class="min-w-0 text-sm font-bold text-stone-700 md:text-right">
           <span class="font-black text-stone-900">${escapeHtml(order.name || "-")}</span>
@@ -1203,6 +1241,8 @@ function orderCard(order) {
       <div class="min-w-0 break-words"><span class="text-stone-400 font-black">${isDelivery ? "收件地點：" : "取貨地點："}</span>${escapeHtml(order.address || "-")}</div>
       <div class="min-w-0 break-all"><span class="text-stone-400 font-black">Email：</span>${escapeHtml(order.email || "-")}</div>
     </div>
+
+    ${renderAdminAmountDetails(order)}
 
     <div class="border-t border-stone-100 pt-2.5 text-sm leading-relaxed">
       <div class="order-detail-title font-black text-stone-500 tracking-widest mb-2">完整商品明細</div>
