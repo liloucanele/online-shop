@@ -136,12 +136,21 @@
       }
     }
 
-    .admin-filter-panel > summary { list-style: none; }
+    .admin-filter-panel > summary {
+      list-style: none;
+      border-radius: 1.25rem;
+      border: 1px solid #E7E5E4;
+      background: #FAFAF9;
+      padding: 10px 12px;
+    }
     .admin-filter-panel > summary::-webkit-details-marker { display: none; }
-    .admin-filter-body { display: none; }
-    .admin-filter-panel[open] .admin-filter-body { display: block; }
-    .admin-filter-toggle-icon::after { content: "展開"; }
+    .admin-filter-toggle-icon::after { content: "展開篩選"; }
     .admin-filter-panel[open] .admin-filter-toggle-icon::after { content: "收合"; }
+    .admin-filter-body { display: block; }
+    @media (max-width: 767px) {
+      .admin-filter-panel:not([open]) .admin-filter-body { display: none !important; }
+      .admin-filter-panel[open] .admin-filter-body { display: block !important; }
+    }
     @media (min-width: 768px) {
       .admin-filter-panel > summary { display: none; }
       .admin-filter-body { display: block !important; }
@@ -1063,7 +1072,7 @@ function renderDashboard() {
         <div class="flex items-center justify-between gap-3">
           <div class="min-w-0">
             <div class="text-sm font-semibold text-stone-900">Dashboard 篩選</div>
-            <div id="dashboardMobileFilterSummary" class="text-xs font-medium text-stone-400 mt-0.5 truncate">本月｜全部配送｜排除已作廢</div>
+            <div id="dashboardMobileFilterSummary" class="text-xs font-medium text-stone-400 mt-0.5 truncate">本月｜全部配送｜排除已作廢｜點擊展開</div>
           </div>
           <span class="admin-filter-toggle-icon shrink-0 text-xs font-semibold text-[#5B7290]"></span>
         </div>
@@ -1362,7 +1371,7 @@ function renderOrders() {
         <div class="flex items-center justify-between gap-3">
           <div class="min-w-0">
             <div class="text-sm font-semibold text-stone-900">篩選與排序</div>
-            <div id="orderMobileFilterSummary" class="text-xs font-medium text-stone-400 mt-0.5 truncate">未來｜全部配送｜取貨／到貨日期近到遠</div>
+            <div id="orderMobileFilterSummary" class="text-xs font-medium text-stone-400 mt-0.5 truncate">未來｜全部配送｜取貨近到遠｜點擊展開</div>
           </div>
           <span class="admin-filter-toggle-icon shrink-0 text-xs font-semibold text-[#5B7290]"></span>
         </div>
@@ -1681,7 +1690,7 @@ function renderRevenueShare() {
         <div class="flex items-center justify-between gap-3">
           <div class="min-w-0">
             <div class="text-sm font-semibold text-stone-900">分潤統計篩選</div>
-            <div id="revenueMobileFilterSummary" class="text-xs font-medium text-stone-400 mt-0.5 truncate">本月｜全部出貨方式</div>
+            <div id="revenueMobileFilterSummary" class="text-xs font-medium text-stone-400 mt-0.5 truncate">本月｜全部出貨方式｜點擊展開</div>
           </div>
           <span class="admin-filter-toggle-icon shrink-0 text-xs font-semibold text-[#5B7290]"></span>
         </div>
