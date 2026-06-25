@@ -1457,10 +1457,12 @@ function getTodayDateInputValue() {
 function setOrderDateFutureDefault() {
   const startInput = document.getElementById("orderStartDate");
   const endInput = document.getElementById("orderEndDate");
+
   if (startInput) startInput.value = getTodayDateInputValue();
   if (endInput) endInput.value = "";
+
   filterOrders();
-  clearOrderDateFilter();
+  updateOrderRangeButtons("future");
 }
 
 function normalizeOrderDateForCompare(value) {
@@ -1480,8 +1482,10 @@ function setOrderDateDefaultMonth() {
   const range = getDefaultMonthRange();
   const startInput = document.getElementById("orderStartDate");
   const endInput = document.getElementById("orderEndDate");
+
   if (startInput) startInput.value = range.start;
   if (endInput) endInput.value = range.end;
+
   filterOrders();
   updateOrderRangeButtons("month");
 }
@@ -1489,8 +1493,10 @@ function setOrderDateDefaultMonth() {
 function clearOrderDateFilter() {
   const startInput = document.getElementById("orderStartDate");
   const endInput = document.getElementById("orderEndDate");
+
   if (startInput) startInput.value = "";
   if (endInput) endInput.value = "";
+
   filterOrders();
   updateOrderRangeButtons("all");
 }
@@ -1637,20 +1643,7 @@ function filterOrders() {
 
   const start = startDate;
   const end = endDate;
-  
-  if (!start && !end) {
-    updateOrderRangeButtons("all");
-  } else {
-    const month = getDefaultMonthRange();
-  
-    if (start === getTodayDateInputValue() && !end) {
-      updateOrderRangeButtons("future");
-    } else if (start === month.start && end === month.end) {
-      updateOrderRangeButtons("month");
-    } else {
-      updateOrderRangeButtons("");
-    }
-  }
+
 }
 
 function formatOrderTimestampMinute(value) {
