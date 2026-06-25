@@ -1634,6 +1634,23 @@ function filterOrders() {
     return;
   }
   area.innerHTML = orders.map(orderCard).join("");
+
+  const start = startDate;
+  const end = endDate;
+  
+  if (!start && !end) {
+    updateOrderRangeButtons("all");
+  } else {
+    const month = getDefaultMonthRange();
+  
+    if (start === getTodayDateInputValue() && !end) {
+      updateOrderRangeButtons("future");
+    } else if (start === month.start && end === month.end) {
+      updateOrderRangeButtons("month");
+    } else {
+      updateOrderRangeButtons("");
+    }
+  }
 }
 
 function formatOrderTimestampMinute(value) {
@@ -2322,17 +2339,19 @@ function updateOrderRangeButtons(mode) {
 
     document.querySelectorAll(".order-range-btn").forEach(btn => {
 
-        const active = btn.dataset.orderRange === mode;
+        const active =
+            mode &&
+            btn.dataset.orderRange === mode;
 
         if (active) {
 
             btn.style.backgroundColor = "#5B7290";
             btn.style.borderColor = "#5B7290";
-            btn.style.color = "#ffffff";
+            btn.style.color = "#fff";
 
         } else {
 
-            btn.style.backgroundColor = "#ffffff";
+            btn.style.backgroundColor = "#fff";
             btn.style.borderColor = "#E7E5E4";
             btn.style.color = "#57534E";
 
