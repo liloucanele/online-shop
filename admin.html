@@ -401,7 +401,31 @@ function switchTab(tab) {
   });
   document.querySelectorAll(".tab-page").forEach(page => page.classList.add("hidden"));
   document.getElementById("tab-" + tab).classList.remove("hidden");
+  syncAdminFilterPanels();
 }
+
+function syncAdminFilterPanels() {
+  const isMobile = window.matchMedia("(max-width: 767px)").matches;
+  document.querySelectorAll(".admin-filter-panel").forEach(panel => {
+    if (isMobile) {
+      if (!panel.dataset.userTouched) panel.removeAttribute("open");
+    } else {
+      panel.setAttribute("open", "");
+    }
+  });
+}
+
+document.addEventListener("toggle", function(event) {
+  const panel = event.target;
+  if (panel && panel.classList && panel.classList.contains("admin-filter-panel")) {
+    panel.dataset.userTouched = "1";
+  }
+}, true);
+
+window.addEventListener("resize", function() {
+  document.querySelectorAll(".admin-filter-panel").forEach(panel => delete panel.dataset.userTouched);
+  syncAdminFilterPanels();
+});
 
 async function loadAll() {
   const token = getToken();
@@ -1067,7 +1091,7 @@ function renderDashboard() {
   const monthStart = formatDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1));
   const monthEnd = formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0));
   document.getElementById("tab-dashboard").innerHTML = `
-    <details class="admin-filter-panel bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-5 space-y-3">
+    <details open class="admin-filter-panel bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-5 space-y-3">
       <summary class="cursor-pointer rounded-2xl px-1 py-1">
         <div class="flex items-center justify-between gap-3">
           <div class="min-w-0">
@@ -1366,7 +1390,7 @@ function clearOrderDateFilter() {
 function renderOrders() {
   const orders = adminData.orders || [];
   document.getElementById("tab-orders").innerHTML = `
-    <details class="admin-filter-panel bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-5 space-y-3">
+    <details open class="admin-filter-panel bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-5 space-y-3">
       <summary class="cursor-pointer rounded-2xl px-1 py-1">
         <div class="flex items-center justify-between gap-3">
           <div class="min-w-0">
@@ -1685,7 +1709,7 @@ function renderRevenueShare() {
   const end = formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 
   document.getElementById("tab-revenue").innerHTML = `
-    <details class="admin-filter-panel bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-5 space-y-4">
+    <details open class="admin-filter-panel bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-5 space-y-4">
       <summary class="cursor-pointer rounded-2xl px-1 py-1">
         <div class="flex items-center justify-between gap-3">
           <div class="min-w-0">
