@@ -135,6 +135,17 @@
         font-size: 16px !important;
       }
     }
+
+    .admin-filter-panel > summary { list-style: none; }
+    .admin-filter-panel > summary::-webkit-details-marker { display: none; }
+    .admin-filter-body { display: none; }
+    .admin-filter-panel[open] .admin-filter-body { display: block; }
+    .admin-filter-toggle-icon::after { content: "展開"; }
+    .admin-filter-panel[open] .admin-filter-toggle-icon::after { content: "收合"; }
+    @media (min-width: 768px) {
+      .admin-filter-panel > summary { display: none; }
+      .admin-filter-body { display: block !important; }
+    }
     .admin-toast {
       transform: translateY(16px);
       opacity: 0;
@@ -787,9 +798,10 @@ function formatMonthDayWithWeekday(value) {
   return `${mm}/${dd}（${weekdays[date.getDay()]}）`;
 }
 
-function renderTodayPickupCard() {
+function renderTodayPickupCard(sourceOrders = null) {
   const today = getTodayDateInputValue();
-  const orders = (adminData.orders || []).filter(o =>
+  const baseOrders = sourceOrders || (adminData.orders || []);
+  const orders = baseOrders.filter(o =>
     normalizeOrderDateForCompare(o.date) === today &&
     getOrderMethodType(o) === "store" &&
     o.orderStatus !== "已取貨" &&
@@ -810,14 +822,15 @@ function renderTodayPickupCard() {
   </div>`;
 }
 
-function renderFutureSevenDayPreview() {
+function renderFutureSevenDayPreview(sourceOrders = null) {
   const today = getTodayDateInputValue();
+  const baseOrders = sourceOrders || (adminData.orders || []);
   const endDate = addDaysToDateInput(today, 6);
   const rows = [];
 
   for (let i = 0; i < 7; i++) {
     const date = addDaysToDateInput(today, i);
-    const dayOrders = (adminData.orders || []).filter(o => normalizeOrderDateForCompare(o.date) === date && o.orderStatus !== "已取貨" && o.orderStatus !== "已作廢");
+    const dayOrders = baseOrders.filter(o => normalizeOrderDateForCompare(o.date) === date && o.orderStatus !== "已取貨" && o.orderStatus !== "已作廢");
     rows.push({
       date,
       store: dayOrders.filter(o => getOrderMethodType(o) === "store").length,
@@ -1040,34 +1053,164 @@ function renderDailyRevenueChart(rows, totalRevenue) {
 }
 
 function renderDashboard() {
-  document.getElementById("tab-dashboard").innerHTML = `<div id="dashboardStatsArea" class="space-y-5"></div>`;
+  const today = getTodayDateInputValue();
+  const now = new Date(today + "T00:00:00");
+  const monthStart = formatDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1));
+  const monthEnd = formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  document.getElementById("tab-dashboard").innerHTML = `
+    <details class="admin-filter-panel bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-5 space-y-3">
+      <summary class="cursor-pointer rounded-2xl px-1 py-1">
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-sm font-semibold text-stone-900">Dashboard 篩選</div>
+            <div id="dashboardMobileFilterSummary" class="text-xs font-medium text-stone-400 mt-0.5 truncate">本月｜全部配送｜排除已作廢</div>
+          </div>
+          <span class="admin-filter-toggle-icon shrink-0 text-xs font-semibold text-[#5B7290]"></span>
+        </div>
+      </summary>
+      <div class="admin-filter-body pt-3 md:pt-0 space-y-3">
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+          <div>
+            <h2 class="text-base md:text-lg font-semibold text-stone-900 tracking-wide">Dashboard 篩選</h2>
+            <p class="text-xs font-medium text-stone-400 mt-0.5">依下單日期統計，圖表與數字會一起更新。</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="setDashboardPreset('today')" class="h-9 rounded-xl border border-stone-200 px-3 font-medium text-stone-600 bg-white hover:bg-stone-50 text-xs">今天</button>
+            <button onclick="setDashboardPreset('7days')" class="h-9 rounded-xl border border-stone-200 px-3 font-medium text-stone-600 bg-white hover:bg-stone-50 text-xs">近 7 天</button>
+            <button onclick="setDashboardPreset('month')" class="h-9 rounded-xl border border-stone-200 px-3 font-medium text-stone-600 bg-white hover:bg-stone-50 text-xs">本月</button>
+            <button onclick="setDashboardPreset('all')" class="h-9 rounded-xl border border-stone-200 px-3 font-medium text-stone-600 bg-white hover:bg-stone-50 text-xs">全部</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-8 gap-3">
+          <input id="dashboardStartDate" type="date" value="${monthStart}" onchange="filterDashboard()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
+          <input id="dashboardEndDate" type="date" value="${monthEnd}" onchange="filterDashboard()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
+          <select id="dashboardMethodFilter" onchange="filterDashboard()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
+            <option value="">全部配送</option>
+            <option value="store">門市自取</option>
+            <option value="delivery">7-11 店到店</option>
+          </select>
+          <select id="dashboardStatusFilter" onchange="filterDashboard()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
+            <option value="active" selected>排除已作廢</option>
+            <option value="completed">只看已完成</option>
+            <option value="unfinished">只看未完成</option>
+            <option value="voided">只看已作廢</option>
+            <option value="all">全部狀態</option>
+          </select>
+        </div>
+        <div id="dashboardFilterSummary" class="text-sm font-medium text-stone-500"></div>
+      </div>
+    </details>
+    <div id="dashboardStatsArea" class="space-y-5"></div>`;
   renderDashboardContent();
 }
 
-function renderDashboardContent() {
+function getDashboardFilters() {
   const today = getTodayDateInputValue();
-  const sevenDaysAgo = addDaysToDateInput(today, -6);
   const now = new Date(today + "T00:00:00");
   const monthStart = formatDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1));
-  const allOrders = adminData.orders || [];
-  const activeOrders = allOrders.filter(o => o.orderStatus !== "已作廢");
-  const summary = summarizeDetailsFromOrders(activeOrders);
-  const revenueRows = getRevenueRowsByCreatedDate(activeOrders, today, 7);
+  const monthEnd = formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  return {
+    startDate: document.getElementById("dashboardStartDate")?.value || monthStart,
+    endDate: document.getElementById("dashboardEndDate")?.value || monthEnd,
+    method: document.getElementById("dashboardMethodFilter")?.value || "",
+    statusMode: document.getElementById("dashboardStatusFilter")?.value || "active"
+  };
+}
 
-  const todayRevenue = sumRevenueByCreatedDate(activeOrders, today, today);
-  const sevenDayRevenue = sumRevenueByCreatedDate(activeOrders, sevenDaysAgo, today);
-  const monthRevenue = sumRevenueByCreatedDate(activeOrders, monthStart, today);
+function setDashboardPreset(preset) {
+  const today = getTodayDateInputValue();
+  const now = new Date(today + "T00:00:00");
+  const monthStart = formatDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1));
+  const monthEnd = formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  const startInput = document.getElementById("dashboardStartDate");
+  const endInput = document.getElementById("dashboardEndDate");
+  if (!startInput || !endInput) return;
+
+  if (preset === "today") {
+    startInput.value = today;
+    endInput.value = today;
+  } else if (preset === "7days") {
+    startInput.value = addDaysToDateInput(today, -6);
+    endInput.value = today;
+  } else if (preset === "month") {
+    startInput.value = monthStart;
+    endInput.value = monthEnd;
+  } else if (preset === "all") {
+    startInput.value = "";
+    endInput.value = "";
+  }
+  filterDashboard();
+}
+
+function dashboardStatusMatch(order, statusMode) {
+  const status = normalizeAdminStatus(order.orderStatus || "");
+  if (statusMode === "all") return true;
+  if (statusMode === "voided") return status === "已作廢";
+  if (statusMode === "completed") return status === "已出貨" || status === "已取貨";
+  if (statusMode === "unfinished") return status !== "已作廢" && status !== "已出貨" && status !== "已取貨";
+  return status !== "已作廢";
+}
+
+function getDashboardFilteredOrders() {
+  const filters = getDashboardFilters();
+  return (adminData.orders || []).filter(order => {
+    const createdDate = getOrderCreatedDate(order);
+    const methodOk = !filters.method || getOrderMethodType(order) === filters.method;
+    const startOk = !filters.startDate || (createdDate && createdDate >= filters.startDate);
+    const endOk = !filters.endDate || (createdDate && createdDate <= filters.endDate);
+    return methodOk && startOk && endOk && dashboardStatusMatch(order, filters.statusMode);
+  });
+}
+
+function getDashboardStatusLabel(statusMode) {
+  const labels = {
+    active: "排除已作廢",
+    completed: "只看已完成",
+    unfinished: "只看未完成",
+    voided: "只看已作廢",
+    all: "全部狀態"
+  };
+  return labels[statusMode] || labels.active;
+}
+
+function renderDashboardContent() {
+  const filters = getDashboardFilters();
+  const filteredOrders = getDashboardFilteredOrders();
+  const allOrdersInRange = (adminData.orders || []).filter(order => {
+    const createdDate = getOrderCreatedDate(order);
+    const methodOk = !filters.method || getOrderMethodType(order) === filters.method;
+    const startOk = !filters.startDate || (createdDate && createdDate >= filters.startDate);
+    const endOk = !filters.endDate || (createdDate && createdDate <= filters.endDate);
+    return methodOk && startOk && endOk;
+  });
+  const summary = summarizeDetailsFromOrders(filteredOrders.filter(o => normalizeAdminStatus(o.orderStatus) !== "已作廢"));
+  const startForChart = filters.startDate || addDaysToDateInput(getTodayDateInputValue(), -6);
+  const endForChart = filters.endDate || getTodayDateInputValue();
+  const chartDays = Math.min(31, Math.max(1, Math.round((new Date(endForChart + "T00:00:00") - new Date(startForChart + "T00:00:00")) / 86400000) + 1 || 7));
+  const revenueRows = getRevenueRowsByCreatedDate(filteredOrders, endForChart, chartDays);
+
+  const totalRevenue = filteredOrders.reduce((sum, order) => sum + parseMoneyNumber(order.total), 0);
+  const storeRevenue = filteredOrders.filter(o => getOrderMethodType(o) === "store").reduce((sum, order) => sum + parseMoneyNumber(order.total), 0);
+  const deliveryRevenue = filteredOrders.filter(o => getOrderMethodType(o) === "delivery").reduce((sum, order) => sum + parseMoneyNumber(order.total), 0);
 
   const d = {
-    totalOrders: activeOrders.length,
-    confirming: activeOrders.filter(o => o.orderStatus === "訂單確認中").length,
-    pendingPayment: activeOrders.filter(o => o.orderStatus === "待付款").length,
-    waitingShipping: activeOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "待出貨").length,
-    readyPickup: activeOrders.filter(o => o.orderStatus === "可取貨").length,
-    shipped: activeOrders.filter(o => o.orderStatus === "已出貨").length,
-    pickedUp: activeOrders.filter(o => o.orderStatus === "已取貨").length,
-    voided: allOrders.filter(o => o.orderStatus === "已作廢").length
+    totalOrders: filteredOrders.length,
+    confirming: filteredOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "訂單確認中").length,
+    pendingPayment: filteredOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "待付款").length,
+    waitingShipping: filteredOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "待出貨").length,
+    readyPickup: filteredOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "可取貨").length,
+    shipped: filteredOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "已出貨").length,
+    pickedUp: filteredOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "已取貨").length,
+    voided: allOrdersInRange.filter(o => normalizeAdminStatus(o.orderStatus) === "已作廢").length
   };
+
+  const methodLabel = filters.method === "store" ? "門市自取" : filters.method === "delivery" ? "7-11 店到店" : "全部配送";
+  const rangeLabel = filters.startDate && filters.endDate ? `${filters.startDate}～${filters.endDate}` : filters.startDate ? `${filters.startDate} 之後` : filters.endDate ? `${filters.endDate} 以前` : "全部日期";
+  const summaryText = `${rangeLabel}｜${methodLabel}｜${getDashboardStatusLabel(filters.statusMode)}｜${filteredOrders.length} 筆訂單`;
+  const summaryEl = document.getElementById("dashboardFilterSummary");
+  if (summaryEl) summaryEl.textContent = summaryText;
+  const mobileSummaryEl = document.getElementById("dashboardMobileFilterSummary");
+  if (mobileSummaryEl) mobileSummaryEl.textContent = summaryText;
 
   document.getElementById("dashboardStatsArea").innerHTML = `
     <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
@@ -1081,23 +1224,23 @@ function renderDashboardContent() {
       ${kpi("已作廢", d.voided || 0)}
     </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      ${revenueKpi("今日營業額", formatCurrency(todayRevenue), "依下單日期計算")}
-      ${revenueKpi("近 7 日營業額", formatCurrency(sevenDayRevenue), "搭配下方曲線圖")}
-      ${revenueKpi("本月營業額", formatCurrency(monthRevenue), "不含已作廢訂單")}
+      ${revenueKpi("篩選營業額", formatCurrency(totalRevenue), "依下單日期與目前條件計算")}
+      ${revenueKpi("門市自取營業額", formatCurrency(storeRevenue), "目前篩選條件內")}
+      ${revenueKpi("7-11 店到店營業額", formatCurrency(deliveryRevenue), "目前篩選條件內")}
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      ${renderTodayPickupCard()}
+      ${renderTodayPickupCard(filteredOrders)}
       ${renderDashboardCoupons()}
     </div>
-    ${renderFutureSevenDayPreview()}
+    ${renderFutureSevenDayPreview(filteredOrders)}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       ${renderSalesRankingChart(summary.production)}
-      ${renderDailyRevenueChart(revenueRows, sevenDayRevenue)}
+      ${renderDailyRevenueChart(revenueRows, totalRevenue)}
     </div>`;
 }
 
 function applyDashboardSingleDate() { renderDashboardContent(); }
-function clearDashboardFilter() { renderDashboardContent(); }
+function clearDashboardFilter() { setDashboardPreset("month"); }
 function filterDashboard() { renderDashboardContent(); }
 
 function kpi(label, value) {
@@ -1214,42 +1357,53 @@ function clearOrderDateFilter() {
 function renderOrders() {
   const orders = adminData.orders || [];
   document.getElementById("tab-orders").innerHTML = `
-    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-3">
-      <div class="grid grid-cols-1 md:grid-cols-10 gap-3">
-        <input id="orderSearch" oninput="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2" placeholder="搜尋訂單編號、姓名、電話、日期">
-        <select id="orderStatusFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          <option value="">全部狀態</option>
-          <option value="訂單確認中">訂單確認中</option>
-          <option value="可取貨">可取貨</option>
-          <option value="待付款">待付款</option>
-          <option value="待出貨">待出貨</option>
-          <option value="已出貨">已出貨</option>
-          <option value="已取貨">已取貨</option>
-          <option value="已作廢">已作廢</option>
-        </select>
-        <select id="orderMethodFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          <option value="">全部配送</option>
-          <option value="store">門市自取</option>
-          <option value="delivery">7-11 店到店</option>
-        </select>
-        <select id="orderSortFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
-          <option value="arrivalAsc">取貨／到貨日期近到遠</option>
-          <option value="arrivalDesc">取貨／到貨日期遠到近</option>
-          <option value="orderDesc">訂單日期近到遠</option>
-          <option value="orderAsc">訂單日期遠到近</option>
-          <option value="amountDesc">金額高到低</option>
-          <option value="amountAsc">金額低到高</option>
-        </select>
-        <input id="orderStartDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        <input id="orderEndDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        <div class="flex gap-2 md:col-span-2">
-          <button onclick="setOrderDateFutureDefault()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">未來</button>
-          <button onclick="setOrderDateDefaultMonth()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">本月</button>
-          <button onclick="clearOrderDateFilter()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">全部</button>
+    <details class="admin-filter-panel bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-5 space-y-3">
+      <summary class="cursor-pointer rounded-2xl px-1 py-1">
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-sm font-semibold text-stone-900">篩選與排序</div>
+            <div id="orderMobileFilterSummary" class="text-xs font-medium text-stone-400 mt-0.5 truncate">未來｜全部配送｜取貨／到貨日期近到遠</div>
+          </div>
+          <span class="admin-filter-toggle-icon shrink-0 text-xs font-semibold text-[#5B7290]"></span>
         </div>
+      </summary>
+      <div class="admin-filter-body pt-3 md:pt-0 space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-10 gap-3">
+          <input id="orderSearch" oninput="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2" placeholder="搜尋訂單編號、姓名、電話、日期">
+          <select id="orderStatusFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+            <option value="">全部狀態</option>
+            <option value="訂單確認中">訂單確認中</option>
+            <option value="可取貨">可取貨</option>
+            <option value="待付款">待付款</option>
+            <option value="待出貨">待出貨</option>
+            <option value="已出貨">已出貨</option>
+            <option value="已取貨">已取貨</option>
+            <option value="已作廢">已作廢</option>
+          </select>
+          <select id="orderMethodFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+            <option value="">全部配送</option>
+            <option value="store">門市自取</option>
+            <option value="delivery">7-11 店到店</option>
+          </select>
+          <select id="orderSortFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
+            <option value="arrivalAsc">取貨／到貨日期近到遠</option>
+            <option value="arrivalDesc">取貨／到貨日期遠到近</option>
+            <option value="orderDesc">訂單日期近到遠</option>
+            <option value="orderAsc">訂單日期遠到近</option>
+            <option value="amountDesc">金額高到低</option>
+            <option value="amountAsc">金額低到高</option>
+          </select>
+          <input id="orderStartDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+          <input id="orderEndDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+          <div class="flex gap-2 md:col-span-2">
+            <button onclick="setOrderDateFutureDefault()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">未來</button>
+            <button onclick="setOrderDateDefaultMonth()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">本月</button>
+            <button onclick="clearOrderDateFilter()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">全部</button>
+          </div>
+        </div>
+        <div id="orderCount" class="text-sm font-semibold text-stone-500"></div>
       </div>
-      <div id="orderCount" class="text-sm font-black text-stone-500"></div>
-    </div>
+    </details>
     <div id="ordersArea" class="space-y-4"></div>`;
   setOrderDateFutureDefault();
 }
@@ -1326,7 +1480,10 @@ function filterOrders() {
   const deliveryCount = effectiveOrders.filter(o => getOrderMethodType(o) === "delivery").length;
   const rangeText = startDate && !endDate ? `｜日期：${startDate} 之後` : startDate && endDate ? `｜日期：${startDate}～${endDate}` : !startDate && endDate ? `｜日期：${endDate} 以前` : "｜日期：全部";
   const voidText = voidCount > 0 ? `｜已作廢 ${voidCount}` : "";
-  document.getElementById("orderCount").textContent = `${effectiveOrders.length} 筆有效訂單｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}${voidText}${rangeText}｜排序：${getOrderSortLabel(sortMode)}`;
+  const orderSummaryText = `${effectiveOrders.length} 筆有效訂單｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}${voidText}${rangeText}｜排序：${getOrderSortLabel(sortMode)}`;
+  document.getElementById("orderCount").textContent = orderSummaryText;
+  const orderMobileSummary = document.getElementById("orderMobileFilterSummary");
+  if (orderMobileSummary) orderMobileSummary.textContent = orderSummaryText;
   const area = document.getElementById("ordersArea");
   if (!orders.length) {
     area.innerHTML = `<div class="bg-white rounded-3xl border border-stone-100 p-8 text-center text-stone-400 font-bold">目前沒有符合條件的訂單</div>`;
@@ -1519,40 +1676,51 @@ function renderRevenueShare() {
   const end = formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 
   document.getElementById("tab-revenue").innerHTML = `
-    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 class="text-xl font-black text-stone-900">分潤統計</h2>
-          <p class="text-sm text-stone-500 mt-1">依 Revenue_Settings 每月比例計算，已作廢訂單會自動排除。</p>
+    <details class="admin-filter-panel bg-white rounded-3xl border border-stone-100 shadow-sm p-3 md:p-5 space-y-4">
+      <summary class="cursor-pointer rounded-2xl px-1 py-1">
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-sm font-semibold text-stone-900">分潤統計篩選</div>
+            <div id="revenueMobileFilterSummary" class="text-xs font-medium text-stone-400 mt-0.5 truncate">本月｜全部出貨方式</div>
+          </div>
+          <span class="admin-filter-toggle-icon shrink-0 text-xs font-semibold text-[#5B7290]"></span>
         </div>
-        <button type="button" onclick="exportRevenueShareCsv()" class="h-10 rounded-xl border border-stone-200 bg-white px-4 font-black text-stone-600 hover:bg-stone-50">匯出 CSV</button>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-        <label class="block">
-          <span class="text-xs font-black text-stone-500 tracking-widest">開始日期</span>
-          <input id="revenueStartDate" type="date" value="${escapeHtml(start)}" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        </label>
-        <label class="block">
-          <span class="text-xs font-black text-stone-500 tracking-widest">結束日期</span>
-          <input id="revenueEndDate" type="date" value="${escapeHtml(end)}" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        </label>
-        <label class="block">
-          <span class="text-xs font-black text-stone-500 tracking-widest">出貨方式</span>
-          <select id="revenueMethodFilter" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-            <option value="">全部</option>
-            <option value="store">門市自取</option>
-            <option value="delivery">7-11 店到店</option>
-          </select>
-        </label>
-        <div class="md:col-span-2 flex items-end gap-2">
-          <button type="button" onclick="setRevenueCurrentMonth()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50">本月</button>
-          <button type="button" onclick="filterRevenueShare()" class="flex-1 h-11 rounded-xl bg-[#5B7290] text-white px-3 font-black hover:bg-[#3E4F66]">查詢</button>
+      </summary>
+      <div class="admin-filter-body pt-3 md:pt-0 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-semibold text-stone-900">分潤統計</h2>
+            <p class="text-sm text-stone-500 mt-1">依 Revenue_Settings 每月比例計算，已作廢訂單會自動排除。</p>
+          </div>
+          <button type="button" onclick="exportRevenueShareCsv()" class="h-10 rounded-xl border border-stone-200 bg-white px-4 font-semibold text-stone-600 hover:bg-stone-50">匯出 CSV</button>
         </div>
-      </div>
 
-      <div id="revenueRateNote" class="rounded-2xl bg-stone-50 border border-stone-100 p-3 text-sm font-bold text-stone-600"></div>
-    </div>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <label class="block">
+            <span class="text-xs font-semibold text-stone-500 tracking-widest">開始日期</span>
+            <input id="revenueStartDate" type="date" value="${escapeHtml(start)}" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+          </label>
+          <label class="block">
+            <span class="text-xs font-semibold text-stone-500 tracking-widest">結束日期</span>
+            <input id="revenueEndDate" type="date" value="${escapeHtml(end)}" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+          </label>
+          <label class="block">
+            <span class="text-xs font-semibold text-stone-500 tracking-widest">出貨方式</span>
+            <select id="revenueMethodFilter" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+              <option value="">全部</option>
+              <option value="store">門市自取</option>
+              <option value="delivery">7-11 店到店</option>
+            </select>
+          </label>
+          <div class="md:col-span-2 flex items-end gap-2">
+            <button type="button" onclick="setRevenueCurrentMonth()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50">本月</button>
+            <button type="button" onclick="filterRevenueShare()" class="flex-1 h-11 rounded-xl bg-[#5B7290] text-white px-3 font-semibold hover:bg-[#3E4F66]">查詢</button>
+          </div>
+        </div>
+
+        <div id="revenueRateNote" class="rounded-2xl bg-stone-50 border border-stone-100 p-3 text-sm font-medium text-stone-600"></div>
+      </div>
+    </details>
 
     <div id="revenueShareResult" class="space-y-4"></div>`;
 
