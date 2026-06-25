@@ -696,19 +696,46 @@ function normalizeAdminStatus(status) {
 function renderAdminAmountDetails(order) {
   const amount = getOrderAmountNumbers(order);
 
-  return `<div class="mt-2 pt-2 border-t border-stone-200 text-left text-xs md:text-sm leading-relaxed">
-    <span class="text-stone-500 font-medium">總額</span>
-    <span class="text-red-500 mono ml-1 font-semibold">${formatMoneyForOrder(amount.total)}</span>
-    <span class="text-stone-300 mx-1">（</span>
-    <span class="text-stone-500">商品</span>
-    <span class="text-stone-700 mono ml-1">${formatMoneyForOrder(amount.subtotal)}</span>
-    <span class="text-stone-300 mx-1">｜</span>
-    <span class="text-stone-500">折扣</span>
-    <span class="text-stone-700 mono ml-1">${amount.discount ? formatSignedMoneyForOrder(amount.discount, true) : "NT$0"}</span>
-    <span class="text-stone-300 mx-1">｜</span>
-    <span class="text-stone-500">運費</span>
-    <span class="text-stone-700 mono ml-1">${amount.shipping ? formatSignedMoneyForOrder(amount.shipping, false) : "NT$0"}</span>
-    <span class="text-stone-300 mx-1">）</span>
+  return `<div class="mt-2 pt-2 border-t border-stone-200 flex justify-end">
+    <div class="text-right text-xs md:text-sm text-stone-500 leading-relaxed">
+      <span>
+        商品
+        <span class="mono text-stone-800 font-medium ml-1">
+          ${formatMoneyForOrder(amount.subtotal)}
+        </span>
+      </span>
+
+      <span class="text-stone-300 mx-2">｜</span>
+
+      <span>
+        折扣
+        <span class="mono text-stone-800 font-medium ml-1">
+          ${amount.discount
+            ? formatSignedMoneyForOrder(amount.discount, true)
+            : "NT$0"}
+        </span>
+      </span>
+
+      <span class="text-stone-300 mx-2">｜</span>
+
+      <span>
+        運費
+        <span class="mono text-stone-800 font-medium ml-1">
+          ${amount.shipping
+            ? formatSignedMoneyForOrder(amount.shipping, false)
+            : "NT$0"}
+        </span>
+      </span>
+
+      <span class="text-stone-300 mx-2">｜</span>
+
+      <span class="font-semibold text-red-500">
+        總額
+        <span class="mono ml-1">
+          ${formatMoneyForOrder(amount.total)}
+        </span>
+      </span>
+    </div>
   </div>`;
 }
 
