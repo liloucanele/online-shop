@@ -964,51 +964,77 @@
             calculateTotal(); 
         }
 
-        function getAmountBreakdown() {
-            let subtotal = 0;
-            cart.forEach(box => subtotal += box.boxTotalCost);
-            const shipMethod = document.getElementById('shipMethod').value;
-            const shipping = shipMethod === 'delivery' ? shippingFee : 0;
+        function calculateTotal() { 
+            let subtotal = 0; 
+            cart.forEach(box => subtotal += box.boxTotalCost); 
+            document.getElementById('subtotalDisplay').innerText = `$${subtotal}`; 
+            const shipMethod = document.getElementById('shipMethod').value; 
+            let finalTotal = subtotal; 
+            if(shipMethod === 'delivery') finalTotal += shippingFee; 
+            if (appliedCoupon) { 
+                const minSpendRequirement = Number(appliedCoupon.min_spend) || 0; 
+                if (subtotal < minSpendRequirement) { 
+                    appliedCoupon = null; 
+                    const msgElement = document.getElementById('couponMessage'); 
+                    msgElement.innerText = `✕ 金額未達門檻 ${minSpendRequirement} 元，已取消折抵。`; 
+                    msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-orange-500"; 
+                } 
+            } 
+            let discountAmount = 0; 
+            const couponDisplay = document.getElementById('couponDiscountDisplay'); 
+            if (appliedCoupon && subtotal > 0) { 
+                if (appliedCoupon.type === 'minus') discountAmount = Number(appliedCoupon.value) || 0; 
+                else if (appliedCoupon.type === 'discount') discountAmount = Math.round(subtotal * (1 - Number(appliedCoupon.value))); 
+                if (discountAmount > finalTotal) discountAmount = finalTotal; 
+                finalTotal -= discountAmount; 
+                couponDisplay.querySelector('span').innerText = `-$${discountAmount}`; 
+                couponDisplay.classList.remove('hidden'); 
+            } else { couponDisplay.classList.add('hidden'); } 
+            document.getElementById('totalDisplay').innerText = `$${finalTotal}`; 
+            return finalTotal; 
+        }
+        
+
+        function getOrderAmountSummary() {
+            const subtotal = cart.reduce((sum, box) => sum + (Number(box.boxTotalCost) || 0), 0);
+            const shipMethodVal = document.getElementById('shipMethod').value;
+            const shippingFeeValue = shipMethodVal === 'delivery' ? shippingFee : 0;
             let discountAmount = 0;
-
-            if (appliedCoupon && subtotal > 0) {
-                const minSpendRequirement = Number(appliedCoupon.min_spend) || 0;
-                if (subtotal < minSpendRequirement) {
-                    appliedCoupon = null;
-                    const msgElement = document.getElementById('couponMessage');
-                    msgElement.innerText = `✕ 金額未達門檻 ${minSpendRequirement} 元，已取消折抵。`;
-                    msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-orange-500";
-                }
-            }
-
             if (appliedCoupon && subtotal > 0) {
                 if (appliedCoupon.type === 'minus') discountAmount = Number(appliedCoupon.value) || 0;
                 else if (appliedCoupon.type === 'discount') discountAmount = Math.round(subtotal * (1 - Number(appliedCoupon.value)));
-                if (discountAmount > subtotal + shipping) discountAmount = subtotal + shipping;
+                if (discountAmount > subtotal + shippingFeeValue) discountAmount = subtotal + shippingFeeValue;
             }
-
             return {
                 subtotal,
-                shipping,
                 discountAmount,
-                total: subtotal + shipping - discountAmount
+                shippingFee: shippingFeeValue,
+                total: subtotal + shippingFeeValue - discountAmount
             };
         }
 
-        function calculateTotal() {
-            const amount = getAmountBreakdown();
-            document.getElementById('subtotalDisplay').innerText = `$${amount.subtotal}`;
-            const couponDisplay = document.getElementById('couponDiscountDisplay');
-            if (amount.discountAmount > 0) {
-                couponDisplay.querySelector('span').innerText = `-$${amount.discountAmount}`;
-                couponDisplay.classList.remove('hidden');
-            } else {
-                couponDisplay.classList.add('hidden');
-            }
-            document.getElementById('totalDisplay').innerText = `$${amount.total}`;
-            return amount.total;
+        function buildItemsDetailSnapshot() {
+            return cart.map((box, index) => {
+                const repeatQty = box.repeatQty || 1;
+                const repeatLabel = repeatQty > 1 ? ` ×${repeatQty}組` : "";
+                return {
+                    groupNo: index + 1,
+                    group: `第${index + 1}組｜${box.boxName}${repeatLabel}`,
+                    packageName: box.boxName,
+                    repeatQty: repeatQty,
+                    items: (box.flavors || []).map(f => {
+                        const qty = (Number(f.quantity) || 0) * repeatQty;
+                        const price = Number(f.price) || 0;
+                        return {
+                            name: f.name || "",
+                            price: price,
+                            qty: qty,
+                            subtotal: price * qty
+                        };
+                    })
+                };
+            });
         }
-
 
         function parseCouponDate(dateStr) {
             if (!dateStr) return null;
@@ -1203,14 +1229,18 @@
             }).join('、');
             const totalQtyAll = cart.reduce((sum, box) => sum + box.totalQty, 0);
             const finalDatabaseAddress = shipMethodVal === 'store' ? "高雄市前鎮區景德路72巷12號" : custAddress;
-            const amount = getAmountBreakdown();
+            const amountSummary = getOrderAmountSummary();
+            const itemsDetailSnapshot = buildItemsDetailSnapshot();
 
-            const orderData = { 
-                action: "submitOrder", name: custName, phone: custPhone, email: custEmail, date: shipDate, 
+            const orderData = {
+                action: "submitOrder", name: custName, phone: custPhone, email: custEmail, date: shipDate,
                 shipping_method: shipMethodVal === 'store' ? "Store Pickup" : "7-11 Pickup",
-                address: finalDatabaseAddress, product_name: orderProductSummary, quantity: totalQtyAll, 
-                packaging_name: orderPackSummary, total_price: amount.total, 
-                product_subtotal: amount.subtotal, shipping_fee: amount.shipping, discount_amount: amount.discountAmount,
+                address: finalDatabaseAddress, product_name: orderProductSummary, quantity: totalQtyAll,
+                packaging_name: orderPackSummary, total_price: finalTotal,
+                subtotal_amount: amountSummary.subtotal,
+                discount_amount: amountSummary.discountAmount,
+                shipping_fee: amountSummary.shippingFee,
+                items_detail: JSON.stringify(itemsDetailSnapshot),
                 note: document.getElementById('orderNote').value, coupon_code: appliedCoupon ? appliedCoupon.code : ""
             };
 
@@ -1254,18 +1284,13 @@
                             <div><strong>預定日期：</strong>${shipDate}</div>
                         </div>
                         <div class="border-t border-dashed border-stone-200 my-4 pt-4 text-sm font-mono text-stone-600 space-y-1"><div class="font-bold text-stone-800 mb-1">購物明細：</div>${cartDetailsHtml}</div>
-                        <div class="border-t border-stone-100 my-4 pt-4 text-sm text-stone-700 space-y-1.5">
-                            <div class="flex justify-between"><span class="font-bold text-stone-500">商品小計</span><span class="font-black">$${amount.subtotal} 元</span></div>
-                            <div class="flex justify-between"><span class="font-bold text-stone-500">運費</span><span class="font-black">$${amount.shipping} 元</span></div>
-                            ${amount.discountAmount > 0 ? `<div class="flex justify-between text-red-500"><span class="font-bold">折扣</span><span class="font-black">-$${amount.discountAmount} 元</span></div>` : ``}
-                            <div class="flex justify-between text-lg font-black text-[#5B7290] border-t border-stone-200 pt-2 mt-2"><span>應付總額</span><span>$${amount.total} 元</span></div>
-                        </div>
+                        <div class="text-right text-lg font-black text-[#5B7290] pt-2 border-t border-stone-100 mb-4">總金額：$${finalTotal} 元</div>
                         <div class="text-sm font-medium text-stone-600 leading-relaxed bg-stone-50 border border-stone-200 p-4 rounded-xl">如需要修改訂單內容，請私訊官方 LINE 或 Instagram，我們將由人工為您調整。謝謝😀</div>
                     `;
                     document.getElementById('receiptContainer').classList.remove('hidden');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-                    sharePlainText = `✨ Lilou 預購成功確認單 ✨\n\n訂單編號：${officialOrderId}\n顧客姓名：${custName}\n聯絡電話：${custPhone}\nEmail：${custEmail}\n配送方式：${shipMethodVal === 'delivery' ? '7-11 店到店' : '門市自取'}\n預定日期：${shipDate}\n商品小計：$${amount.subtotal} 元\n運費：$${amount.shipping} 元\n折扣：-$${amount.discountAmount} 元\n應付總額：$${amount.total} 元\n\n如有調整需求，請私訊官方官方，謝謝您的支持！`;
+                    sharePlainText = `✨ Lilou 預購成功確認單 ✨\n\n訂單編號：${officialOrderId}\n顧客姓名：${custName}\n聯絡電話：${custPhone}\nEmail：${custEmail}\n配送方式：${shipMethodVal === 'delivery' ? '7-11 店到店' : '門市自取'}\n預定日期：${shipDate}\n總金額：$${finalTotal} 元\n\n如有調整需求，請私訊官方官方，謝謝您的支持！`;
                     cart = []; appliedCoupon = null; 
                 } else if (result.status === "error") { alert(result.message); }
             } catch(err) { 
@@ -1301,7 +1326,7 @@
         }
 
         function getOrderStatusMessage(order, isStorePickup) {
-            const status = ((order.status || "訂單確認中").toString().trim() === "付款已確認" ? "待出貨" : (order.status || "訂單確認中").toString().trim());
+            const status = (order.status || "訂單確認中").toString().trim();
 
             if (status === "已取貨") {
                 return "您的訂單已完成取貨，感謝您選擇 Lilou。";
@@ -1331,35 +1356,6 @@
             }
 
             return "您的訂單已收到，正在確認中。";
-        }
-
-        function parseMoneyNumber(value) {
-            const n = Number((value || "").toString().replace(/[^0-9.-]/g, ""));
-            return isNaN(n) ? 0 : n;
-        }
-
-        function formatOrderMoney(value) {
-            return "$" + Math.round(parseMoneyNumber(value)).toLocaleString("zh-TW");
-        }
-
-        function renderOrderAmountDetails(order) {
-            const total = parseMoneyNumber(order.total);
-            const shipping = parseMoneyNumber(order.shippingFee);
-            const discount = parseMoneyNumber(order.discountAmount);
-            let subtotal = parseMoneyNumber(order.productSubtotal);
-            if (!subtotal && total) subtotal = Math.max(0, total - shipping + discount);
-
-            if (!subtotal && !shipping && !discount) {
-                return `<div><strong>應付總額：</strong><span class="font-black text-[#5B7290]">${formatOrderMoney(total)}</span></div>`;
-            }
-
-            return `<div class="bg-stone-50 border border-stone-100 rounded-xl p-3 space-y-1.5">
-                <div class="text-[11px] font-black text-stone-400 tracking-widest mb-1">金額明細</div>
-                <div class="flex justify-between gap-3"><span class="font-bold text-stone-500">商品小計</span><span class="font-black">${formatOrderMoney(subtotal)}</span></div>
-                <div class="flex justify-between gap-3"><span class="font-bold text-stone-500">運費</span><span class="font-black">${formatOrderMoney(shipping)}</span></div>
-                ${discount ? `<div class="flex justify-between gap-3 text-red-500"><span class="font-bold">折扣</span><span class="font-black">-${formatOrderMoney(discount)}</span></div>` : ``}
-                <div class="flex justify-between gap-3 border-t border-stone-200 pt-1.5 mt-1 text-[#5B7290]"><span class="font-black">應付總額</span><span class="font-black">${formatOrderMoney(total)}</span></div>
-            </div>`;
         }
 
         async function queryCustomerOrders() {
@@ -1447,6 +1443,96 @@
                 .join("");
         }
 
+
+        function formatTwd(value) {
+            const n = Number((value || "").toString().replace(/[^0-9.-]/g, ""));
+            return "NT$" + Math.round(isNaN(n) ? 0 : n).toLocaleString("zh-TW");
+        }
+
+        function formatDiscountTwd(value) {
+            const n = Number((value || "").toString().replace(/[^0-9.-]/g, ""));
+            const abs = Math.abs(Math.round(isNaN(n) ? 0 : n));
+            return abs > 0 ? "-NT$" + abs.toLocaleString("zh-TW") : "NT$0";
+        }
+
+        function parseItemsDetailJson(value) {
+            const raw = (value || "").toString().trim();
+            if (!raw) return [];
+            try {
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (err) {
+                return [];
+            }
+        }
+
+        function formatItemsDetailWithPrices(itemsDetail) {
+            const groups = parseItemsDetailJson(itemsDetail);
+            if (!groups.length) return "";
+
+            return groups.map((group, idx) => {
+                const title = group.group || group.packageName || `第${idx + 1}組`;
+                const items = Array.isArray(group.items) ? group.items : [];
+                const itemRows = items.map(item => {
+                    const name = item.name || "未命名商品";
+                    const price = Number(item.price || 0);
+                    const qty = Number(item.qty || item.quantity || 0);
+                    const subtotal = Number(item.subtotal || (price * qty));
+                    return `
+                        <div class="grid grid-cols-[1fr_auto] gap-3 py-2 border-b border-stone-100 last:border-b-0">
+                            <div class="min-w-0">
+                                <div class="font-black text-stone-800 break-words">${escapeHtml(name)}</div>
+                                <div class="text-xs md:text-sm text-stone-500 font-bold mt-0.5">${formatTwd(price)} × ${qty}</div>
+                            </div>
+                            <div class="font-black text-stone-900 mono whitespace-nowrap">${formatTwd(subtotal)}</div>
+                        </div>`;
+                }).join("");
+
+                return `
+                    <div class="bg-white border border-stone-100 rounded-xl p-3 space-y-2">
+                        <div class="font-black text-[#5B7290] text-xs md:text-sm tracking-wide">${escapeHtml(title)}</div>
+                        <div class="space-y-0.5">${itemRows || `<div class="text-stone-400 font-bold text-sm">無商品明細</div>`}</div>
+                    </div>`;
+            }).join("");
+        }
+
+        function renderCustomerOrderDetailBlock(order) {
+            const pricedDetails = formatItemsDetailWithPrices(order.itemsDetail);
+            const detailHtml = pricedDetails || formatOrderDetails(order.details) || `<div class="text-stone-400 font-bold text-sm">無商品明細</div>`;
+            const subtotal = order.subtotalAmount || order.subtotal || "";
+            const discount = order.discountAmount || order.discount || "0";
+            const shipping = order.shippingFee || order.shipping || "0";
+            const total = order.total || "0";
+
+            const hasAmountDetail = subtotal !== "" || discount !== "" || shipping !== "";
+            const amountHtml = hasAmountDetail ? `
+                <div class="bg-stone-50 border border-stone-100 rounded-xl p-3 space-y-2">
+                    <div class="text-[11px] font-black text-stone-400 tracking-widest">金額明細</div>
+                    <div class="space-y-1.5 text-sm font-bold">
+                        <div class="flex justify-between gap-3"><span class="text-stone-500">商品小計</span><span class="mono text-stone-800">${formatTwd(subtotal)}</span></div>
+                        <div class="flex justify-between gap-3"><span class="text-stone-500">折扣</span><span class="mono text-red-500">${formatDiscountTwd(discount)}</span></div>
+                        <div class="flex justify-between gap-3"><span class="text-stone-500">運費</span><span class="mono text-stone-800">${formatTwd(shipping)}</span></div>
+                        <div class="flex justify-between gap-3 border-t border-stone-200 pt-2 mt-2 text-base">
+                            <span class="text-stone-900 font-black">應付總額</span>
+                            <span class="mono text-[#5B7290] font-black">${formatTwd(total)}</span>
+                        </div>
+                    </div>
+                </div>` : `
+                <div class="flex justify-between gap-3 bg-stone-50 border border-stone-100 rounded-xl p-3">
+                    <span class="font-black text-stone-700">應付總額</span>
+                    <span class="font-black text-[#5B7290] mono">${formatTwd(total)}</span>
+                </div>`;
+
+            return `
+                <div class="space-y-3">
+                    <div class="space-y-2">
+                        <strong>商品明細：</strong>
+                        <div class="space-y-2">${detailHtml}</div>
+                    </div>
+                    ${amountHtml}
+                </div>`;
+        }
+
         function renderOrderResults(orders) {
             const resultArea = document.getElementById('queryResultArea');
 
@@ -1465,8 +1551,7 @@
             resultArea.innerHTML = orders.map(order => {
                 const method = order.method || "";
                 const isStorePickup = method.toLowerCase().includes("store");
-                const rawStatus = order.status || "訂單確認中";
-                const status = rawStatus === "付款已確認" ? "待出貨" : rawStatus;
+                const status = (order.status === "付款已確認") ? "待出貨" : (order.status || "訂單確認中");
                 const statusClass = getOrderStatusClass(status);
                 const statusMessage = getOrderStatusMessage(order, isStorePickup);
 
@@ -1566,11 +1651,7 @@
 
                         <div class="space-y-2 text-sm text-stone-700">
                             <div><strong>配送方式：</strong>${isStorePickup ? "門市自取付款" : "7-11 店到店取貨"}</div>
-                            <div class="space-y-2">
-                                <strong>商品明細：</strong>
-                                <div class="space-y-2">${formatOrderDetails(order.details)}</div>
-                            </div>
-                            ${renderOrderAmountDetails(order)}
+                            ${renderCustomerOrderDetailBlock(order)}
                             ${order.lastUpdate ? `<div><strong>最後更新：</strong>${escapeHtml(order.lastUpdate)}</div>` : ""}
                             ${order.statusNote && status !== "已出貨" ? `<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-2"><strong>狀態備註：</strong>${escapeHtml(order.statusNote)}</div>` : ""}
                             ${order.note ? `<div><strong>訂單備註：</strong>${escapeHtml(order.note)}</div>` : ""}
