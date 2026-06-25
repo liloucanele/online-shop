@@ -456,6 +456,33 @@ function formatOrderDetailsAdmin(details) {
   </div>`;
 }
 
+function getProductUnitPriceByName(itemName) {
+  const target = (itemName || "").toString().trim();
+  if (!target) return 0;
+  const products = adminData?.products || [];
+  const found = products.find(p => (p.name || "").toString().trim() === target)
+    || products.find(p => target.includes((p.name || "").toString().trim()) || (p.name || "").toString().trim().includes(target));
+  return parseMoneyNumber(found?.price || 0);
+}
+
+function parseGroupItemForAmount(itemText) {
+  const raw = (itemText || "").toString().trim();
+  const match = raw.match(/^(.+?)[(（](\d+)/);
+  if (!match) return { name: raw, qty: 0 };
+  return {
+    name: (match[1] || "").trim(),
+    qty: Number(match[2]) || 0
+  };
+}
+
+function calculateGroupAmount(group) {
+  return (group.items || []).reduce((sum, item) => {
+    const parsed = parseGroupItemForAmount(item);
+    if (!parsed.name || !parsed.qty) return sum;
+    return sum + getProductUnitPriceByName(parsed.name) * parsed.qty;
+  }, 0);
+}
+
 function formatOrderGroupDetailsAdmin(details) {
   const { text, groups } = parseOrderDetailGroups(details);
   if (!text) return `<p class="text-stone-400 font-bold">無商品明細</p>`;
@@ -465,21 +492,26 @@ function formatOrderGroupDetailsAdmin(details) {
   }
 
   return `<div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-    ${groups.map(group => `
+    ${groups.map(group => {
+      const groupAmount = calculateGroupAmount(group);
+      return `
       <div class="bg-white border border-stone-200 rounded-2xl p-3">
-        <div class="flex flex-wrap items-center gap-2 mb-2">
-          <span class="inline-flex items-center justify-center rounded-full bg-[#5B7290] text-white text-[11px] font-black px-2 py-0.5">
-            第${escapeHtml(group.groupNo)}組
-          </span>
-          <span class="order-group-title text-stone-900">${escapeHtml(group.packageName)}</span>
+        <div class="flex items-start justify-between gap-3 mb-2">
+          <div class="min-w-0 flex flex-wrap items-center gap-2">
+            <span class="inline-flex items-center justify-center rounded-full bg-[#5B7290] text-white text-[11px] font-black px-2 py-0.5">
+              第${escapeHtml(group.groupNo)}組
+            </span>
+            <span class="order-group-title text-stone-900">${escapeHtml(group.packageName)}</span>
+          </div>
+          ${groupAmount ? `<div class="shrink-0 text-base font-black text-stone-900 mono">${formatMoneyForOrder(groupAmount)}</div>` : ""}
         </div>
         <div class="flex flex-wrap gap-1.5">
           ${group.items.length
             ? group.items.map(item => `<span class="order-group-item-chip inline-flex rounded-lg bg-stone-50 border border-stone-100 text-stone-800">${escapeHtml(item)}</span>`).join("")
             : `<span class="text-sm text-stone-400 font-bold">無品項資料</span>`}
         </div>
-      </div>
-    `).join("")}
+      </div>`;
+    }).join("")}
   </div>`;
 }
 
@@ -559,20 +591,19 @@ function renderAdminAmountDetails(order) {
     subtotal = Math.max(0, total - shipping + discount);
   }
 
-  const hasDetails = subtotal || shipping || discount;
-  if (!hasDetails) {
-    return `<div class="flex items-center justify-between gap-3 border-t border-stone-100 pt-2 mt-2 text-sm">
-      <span class="font-black text-stone-500">應付總額</span>
-      <span class="font-black text-[#5B7290] mono">${formatMoneyForOrder(total)}</span>
-    </div>`;
-  }
-
-  return `<div class="bg-stone-50 border border-stone-100 rounded-xl p-3 space-y-1.5 text-sm">
-    <div class="order-detail-title font-black text-stone-500 tracking-widest mb-1">金額明細</div>
-    <div class="flex items-center justify-between gap-3"><span class="font-bold text-stone-500">商品小計</span><span class="font-black text-stone-800 mono">${formatMoneyForOrder(subtotal)}</span></div>
-    <div class="flex items-center justify-between gap-3"><span class="font-bold text-stone-500">運費</span><span class="font-black text-stone-800 mono">${shipping ? "+" : ""}${formatMoneyForOrder(shipping)}</span></div>
-    <div class="flex items-center justify-between gap-3"><span class="font-bold text-stone-500">折扣</span><span class="font-black text-red-500 mono">${discount ? "-" : ""}${formatMoneyForOrder(discount)}</span></div>
-    <div class="flex items-center justify-between gap-3 border-t border-stone-200 pt-1.5 mt-1"><span class="font-black text-stone-800">應付總額</span><span class="font-black text-[#5B7290] mono">${formatMoneyForOrder(total)}</span></div>
+  return `<div class="bg-white border border-stone-200 rounded-xl px-3 py-2 text-sm font-black text-left leading-relaxed">
+    <span class="text-stone-500">總額</span>
+    <span class="text-red-500 mono ml-1">${formatMoneyForOrder(total)}</span>
+    <span class="text-stone-300 mx-1">（</span>
+    <span class="text-stone-500">商品</span>
+    <span class="text-stone-800 mono ml-1">${formatMoneyForOrder(subtotal)}</span>
+    <span class="text-stone-300 mx-1">｜</span>
+    <span class="text-stone-500">折扣</span>
+    <span class="text-stone-800 mono ml-1">${discount ? "-" : ""}${formatMoneyForOrder(discount)}</span>
+    <span class="text-stone-300 mx-1">｜</span>
+    <span class="text-stone-500">運費</span>
+    <span class="text-stone-800 mono ml-1">${formatMoneyForOrder(shipping)}</span>
+    <span class="text-stone-300 mx-1">）</span>
   </div>`;
 }
 
