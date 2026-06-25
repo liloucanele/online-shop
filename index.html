@@ -1548,12 +1548,21 @@
                 return;
             }
 
-            resultArea.innerHTML = orders.map(order => {
+            const sortedOrders = orders.slice().sort((a, b) => {
+                const aKey = (a.orderDate || a.timestamp || a.date || a.id || "").toString();
+                const bKey = (b.orderDate || b.timestamp || b.date || b.id || "").toString();
+                return bKey.localeCompare(aKey);
+            });
+
+            resultArea.innerHTML = sortedOrders.map((order, index) => {
+                const isLatestOrder = index === 0;
                 const method = order.method || "";
                 const isStorePickup = method.toLowerCase().includes("store");
                 const status = (order.status === "付款已確認") ? "待出貨" : (order.status || "訂單確認中");
                 const statusClass = getOrderStatusClass(status);
                 const statusMessage = getOrderStatusMessage(order, isStorePickup);
+                const orderTotal = formatTwd(order.total || 0);
+                const orderDateLabel = order.orderDate || order.date || "-";
 
                 let actionHtml = "";
 
@@ -1620,7 +1629,7 @@
                     </div>
                 `;
 
-                return `
+                const fullArticle = `
                     <article class="bg-white p-5 md:p-6 rounded-2xl border border-stone-100 shadow-xs space-y-4">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border-b border-stone-100 pb-3">
                             <div>
@@ -1660,10 +1669,37 @@
                         ${actionHtml ? `<div class="space-y-3 pt-2">${actionHtml}</div>` : ""}
                     </article>
                 `;
+
+                if (isLatestOrder) return fullArticle;
+
+                return `
+                    <details class="group bg-white rounded-2xl border border-stone-100 shadow-xs overflow-hidden">
+                        <summary class="list-none cursor-pointer p-4 md:p-5 flex items-center justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="font-black text-stone-900">${escapeHtml(order.id)}</span>
+                                    <span class="inline-flex w-fit px-2 py-0.5 rounded-full border text-[11px] font-black ${statusClass}">
+                                        ${escapeHtml(status)}
+                                    </span>
+                                </div>
+                                <div class="mt-1 text-xs md:text-sm font-bold text-stone-500 leading-relaxed">
+                                    ${escapeHtml(isStorePickup ? "取貨" : "到貨")}：${escapeHtml(order.date || "-")}
+                                    <span class="text-stone-300 mx-1">｜</span>
+                                    ${escapeHtml(orderTotal)}
+                                </div>
+                            </div>
+                            <div class="shrink-0 text-xs font-black text-[#5B7290] group-open:hidden">展開</div>
+                            <div class="shrink-0 text-xs font-black text-stone-400 hidden group-open:block">收合</div>
+                        </summary>
+                        <div class="border-t border-stone-100 p-0">
+                            ${fullArticle}
+                        </div>
+                    </details>
+                `;
             }).join('');
         }
 
-                document.addEventListener('DOMContentLoaded', function queryPhoneEnterBind() {
+        document.addEventListener('DOMContentLoaded', function queryPhoneEnterBind() {
             const queryPhone = document.getElementById('queryPhone');
             if (queryPhone) {
                 queryPhone.addEventListener('keydown', function(e) {
