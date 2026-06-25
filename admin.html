@@ -921,37 +921,115 @@ function sumRevenueByCreatedDate(orders, startDate, endDate) {
 }
 
 function renderRevenueLineChart(rows) {
-  if (!rows || !rows.length) return `<p class="text-stone-400 font-bold">目前無資料</p>`;
-  const width = 640;
-  const height = 220;
+  if (!rows || !rows.length) {
+    return `<p class="text-stone-400 font-medium">目前無資料</p>`;
+  }
+
+  const width = 720;
+  const height = 340;
+
   const left = 54;
   const right = 18;
   const top = 24;
-  const bottom = 42;
+  const bottom = 50;
+
   const chartWidth = width - left - right;
   const chartHeight = height - top - bottom;
-  const maxRevenue = Math.max(...rows.map(row => row.revenue), 1);
-  const points = rows.map((row, index) => {
-    const x = rows.length === 1 ? left + chartWidth / 2 : left + (chartWidth * index / (rows.length - 1));
-    const y = top + chartHeight - (row.revenue / maxRevenue * chartHeight);
-    return { ...row, x, y };
-  });
-  const pointLine = points.map(point => `${point.x},${point.y}`).join(" ");
-  const areaLine = `${left},${top + chartHeight} ${pointLine} ${left + chartWidth},${top + chartHeight}`;
+
+  const maxRevenue = Math.max(...rows.map(r => r.revenue), 1);
   const midValue = Math.round(maxRevenue / 2);
 
-  return `<div class="overflow-x-auto">
-    <svg viewBox="0 0 ${width} ${height}" class="w-full min-w-[520px] h-[240px]" role="img" aria-label="近 7 日每日營業額曲線圖">
-      <line x1="${left}" y1="${top}" x2="${left}" y2="${top + chartHeight}" stroke="#E7E5E4" stroke-width="1" />
-      <line x1="${left}" y1="${top + chartHeight}" x2="${left + chartWidth}" y2="${top + chartHeight}" stroke="#E7E5E4" stroke-width="1" />
-      <line x1="${left}" y1="${top + chartHeight / 2}" x2="${left + chartWidth}" y2="${top + chartHeight / 2}" stroke="#F1F0EE" stroke-width="1" />
-      <text x="${left - 8}" y="${top + 4}" text-anchor="end" font-size="11" fill="#A8A29E" font-weight="700">${formatCurrency(maxRevenue)}</text>
-      <text x="${left - 8}" y="${top + chartHeight / 2 + 4}" text-anchor="end" font-size="11" fill="#A8A29E" font-weight="700">${formatCurrency(midValue)}</text>
-      <text x="${left - 8}" y="${top + chartHeight + 4}" text-anchor="end" font-size="11" fill="#A8A29E" font-weight="700">NT$0</text>
-      <polygon points="${areaLine}" fill="#5B7290" opacity="0.08"></polygon>
-      <polyline points="${pointLine}" fill="none" stroke="#5B7290" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
-      ${points.map(point => `<circle cx="${point.x}" cy="${point.y}" r="4" fill="#5B7290"><title>${escapeHtml(point.label)}：${formatCurrency(point.revenue)}</title></circle>`).join("")}
-      ${points.map(point => `<text x="${point.x}" y="${top + chartHeight + 24}" text-anchor="middle" font-size="12" fill="#78716C" font-weight="700">${escapeHtml(point.label)}</text>`).join("")}
+  const points = rows.map((row, index) => {
+    const x = rows.length === 1
+      ? left + chartWidth / 2
+      : left + (chartWidth * index / (rows.length - 1));
+
+    const y = top + chartHeight - (row.revenue / maxRevenue * chartHeight);
+
+    return {
+      ...row,
+      x,
+      y
+    };
+  });
+
+  const pointLine = points.map(p => `${p.x},${p.y}`).join(" ");
+  const areaLine = `${left},${top + chartHeight} ${pointLine} ${left + chartWidth},${top + chartHeight}`;
+
+  // 最多顯示 7 個日期
+  const labelInterval = Math.max(1, Math.ceil(points.length / 7));
+
+  return `
+  <div>
+    <svg
+      viewBox="0 0 ${width} ${height}"
+      class="w-full h-[340px]"
+      role="img"
+      aria-label="每日營業額">
+
+      <!-- Y 軸 -->
+      <line x1="${left}" y1="${top}" x2="${left}" y2="${top + chartHeight}" stroke="#E7E5E4"/>
+      <line x1="${left}" y1="${top + chartHeight}" x2="${left + chartWidth}" y2="${top + chartHeight}" stroke="#E7E5E4"/>
+      <line x1="${left}" y1="${top + chartHeight/2}" x2="${left + chartWidth}" y2="${top + chartHeight/2}" stroke="#F1F0EE"/>
+
+      <text x="${left-8}" y="${top+4}" text-anchor="end" font-size="11" fill="#A8A29E">
+        ${formatCurrency(maxRevenue)}
+      </text>
+
+      <text x="${left-8}" y="${top + chartHeight/2 +4}" text-anchor="end" font-size="11" fill="#A8A29E">
+        ${formatCurrency(midValue)}
+      </text>
+
+      <text x="${left-8}" y="${top + chartHeight +4}" text-anchor="end" font-size="11" fill="#A8A29E">
+        NT$0
+      </text>
+
+      <!-- 面積 -->
+      <polygon
+        points="${areaLine}"
+        fill="#5B7290"
+        opacity="0.08">
+      </polygon>
+
+      <!-- 曲線 -->
+      <polyline
+        points="${pointLine}"
+        fill="none"
+        stroke="#5B7290"
+        stroke-width="3"
+        stroke-linejoin="round"
+        stroke-linecap="round">
+      </polyline>
+
+      <!-- 點 -->
+      ${points.map(point => `
+        <circle
+          cx="${point.x}"
+          cy="${point.y}"
+          r="4"
+          fill="#5B7290">
+          <title>${escapeHtml(point.label)}：${formatCurrency(point.revenue)}</title>
+        </circle>
+      `).join("")}
+
+      <!-- X 軸日期 -->
+      ${points
+        .filter((point, index) =>
+          index % labelInterval === 0 ||
+          index === points.length - 1
+        )
+        .map(point => `
+          <text
+            x="${point.x}"
+            y="${top + chartHeight + 30}"
+            text-anchor="middle"
+            font-size="12"
+            fill="#78716C"
+            font-weight="500">
+            ${escapeHtml(point.label)}
+          </text>
+        `).join("")}
+
     </svg>
   </div>`;
 }
@@ -1082,8 +1160,12 @@ function getDashboardRangeMode(start, end) {
   const today = getTodayDateInputValue();
   const seven = getDashboardSevenDayRange();
   const now = new Date(today + "T00:00:00");
-  const monthStart = formatDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1));
-  const monthEnd = formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  const monthStart = formatDateInputValue(
+    new Date(now.getFullYear(), now.getMonth(), 1)
+  );
+  const monthEnd = formatDateInputValue(
+    new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  );
   if (!start && !end) return "all";
   if (start === today && end === today) return "today";
   if (start === seven.start && end === seven.end) return "seven";
@@ -1201,18 +1283,24 @@ function updateDashboardFilterSummary(state) {
   el.textContent = `${getDashboardPeriodLabel(state.start, state.end)}｜${methodText}`;
 }
 
-function updateDashboardRangeButtons(state) {
-  const activeMode = getDashboardRangeMode(state.start, state.end);
-  document.querySelectorAll(".dashboard-range-btn").forEach(btn => {
-    const active = btn.dataset.dashboardRange === activeMode;
-    btn.classList.toggle("bg-[#5B7290]", active);
-    btn.classList.toggle("border-[#5B7290]", active);
-    btn.classList.toggle("text-white", active);
-    btn.classList.toggle("bg-white", !active);
-    btn.classList.toggle("border-stone-200", !active);
-    btn.classList.toggle("text-stone-600", !active);
-    btn.classList.toggle("hover:bg-stone-50", !active);
-  });
+function updateDashboardRangeButtons(state){
+    const mode = getDashboardRangeMode(
+        state.start,
+        state.end
+    );
+    document
+    .querySelectorAll(".dashboard-range-btn")
+    .forEach(btn=>{
+        const active =
+            btn.dataset.dashboardRange===mode;
+        btn.classList.toggle("bg-[#5B7290]",active);
+        btn.classList.toggle("text-white",active);
+        btn.classList.toggle("border-[#5B7290]",active);
+        btn.classList.toggle("bg-white",!active);
+        btn.classList.toggle("text-stone-600",!active);
+        btn.classList.toggle("border-stone-200",!active);
+    });
+
 }
 
 function syncDashboardFilterDetails() {
