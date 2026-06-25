@@ -1242,8 +1242,6 @@ function orderCard(order) {
       <div class="min-w-0 break-all"><span class="text-stone-400 font-black">Email：</span>${escapeHtml(order.email || "-")}</div>
     </div>
 
-    ${renderAdminAmountDetails(order)}
-
     <div class="border-t border-stone-100 pt-2.5 text-sm leading-relaxed">
       <div class="order-detail-title font-black text-stone-500 tracking-widest mb-2">完整商品明細</div>
       ${formatOrderDetailsAdmin(order.details)}
@@ -1260,6 +1258,7 @@ function orderCard(order) {
           <div class="order-detail-title font-black text-stone-500 tracking-widest mb-2">每組完整明細</div>
           ${formatOrderGroupDetailsAdmin(order.details)}
         </div>
+        ${renderAdminAmountDetails(order)}
         ${order.note ? `<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm"><strong>客人備註：</strong>${escapeHtml(order.note)}</div>` : ""}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
           ${statusFields}
