@@ -1460,6 +1460,7 @@ function setOrderDateFutureDefault() {
   if (startInput) startInput.value = getTodayDateInputValue();
   if (endInput) endInput.value = "";
   filterOrders();
+  clearOrderDateFilter();
 }
 
 function normalizeOrderDateForCompare(value) {
@@ -1482,6 +1483,7 @@ function setOrderDateDefaultMonth() {
   if (startInput) startInput.value = range.start;
   if (endInput) endInput.value = range.end;
   filterOrders();
+  updateOrderRangeButtons("month");
 }
 
 function clearOrderDateFilter() {
@@ -1490,6 +1492,7 @@ function clearOrderDateFilter() {
   if (startInput) startInput.value = "";
   if (endInput) endInput.value = "";
   filterOrders();
+  updateOrderRangeButtons("all");
 }
 
 function renderOrders() {
@@ -1523,16 +1526,33 @@ function renderOrders() {
         </select>
         <input id="orderStartDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
         <input id="orderEndDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        <div class="flex gap-2 md:col-span-2">
-          <button onclick="setOrderDateFutureDefault()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">未來</button>
-          <button onclick="setOrderDateDefaultMonth()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">本月</button>
-          <button onclick="clearOrderDateFilter()" class="flex-1 h-11 rounded-xl border border-stone-200 px-3 font-black text-stone-600 bg-white hover:bg-stone-50 text-xs">全部</button>
-        </div>
+<div class="flex gap-2 md:col-span-2">
+  <button
+      data-order-range="future"
+      onclick="setOrderDateFutureDefault()"
+      class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">
+      未來
+  </button>
+
+  <button
+      data-order-range="month"
+      onclick="setOrderDateDefaultMonth()"
+      class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">
+      本月
+  </button>
+
+  <button
+      data-order-range="all"
+      onclick="clearOrderDateFilter()"
+      class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">
+      全部
+  </button>
+</div>
       </div>
       <div id="orderCount" class="text-sm font-black text-stone-500"></div>
     </div>
-    <div id="ordersArea" class="space-y-4"></div>`;
-  setOrderDateFutureDefault();
+  <div id="ordersArea" class="space-y-4"></div>`;
+    clearOrderDateFilter();
 }
 
 function getOrderSortLabel(sortMode) {
@@ -2298,6 +2318,27 @@ async function postAdmin(payload, successMessage) {
   }
 }
 
+  function updateOrderRangeButtons(mode){
+
+    document
+        .querySelectorAll(".order-range-btn")
+        .forEach(btn=>{
+
+            const active =
+                btn.dataset.orderRange===mode;
+
+            btn.classList.toggle("bg-[#5B7290]",active);
+            btn.classList.toggle("border-[#5B7290]",active);
+            btn.classList.toggle("text-white",active);
+
+            btn.classList.toggle("bg-white",!active);
+            btn.classList.toggle("border-stone-200",!active);
+            btn.classList.toggle("text-stone-600",!active);
+
+        });
+
+}
+  
 document.getElementById("adminPassword").addEventListener("keydown", e => { if (e.key === "Enter") adminLogin(); });
 if (getToken()) { setLoggedInState(true); loadAll(); }
 </script>
