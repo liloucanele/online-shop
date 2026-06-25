@@ -106,37 +106,42 @@
       article[data-order-id] .text-lg,
       article[data-order-id] .md\:text-lg { font-size: 19px !important; }
     }
-
     .order-item-chip {
-      font-size: 13px !important;
+      font-size: 14px !important;
       line-height: 1.35 !important;
-      font-weight: 650 !important;
+      font-weight: 500 !important;
       padding: 5px 10px !important;
       border-radius: 999px;
+    }
+    .order-item-chip .qty {
+      font-weight: 600 !important;
+      margin-left: 4px;
     }
     .order-group-item-chip {
       font-size: 14px !important;
       line-height: 1.4 !important;
-      font-weight: 600 !important;
+      font-weight: 500 !important;
       padding: 5px 9px !important;
     }
     .order-group-title {
       font-size: 16px !important;
       line-height: 1.35 !important;
-      font-weight: 800 !important;
+      font-weight: 700 !important;
     }
     .order-detail-title {
       font-size: 13px !important;
       letter-spacing: .08em;
+      font-weight: 600 !important;
     }
     @media (max-width: 640px) {
-      ..order-item-chip {
+      .order-item-chip,
+      .order-group-item-chip {
         font-size: 14px !important;
-        line-height: 1.35 !important;
-        font-weight: 500 !important;
-        padding: 5px 10px !important;
-        border-radius: 999px;
       }
+      .order-group-title {
+        font-size: 16px !important;
+      }
+    }
       .order-group-item-chip {
         font-size: 14px !important;
       }
@@ -461,9 +466,9 @@ function formatOrderDetailsAdmin(details) {
   const itemChips = Object.entries(itemSummary)
     .sort((a, b) => b[1] - a[1])
     .map(([name, qty]) => `
-      <span class="order-item-chip inline-flex items-center rounded-full bg-white border border-stone-200 text-stone-800 !font-medium">
+      <span class="order-item-chip inline-flex items-center rounded-full bg-white border border-stone-200 text-stone-800">
         <span>${escapeHtml(name)}</span>
-        <span class="ml-1 !font-semibold">× ${qty}</span>
+        <span class="qty">× ${qty}</span>
       </span>
     `)
     .join("");
@@ -698,43 +703,13 @@ function renderAdminAmountDetails(order) {
 
   return `<div class="mt-2 pt-2 border-t border-stone-200 flex justify-end">
     <div class="text-right text-xs md:text-sm text-stone-500 leading-relaxed">
-      <span>
-        商品
-        <span class="mono text-stone-800 font-medium ml-1">
-          ${formatMoneyForOrder(amount.subtotal)}
-        </span>
-      </span>
-
+      <span>商品 <span class="mono text-stone-800 font-medium ml-1">${formatMoneyForOrder(amount.subtotal)}</span></span>
       <span class="text-stone-300 mx-2">｜</span>
-
-      <span>
-        折扣
-        <span class="mono text-stone-800 font-medium ml-1">
-          ${amount.discount
-            ? formatSignedMoneyForOrder(amount.discount, true)
-            : "NT$0"}
-        </span>
-      </span>
-
+      <span>折扣 <span class="mono text-stone-800 font-medium ml-1">${amount.discount ? formatSignedMoneyForOrder(amount.discount, true) : "NT$0"}</span></span>
       <span class="text-stone-300 mx-2">｜</span>
-
-      <span>
-        運費
-        <span class="mono text-stone-800 font-medium ml-1">
-          ${amount.shipping
-            ? formatSignedMoneyForOrder(amount.shipping, false)
-            : "NT$0"}
-        </span>
-      </span>
-
+      <span>運費 <span class="mono text-stone-800 font-medium ml-1">${amount.shipping ? formatSignedMoneyForOrder(amount.shipping, false) : "NT$0"}</span></span>
       <span class="text-stone-300 mx-2">｜</span>
-
-      <span class="font-semibold text-red-500">
-        總額
-        <span class="mono ml-1">
-          ${formatMoneyForOrder(amount.total)}
-        </span>
-      </span>
+      <span class="font-semibold text-red-500">總額 <span class="mono ml-1">${formatMoneyForOrder(amount.total)}</span></span>
     </div>
   </div>`;
 }
@@ -836,28 +811,41 @@ function renderFutureSevenDayPreview() {
 
   for (let i = 0; i < 7; i++) {
     const date = addDaysToDateInput(today, i);
-    const dayOrders = (adminData.orders || []).filter(o => normalizeOrderDateForCompare(o.date) === date && o.orderStatus !== "已取貨" && o.orderStatus !== "已作廢");
+    const dayOrders = (adminData.orders || []).filter(o =>
+      normalizeOrderDateForCompare(o.date) === date &&
+      o.orderStatus !== "已取貨" &&
+      o.orderStatus !== "已作廢"
+    );
+
     rows.push({
       date,
       store: dayOrders.filter(o => getOrderMethodType(o) === "store").length,
-      delivery: dayOrders.filter(o => getOrderMethodType(o) === "delivery").length,
-      total: dayOrders.length
+      delivery: dayOrders.filter(o => getOrderMethodType(o) === "delivery").length
     });
   }
 
   return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
-      <h3 class="font-black text-[#5B7290] tracking-widest">📦 未來 7 天訂單預覽</h3>
-      <div class="text-xs text-stone-400 font-bold">依客人選擇日期統計｜${escapeHtml(today)}～${escapeHtml(endDate)}</div>
+      <h3 class="font-semibold text-[#5B7290] tracking-wide">📦 未來 7 天訂單預覽</h3>
+      <div class="text-xs text-stone-400 font-medium">依客人選擇日期統計｜${escapeHtml(today)}～${escapeHtml(endDate)}</div>
     </div>
+
     <div class="grid grid-cols-1 md:grid-cols-7 gap-2">
       ${rows.map(row => `
         <div class="rounded-2xl border border-stone-100 bg-stone-50 p-3 space-y-2">
-          <div class="font-black text-stone-800 text-sm">${formatMonthDayWithWeekday(row.date)}</div>
-          <div class="text-xs font-bold text-blue-700">門市自取 ${row.store}</div>
-          <div class="text-xs font-bold text-amber-700">7-11店到店 ${row.delivery}</div>
-          <div class="pt-1 border-t border-stone-200 text-xs font-black text-stone-500">合計 ${row.total}</div>
-        </div>`).join("")}
+          <div class="text-base font-semibold text-stone-800">${formatMonthDayWithWeekday(row.date)}</div>
+
+          <div class="flex items-center justify-between gap-2 text-sm font-medium">
+            <span class="text-stone-500">門市自取</span>
+            <span class="mono font-semibold text-blue-700">${row.store}</span>
+          </div>
+
+          <div class="flex items-center justify-between gap-2 text-sm font-medium">
+            <span class="text-stone-500">7-11店到店</span>
+            <span class="mono font-semibold text-amber-700">${row.delivery}</span>
+          </div>
+        </div>
+      `).join("")}
     </div>
   </div>`;
 }
