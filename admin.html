@@ -1373,21 +1373,13 @@ function renderDashboardContent() {
   document.getElementById("dashboardStatsArea").innerHTML = `
     <div class="text-xs md:text-sm font-medium text-stone-500 -mt-1">目前顯示：${escapeHtml(periodLabel)}｜${state.method === "store" ? "門市自取" : state.method === "delivery" ? "7-11 店到店" : "全部配送"}｜依下單日期統計</div>
     ${renderDashboardOpenOrdersReminder(allOrders)}
-    <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
-      ${kpi("全部訂單", d.totalOrders || 0)}
-      ${kpi("訂單確認中", d.confirming || 0)}
-      ${kpi("待付款", d.pendingPayment || 0)}
-      ${kpi("待出貨", d.waitingShipping || 0)}
-      ${kpi("可取貨", d.readyPickup || 0)}
-      ${kpi("已出貨", d.shipped || 0)}
-      ${kpi("已完成", d.pickedUp || 0)}
-      ${kpi("已作廢", d.voided || 0)}
-    </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      ${revenueKpi(periodLabel === "全部期間" ? "總營業額" : periodLabel === "近 7 日" ? "近7天營業額" : "區間營業額", formatCurrency(rangeRevenue), "依下單日期｜目前篩選條件")}
-      ${revenueKpi("門市自取營業額", formatCurrency(storeRevenue), "目前篩選條件內")}
-      ${revenueKpi("7-11 店到店營業額", formatCurrency(deliveryRevenue), "目前篩選條件內")}
+      ${dashboardOverviewCard("待處理", (d.confirming + d.pendingPayment + d.waitingShipping + d.readyPickup), `確認中 ${d.confirming}｜待付款 ${d.pendingPayment}｜待出貨 ${d.waitingShipping}｜可取貨 ${d.readyPickup}`)}
+      ${dashboardOverviewCard(periodLabel === "全部期間" ? "總營業額" : periodLabel === "近 7 日" ? "近7天營業額" : "區間營業額", formatCurrency(rangeRevenue), `門市 ${formatCurrency(storeRevenue)}｜7-11 ${formatCurrency(deliveryRevenue)}`)}
+      ${dashboardOverviewCard("總訂單", d.totalOrders, `已完成 ${d.pickedUp}｜已作廢 ${d.voided}`)}
     </div>
+
+    ${renderDashboardStatusBar(d)}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       ${renderTodayPickupCard()}
       ${renderDashboardCoupons()}
@@ -1402,6 +1394,54 @@ function renderDashboardContent() {
 function applyDashboardSingleDate() { renderDashboardContent(); }
 function clearDashboardFilter() { setDashboardRange("all"); }
 function filterDashboard() { renderDashboardContent(); }
+
+
+
+function dashboardOverviewCard(label, value, note) {
+  return `<div class="bg-white rounded-3xl border border-stone-100 p-4 shadow-sm min-w-0">
+    <div class="dashboard-kpi-label text-stone-400">${escapeHtml(label)}</div>
+    <div class="dashboard-money-value mt-1.5 text-stone-900 mono whitespace-nowrap">${escapeHtml(value)}</div>
+    <div class="mt-1.5 text-xs font-normal text-stone-400 leading-snug">${escapeHtml(note)}</div>
+  </div>`;
+}
+
+function dashboardStatusChip(label, value, status, colorClass = "bg-stone-50 text-stone-600 border-stone-200") {
+  return `<button onclick="goToOrdersByStatus('${escapeHtml(status)}')" class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs md:text-sm font-semibold transition hover:bg-white ${colorClass}">
+    <span>${escapeHtml(label)}</span>
+    <span class="mono font-semibold">${value || 0}</span>
+  </button>`;
+}
+
+function renderDashboardStatusBar(d) {
+  return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div>
+        <h3 class="font-semibold text-[#5B7290] tracking-wide">訂單狀態</h3>
+        <p class="text-xs text-stone-400 font-normal mt-1">點擊狀態可直接查看對應訂單</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        ${dashboardStatusChip("確認中", d.confirming, "訂單確認中")}
+        ${dashboardStatusChip("待付款", d.pendingPayment, "待付款", "bg-amber-50 text-amber-700 border-amber-200")}
+        ${dashboardStatusChip("待出貨", d.waitingShipping, "待出貨", "bg-blue-50 text-blue-700 border-blue-200")}
+        ${dashboardStatusChip("可取貨", d.readyPickup, "可取貨", "bg-emerald-50 text-emerald-700 border-emerald-200")}
+        ${dashboardStatusChip("已出貨", d.shipped, "已出貨")}
+        ${dashboardStatusChip("已完成", d.pickedUp, "已完成")}
+        ${dashboardStatusChip("已作廢", d.voided, "已作廢", "bg-red-50 text-red-700 border-red-200")}
+      </div>
+    </div>
+  </div>`;
+}
+
+function goToOrdersByStatus(status) {
+  switchTab("orders");
+  requestAnimationFrame(() => {
+    const statusFilter = document.getElementById("orderStatusFilter");
+    if (statusFilter) statusFilter.value = status;
+    const searchInput = document.getElementById("orderSearch");
+    if (searchInput) searchInput.value = "";
+    filterOrders();
+  });
+}
 
 
 function kpi(label, value) {
