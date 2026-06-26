@@ -1406,6 +1406,10 @@ function renderDashboardContent() {
   const storeRevenue = methodStoreOrders.reduce((sum, order) => sum + parseMoneyNumber(order.total), 0);
   const deliveryRevenue = methodDeliveryOrders.reduce((sum, order) => sum + parseMoneyNumber(order.total), 0);
 
+  const todayNewOrders = activeOrders.filter(o => getOrderCreatedDate(o) === today);
+  const todayNewStoreOrders = todayNewOrders.filter(o => getOrderMethodType(o) === "store").length;
+  const todayNewDeliveryOrders = todayNewOrders.filter(o => getOrderMethodType(o) === "delivery").length;
+
   const d = {
     totalOrders: filteredActiveOrders.length,
     confirming: filteredActiveOrders.filter(o => o.orderStatus === "訂單確認中").length,
@@ -1421,7 +1425,7 @@ function renderDashboardContent() {
     <div class="text-xs md:text-sm font-medium text-stone-500 -mt-1">目前顯示：${escapeHtml(periodLabel)}｜${state.method === "store" ? "門市自取" : state.method === "delivery" ? "7-11 店到店" : "全部配送"}｜依下單日期統計</div>
     ${renderDashboardOpenOrdersReminder(allOrders)}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      ${dashboardOverviewCard("待處理", (d.confirming + d.pendingPayment + d.waitingShipping + d.readyPickup), `確認中 ${d.confirming}｜待付款 ${d.pendingPayment}｜待出貨 ${d.waitingShipping}｜可取貨 ${d.readyPickup}`)}
+      ${dashboardOverviewCard("今日新增訂單", todayNewOrders.length, `今日下單｜門市 ${todayNewStoreOrders}｜7-11 ${todayNewDeliveryOrders}`)}
       ${dashboardOverviewCard("總訂單", d.totalOrders, `已完成 ${d.pickedUp}｜已作廢 ${d.voided}`)}
       ${dashboardOverviewCard(periodLabel === "全部期間" ? "總營業額" : periodLabel === "近 7 日" ? "近7天營業額" : "區間營業額", formatCurrency(rangeRevenue), `門市 ${formatCurrency(storeRevenue)}｜7-11 ${formatCurrency(deliveryRevenue)}`)}
     </div>
