@@ -783,7 +783,7 @@ function renderTodayPickupCard() {
   const orders = (adminData.orders || []).filter(o =>
     normalizeOrderDateForCompare(o.date) === today &&
     getOrderMethodType(o) === "store" &&
-    o.orderStatus !== "已取貨" &&
+    o.orderStatus !== "已完成" &&
     o.orderStatus !== "已作廢"
   );
 
@@ -810,7 +810,7 @@ function renderFutureSevenDayPreview() {
     const date = addDaysToDateInput(today, i);
     const dayOrders = (adminData.orders || []).filter(o =>
       normalizeOrderDateForCompare(o.date) === date &&
-      o.orderStatus !== "已取貨" &&
+      o.orderStatus !== "已完成" &&
       o.orderStatus !== "已作廢"
     );
 
@@ -1366,7 +1366,7 @@ function renderDashboardContent() {
     waitingShipping: filteredActiveOrders.filter(o => normalizeAdminStatus(o.orderStatus) === "待出貨").length,
     readyPickup: filteredActiveOrders.filter(o => o.orderStatus === "可取貨").length,
     shipped: filteredActiveOrders.filter(o => o.orderStatus === "已出貨").length,
-    pickedUp: filteredActiveOrders.filter(o => o.orderStatus === "已取貨").length,
+    pickedUp: filteredActiveOrders.filter(o => o.orderStatus === "已完成").length,
     voided: allOrders.filter(o => o.orderStatus === "已作廢" && orderPassDashboardFilter(o, state)).length
   };
 
@@ -1380,7 +1380,7 @@ function renderDashboardContent() {
       ${kpi("待出貨", d.waitingShipping || 0)}
       ${kpi("可取貨", d.readyPickup || 0)}
       ${kpi("已出貨", d.shipped || 0)}
-      ${kpi("已取貨", d.pickedUp || 0)}
+      ${kpi("已完成", d.pickedUp || 0)}
       ${kpi("已作廢", d.voided || 0)}
     </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1448,7 +1448,7 @@ function methodCardClass(order) {
 function statusClass(status) {
   status = normalizeAdminStatus(status);
   if (status === "已作廢") return "bg-red-50 text-red-700 border-red-200";
-  if (status === "已取貨") return "bg-emerald-100 text-emerald-800 border-emerald-300";
+  if (status === "已完成") return "bg-emerald-100 text-emerald-800 border-emerald-300";
   if (status === "已出貨") return "bg-emerald-50 text-emerald-700 border-emerald-200";
   if (status === "待出貨" || status === "可取貨") return "bg-blue-50 text-blue-700 border-blue-200";
   if (status === "待付款") return "bg-amber-50 text-amber-700 border-amber-200";
@@ -1567,11 +1567,11 @@ function renderOrders() {
           <select id="orderStatusFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
             <option value="">全部狀態</option>
             <option value="訂單確認中">訂單確認中</option>
-            <option value="可取貨">可取貨</option>
+            <option value="可取貨">可取貨(門市)</option>
             <option value="待付款">待付款</option>
             <option value="待出貨">待出貨</option>
             <option value="已出貨">已出貨</option>
-            <option value="已取貨">已取貨</option>
+            <option value="已完成">已完成</option>
             <option value="已作廢">已作廢</option>
           </select>
 
@@ -1755,7 +1755,7 @@ function formatOrderTimestampMinute(value) {
 }
 
 function orderCard(order) {
-  const statuses = ["訂單確認中", "可取貨", "待付款", "待出貨", "已出貨", "已取貨", "已作廢"];
+  const statuses = ["訂單確認中", "可取貨", "待付款", "待出貨", "已出貨", "已完成", "已作廢"];
   const methodType = getOrderMethodType(order);
   const isDelivery = methodType === "delivery";
   const dateDisplay = formatDateDisplayWithWeekday(order.date) || escapeHtml(order.date || "-");
