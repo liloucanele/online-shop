@@ -1427,7 +1427,7 @@ function renderDashboardContent() {
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       ${dashboardOverviewCard("今日新增訂單", todayNewOrders.length, `今日下單｜門市 ${todayNewStoreOrders}｜7-11 ${todayNewDeliveryOrders}`)}
       ${dashboardOverviewCard("總訂單", d.totalOrders, `已完成 ${d.pickedUp}｜已作廢 ${d.voided}`)}
-      ${dashboardOverviewCard(periodLabel === "全部期間" ? "總營業額" : periodLabel === "近 7 日" ? "近7天營業額" : "區間營業額", formatCurrency(rangeRevenue), `門市 ${formatCurrency(storeRevenue)}｜7-11 ${formatCurrency(deliveryRevenue)}`)}
+      ${dashboardOverviewCard(periodLabel === "全部期間" ? "總營業額" : periodLabel === "近 7 日" ? "近7天營業額" : "區間營業額", formatCurrency(rangeRevenue), `門市 ${formatCurrency(storeRevenue)}｜店到店 ${formatCurrency(deliveryRevenue)}`)}
     </div>
 
     ${renderDashboardStatusBar(d)}
