@@ -2358,7 +2358,7 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
       ${couponOperationNotice}
       <div class="overflow-x-auto">
         <table class="w-full text-sm min-w-[720px]" data-edit-table="${tab}" data-keys="${keys.join(",")}">
-          <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2">${l}</th>`).join("")}<th class="px-2 py-2">操作</th></tr></thead>
+          <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2">${l}</th>`).join("")}<th class="px-2 py-2"></th></tr></thead>
           <tbody>${rows.map(row => editRowHtml(tab, keys, row, textareaLong)).join("")}</tbody>
         </table>
       </div>
