@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Lilou｜後台管理系統</title>
   <meta name="robots" content="noindex,nofollow">
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4">
-window.addEventListener("resize", syncOrderFilterDetails);
-</script>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <!--Developed by TylerChen Design 2026-->
   <style>
     :root {
@@ -1682,7 +1680,10 @@ function filterOrders() {
     const methodType = getOrderMethodType(o);
 
     const keywordOk = !q || text.includes(q);
-    const statusOk = !status || o.orderStatus === status;
+    const statusOk =
+      status === "已作廢"
+        ? o.orderStatus === "已作廢"
+        : ((!status || o.orderStatus === status) && o.orderStatus !== "已作廢");
     const methodOk = !method || methodType === method;
     const startOk = !startDate || (orderDate && orderDate >= startDate);
     const endOk = !endDate || (orderDate && orderDate <= endDate);
@@ -1718,15 +1719,16 @@ function filterOrders() {
     if (timeCompare !== 0) return -timeCompare;
     return compareTextValue(a.id, b.id);
   });
-  const effectiveOrders = orders.filter(o => o.orderStatus !== "已作廢");
-  const voidCount = orders.length - effectiveOrders.length;
+  const effectiveOrders = orders;
+  const voidCount = (adminData.orders || []).filter(o => o.orderStatus === "已作廢").length;
   const storeCount = effectiveOrders.filter(o => getOrderMethodType(o) === "store").length;
   const deliveryCount = effectiveOrders.filter(o => getOrderMethodType(o) === "delivery").length;
   const rangeText = startDate && !endDate ? `｜日期：${startDate} 之後` : startDate && endDate ? `｜日期：${startDate}～${endDate}` : !startDate && endDate ? `｜日期：${endDate} 以前` : "｜日期：全部";
-  const voidText = voidCount > 0 ? `｜已作廢 ${voidCount}` : "";
   updateOrderFilterSummary(startDate, endDate, method, sortMode);
   updateOrderRangeButtons(getOrderRangeMode(startDate, endDate));
-  document.getElementById("orderCount").textContent = `${effectiveOrders.length} 筆有效訂單｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}${voidText}${rangeText}｜排序：${getOrderSortLabel(sortMode)}`;
+  const countLabel = status === "已作廢" ? "筆已作廢訂單" : "筆有效訂單";
+  const hiddenVoidText = status === "已作廢" || voidCount <= 0 ? "" : `｜已隱藏作廢 ${voidCount}`;
+  document.getElementById("orderCount").textContent = `${effectiveOrders.length} ${countLabel}｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}${hiddenVoidText}${rangeText}｜排序：${getOrderSortLabel(sortMode)}`;
   const area = document.getElementById("ordersArea");
   if (!orders.length) {
     area.innerHTML = `<div class="bg-white rounded-3xl border border-stone-100 p-8 text-center text-stone-400 font-bold">目前沒有符合條件的訂單</div>`;
