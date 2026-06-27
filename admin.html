@@ -1714,12 +1714,12 @@ function renderOrders() {
           </select>
 
           <select id="orderSortFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
-            <option value="orderDesc">訂單日期近到遠</option>
-            <option value="arrivalAsc">取貨／到貨日期近到遠</option>
-            <option value="arrivalDesc">取貨／到貨日期遠到近</option>
-            <option value="orderAsc">訂單日期遠到近</option>
-            <option value="amountDesc">金額高到低</option>
-            <option value="amountAsc">金額低到高</option>
+            <option value="orderDesc">訂單日期(近到遠)</option>
+            <option value="orderAsc">訂單日期(遠到近)</option>
+            <option value="arrivalAsc">取到貨日期(近到遠)</option>
+            <option value="arrivalDesc">取到貨日期(遠到近)</option>
+            <option value="amountDesc">訂單金額(高到低)</option>
+            <option value="amountAsc">訂單金額(低到高)</option>
           </select>
 
           <input id="orderStartDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
