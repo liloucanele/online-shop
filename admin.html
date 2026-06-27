@@ -1887,7 +1887,8 @@ function orderCard(order) {
     <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">訂單狀態</span><select class="admin-status mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">${statuses.map(s => `<option value="${s}" ${displayStatus === s ? "selected" : ""}>${s}</option>`).join("")}</select></label>
     ${isDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">PChomePay 付款連結</span><input class="admin-payment mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.paymentLink || "")}" placeholder="PChomePay 付款連結"></label>` : `<input type="hidden" class="admin-payment" value="${escapeHtml(order.paymentLink || "")}">`}
     ${isDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">貨運編號</span><input class="admin-tracking mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.trackingNo || "")}" placeholder="貨運編號"></label>` : `<input type="hidden" class="admin-tracking" value="${escapeHtml(order.trackingNo || "")}">`}
-    <label class="block ${isDelivery ? "" : "md:col-span-1"}"><span class="text-xs font-black text-stone-500 tracking-widest">訂單備註</span><input class="admin-note mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.statusNote || "")}" placeholder="給客人看的訂單備註"></label>`;
+    <label class="block ${isDelivery ? "" : "md:col-span-1"}"><span class="text-xs font-black text-stone-500 tracking-widest">訂單備註</span><input class="admin-note mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.statusNote || "")}" placeholder="給客人看的訂單備註"></label>
+    <label class="block md:col-span-2"><span class="text-xs font-black text-stone-500 tracking-widest">店內備註（客人看不到）</span><textarea class="admin-internal-note mt-1 w-full rounded-xl border border-stone-200 px-3 py-2 bg-stone-50" rows="2" placeholder="例如：已電話確認、改時間、特殊包裝需求">${escapeHtml(order.internalNote || "")}</textarea></label>`;
 
   return `<article class="bg-white rounded-2xl border border-stone-100 shadow-sm px-4 py-3 md:px-5 md:py-4 space-y-3 ${methodCardClass(order)}" data-order-id="${escapeHtml(order.id)}">
     <div class="border-b border-stone-100 pb-2">
@@ -1953,7 +1954,8 @@ async function updateOrder(orderId) {
     orderStatus: card.querySelector(".admin-status").value,
     paymentLink: card.querySelector(".admin-payment").value.trim(),
     trackingNo: card.querySelector(".admin-tracking").value.trim(),
-    statusNote: card.querySelector(".admin-note").value.trim()
+    statusNote: card.querySelector(".admin-note").value.trim(),
+    internalNote: card.querySelector(".admin-internal-note")?.value.trim() || ""
   };
   await postAdmin(payload, `${orderId} 已更新。`);
 }
