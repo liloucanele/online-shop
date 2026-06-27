@@ -2185,14 +2185,11 @@ function filterRevenueShare() {
 
   const totalAmount = rows.reduce((sum, row) => sum + row.amount, 0);
   const totalCommission = rows.reduce((sum, row) => sum + row.commission, 0);
-  const missingCount = rows.filter(row => row.missingRate).length;
-
   area.innerHTML = `
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
       ${revenueShareKpi("訂單數", rows.length + " 筆", "不含已作廢")}
       ${revenueShareKpi("總營業額", formatCurrency(totalAmount), "依篩選區間")}
       ${revenueShareKpi("預估分潤", formatCurrency(totalCommission), "依每月比例")}
-      ${revenueShareKpi("缺少比例", missingCount + " 筆", "請補 Revenue_Settings")}
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
