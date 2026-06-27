@@ -1962,9 +1962,17 @@ function orderCard(order) {
     </div>
 
     <div class="space-y-1 text-sm font-normal text-stone-700 order-meta-line">
-      <div class="min-w-0"><span class="text-stone-400 font-black">取貨／到貨：</span><span class="text-stone-900 font-black">${escapeHtml(dateDisplay)}</span><span class="text-stone-300 mx-1">｜</span><span class="text-stone-400 font-black">下單時間：</span><span class="text-stone-900 font-black">${escapeHtml(timestampDisplay)}</span></div>
-      <div class="min-w-0 break-words"><span class="text-stone-400 font-black">${isDelivery ? "收件地點：" : "取貨地點："}</span>${escapeHtml(order.address || "-")}</div>
-      <div class="min-w-0 break-all"><span class="text-stone-400 font-black">Email：</span>${escapeHtml(order.email || "-")}</div>
+      <div class="min-w-0 order-meta-line">
+  <div class="hidden sm:inline">
+    <span>取貨／到貨：${escapeHtml(dateDisplay)}</span><span class="text-stone-300 mx-1">｜</span><span>下單時間：${escapeHtml(timestampDisplay)}</span>
+  </div>
+  <div class="sm:hidden">
+    <div>取貨／到貨：${escapeHtml(dateDisplay)}</div>
+    <div>下單時間：${escapeHtml(timestampDisplay)}</div>
+  </div>
+</div>
+      <div class="min-w-0 break-words order-meta-line">${isDelivery ? "收件地點：" : "取貨地點："}${escapeHtml(order.address || "-")}</div>
+      <div class="min-w-0 break-all order-meta-line">Email：${escapeHtml(order.email || "-")}</div>
       ${internalNotePreview}
     </div>
 
