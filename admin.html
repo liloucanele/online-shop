@@ -172,6 +172,19 @@
       animation: adminSpin .75s linear infinite;
     }
     @keyframes adminSpin { to { transform: rotate(360deg); } }
+
+    table[data-edit-table="products"] input[data-key="price"],
+    table[data-edit-table="products"] input[data-key="stock"],
+    table[data-edit-table="products"] input[data-key="sort"],
+    table[data-edit-table="packaging"] input[data-key="extra_price"],
+    table[data-edit-table="packaging"] input[data-key="box_size"],
+    table[data-edit-table="packaging"] input[data-key="sort"],
+    table[data-edit-table="coupons"] input[data-key="value"],
+    table[data-edit-table="coupons"] input[data-key="min_spend"] {
+      padding-left: 10px !important;
+      padding-right: 10px !important;
+      text-align: left;
+    }
   </style>
 </head>
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
@@ -2352,6 +2365,51 @@ function renderSettingDateTags(dates) {
 }
 
 
+
+function getEditableTableMinWidth(tab) {
+  if (tab === "products") return "min-w-[2350px]";
+  if (tab === "packaging") return "min-w-[980px]";
+  if (tab === "coupons") return "min-w-[980px]";
+  return "min-w-[720px]";
+}
+
+function getEditableTableColgroup(tab, keys) {
+  const widthMap = {
+    products: {
+      name: "180px",
+      price: "70px",
+      stock: "70px",
+      type: "125px",
+      display: "115px",
+      shipping_rule: "150px",
+      sort: "70px",
+      ingredients: "380px",
+      allergens: "360px",
+      storage: "360px",
+      weight: "90px",
+      nutrition: "430px"
+    },
+    packaging: {
+      name: "42%",
+      extra_price: "100px",
+      box_size: "90px",
+      type: "140px",
+      display: "130px",
+      sort: "90px"
+    },
+    coupons: {
+      code: "34%",
+      type: "160px",
+      value: "110px",
+      min_spend: "110px",
+      start_date: "150px",
+      end_date: "150px"
+    }
+  };
+  const map = widthMap[tab] || {};
+  return `<colgroup>${keys.map(key => `<col style="width:${map[key] || '160px'}">`).join("")}<col style="width:56px"></colgroup>`;
+}
+
 function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = false) {
   const id = "tab-" + tab;
   const productNamingNotice = tab === "products" ? `
@@ -2378,8 +2436,9 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
       ${productNamingNotice}
       ${couponOperationNotice}
       <div class="overflow-x-auto">
-        <table class="w-full table-fixed text-sm ${tab === "products" ? "min-w-[1600px]" : tab === "coupons" ? "min-w-[980px]" : "min-w-[960px]"}" data-edit-table="${tab}" data-keys="${keys.join(",")}">
-          <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map((l, i) => `<th class="px-2 py-2 ${getAdminCellClass(tab, keys[i])}" ${getAdminCellStyle(tab, keys[i])}>${l}</th>`).join("")}<th class="px-2 py-2 w-14 min-w-[52px] max-w-[60px]" ${getAdminDeleteCellStyle()}> </th></tr></thead>
+        <table class="w-full text-sm table-fixed ${getEditableTableMinWidth(tab)}" data-edit-table="${tab}" data-keys="${keys.join(",")}">
+          ${getEditableTableColgroup(tab, keys)}
+          <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2 whitespace-nowrap">${l}</th>`).join("")}<th class="px-1 py-2"></th></tr></thead>
           <tbody>${rows.map(row => editRowHtml(tab, keys, row, textareaLong)).join("")}</tbody>
         </table>
       </div>
@@ -2387,80 +2446,24 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
 }
 
 
-
-function getAdminCellStyle(tab, key) {
-  const styleMap = {
-    packaging: {
-      name: "width:42%;",
-      extra_price: "width:8%;",
-      box_size: "width:7%;",
-      type: "width:13%;",
-      display: "width:12%;",
-      sort: "width:7%;"
-    },
-    coupons: {
-      code: "width:32%;",
-      type: "width:15%;",
-      value: "width:10%;",
-      min_spend: "width:10%;",
-      start_date: "width:14%;",
-      end_date: "width:14%;"
-    },
-    products: {
-      name: "width:18%;",
-      price: "width:6%;",
-      stock: "width:6%;",
-      type: "width:8%;",
-      display: "width:8%;",
-      shipping_rule: "width:10%;",
-      sort: "width:6%;",
-      weight: "width:7%;"
-    }
-  };
-  const style = styleMap[tab]?.[key] || "";
-  return style ? `style="${style}"` : "";
-}
-
-function getAdminDeleteCellStyle() {
-  return 'style="width:52px;"';
-}
-
 function getAdminCellClass(tab, key) {
-  const compactNumberMap = {
-    price: "w-20 min-w-[76px] max-w-[88px]",
-    stock: "w-20 min-w-[76px] max-w-[88px]",
-    sort: "w-20 min-w-[72px] max-w-[84px]",
-    extra_price: "w-24 min-w-[88px] max-w-[100px]",
-    box_size: "w-20 min-w-[72px] max-w-[84px]",
-    value: "w-24 min-w-[92px] max-w-[108px]",
-    min_spend: "w-24 min-w-[92px] max-w-[108px]"
-  };
-
-  if (compactNumberMap[key]) return compactNumberMap[key];
+  if (tab === "products") {
+    if (["price", "stock", "sort"].includes(key)) return "w-[70px]";
+    if (key === "weight") return "w-[90px]";
+    if (["type", "display", "shipping_rule"].includes(key)) return "";
+    return "";
+  }
 
   if (tab === "packaging") {
-    if (key === "name") return "w-[420px] min-w-[420px]";
-    if (key === "type") return "w-32 min-w-[120px] max-w-[140px]";
-    if (key === "display") return "w-32 min-w-[120px] max-w-[140px]";
+    if (["extra_price", "box_size", "sort"].includes(key)) return "";
+    return "";
   }
 
-  if (tab === "products") {
-    if (key === "name") return "w-[420px] min-w-[420px]";
-    if (key === "type") return "w-32 min-w-[120px] max-w-[140px]";
-    if (key === "display") return "w-32 min-w-[120px] max-w-[140px]";
-    if (key === "shipping_rule") return "w-40 min-w-[150px] max-w-[170px]";
+  if (tab === "coupons") {
+    if (["value", "min_spend"].includes(key)) return "";
+    return "";
   }
 
-  const compactSelectKeys = ["type", "display", "shipping_rule"];
-  const dateKeys = ["start_date", "end_date"];
-
-  if (compactSelectKeys.includes(key)) return "w-32 min-w-[120px] max-w-[150px]";
-  if (dateKeys.includes(key)) return "w-36 min-w-[136px] max-w-[150px]";
-  if (key === "code") return "w-[320px] min-w-[320px]";
-  if (key === "name") return "w-[320px] min-w-[320px]";
-  if (key === "weight") return "w-24 min-w-[92px] max-w-[110px]";
-  if (["ingredients", "allergens", "storage"].includes(key)) return "w-72 min-w-[280px]";
-  if (key === "nutrition") return "w-96 min-w-[360px]";
   return "min-w-[140px]";
 }
 
@@ -2506,7 +2509,7 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false) {
 
     const cellClass = getAdminCellClass(tab, key);
     return `<td class="px-2 py-2 align-top ${cellClass}">${field}</td>`;
-  }).join("")}<td class="px-2 py-2 align-top text-center w-14 min-w-[52px] max-w-[60px]" ${getAdminDeleteCellStyle()}>
+  }).join("")}<td class="px-1 py-2 align-top text-center">
     <button onclick="this.closest('tr').remove()" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">
       ✕
     </button>
