@@ -2378,14 +2378,52 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
       ${productNamingNotice}
       ${couponOperationNotice}
       <div class="overflow-x-auto">
-        <table class="w-full text-sm ${tab === "products" ? "min-w-[1600px]" : "min-w-[720px]"}" data-edit-table="${tab}" data-keys="${keys.join(",")}">
-          <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2">${l}</th>`).join("")}<th class="px-2 py-2"></th></tr></thead>
+        <table class="w-full table-fixed text-sm ${tab === "products" ? "min-w-[1600px]" : tab === "coupons" ? "min-w-[980px]" : "min-w-[960px]"}" data-edit-table="${tab}" data-keys="${keys.join(",")}">
+          <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map((l, i) => `<th class="px-2 py-2 ${getAdminCellClass(tab, keys[i])}" ${getAdminCellStyle(tab, keys[i])}>${l}</th>`).join("")}<th class="px-2 py-2 w-14 min-w-[52px] max-w-[60px]" ${getAdminDeleteCellStyle()}> </th></tr></thead>
           <tbody>${rows.map(row => editRowHtml(tab, keys, row, textareaLong)).join("")}</tbody>
         </table>
       </div>
     </div>`;
 }
 
+
+
+function getAdminCellStyle(tab, key) {
+  const styleMap = {
+    packaging: {
+      name: "width:42%;",
+      extra_price: "width:8%;",
+      box_size: "width:7%;",
+      type: "width:13%;",
+      display: "width:12%;",
+      sort: "width:7%;"
+    },
+    coupons: {
+      code: "width:32%;",
+      type: "width:15%;",
+      value: "width:10%;",
+      min_spend: "width:10%;",
+      start_date: "width:14%;",
+      end_date: "width:14%;"
+    },
+    products: {
+      name: "width:18%;",
+      price: "width:6%;",
+      stock: "width:6%;",
+      type: "width:8%;",
+      display: "width:8%;",
+      shipping_rule: "width:10%;",
+      sort: "width:6%;",
+      weight: "width:7%;"
+    }
+  };
+  const style = styleMap[tab]?.[key] || "";
+  return style ? `style="${style}"` : "";
+}
+
+function getAdminDeleteCellStyle() {
+  return 'style="width:52px;"';
+}
 
 function getAdminCellClass(tab, key) {
   const compactNumberMap = {
@@ -2401,13 +2439,13 @@ function getAdminCellClass(tab, key) {
   if (compactNumberMap[key]) return compactNumberMap[key];
 
   if (tab === "packaging") {
-    if (key === "name") return "w-72 min-w-[280px]";
+    if (key === "name") return "w-[420px] min-w-[420px]";
     if (key === "type") return "w-32 min-w-[120px] max-w-[140px]";
     if (key === "display") return "w-32 min-w-[120px] max-w-[140px]";
   }
 
   if (tab === "products") {
-    if (key === "name") return "w-72 min-w-[280px]";
+    if (key === "name") return "w-[420px] min-w-[420px]";
     if (key === "type") return "w-32 min-w-[120px] max-w-[140px]";
     if (key === "display") return "w-32 min-w-[120px] max-w-[140px]";
     if (key === "shipping_rule") return "w-40 min-w-[150px] max-w-[170px]";
@@ -2418,7 +2456,8 @@ function getAdminCellClass(tab, key) {
 
   if (compactSelectKeys.includes(key)) return "w-32 min-w-[120px] max-w-[150px]";
   if (dateKeys.includes(key)) return "w-36 min-w-[136px] max-w-[150px]";
-  if (key === "name" || key === "code") return "w-56 min-w-[220px]";
+  if (key === "code") return "w-[320px] min-w-[320px]";
+  if (key === "name") return "w-[320px] min-w-[320px]";
   if (key === "weight") return "w-24 min-w-[92px] max-w-[110px]";
   if (["ingredients", "allergens", "storage"].includes(key)) return "w-72 min-w-[280px]";
   if (key === "nutrition") return "w-96 min-w-[360px]";
@@ -2467,7 +2506,7 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false) {
 
     const cellClass = getAdminCellClass(tab, key);
     return `<td class="px-2 py-2 align-top ${cellClass}">${field}</td>`;
-  }).join("")}<td class="px-2 py-2 align-top text-center">
+  }).join("")}<td class="px-2 py-2 align-top text-center w-14 min-w-[52px] max-w-[60px]" ${getAdminDeleteCellStyle()}>
     <button onclick="this.closest('tr').remove()" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">
       ✕
     </button>
