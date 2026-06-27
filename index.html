@@ -194,13 +194,45 @@
             return v === "true" || v === "1" || v === "yes" || v === "y" || v === "顯示" || v === "上架";
         }
 
+        function normalizeShippingRuleForFrontend(value) {
+            const raw = (value ?? "").toString().trim();
+            const v = raw.toLowerCase().replace(/[\s_\-]/g, "");
+            if (
+                v === "pickup" ||
+                v === "store" ||
+                v === "storepickup" ||
+                v === "pickuponly" ||
+                raw.includes("僅自取") ||
+                raw.includes("限自取") ||
+                raw.includes("僅門市自取") ||
+                raw.includes("門市自取限定") ||
+                raw.includes("只限自取")
+            ) {
+                return "pickup";
+            }
+            if (
+                v === "delivery" ||
+                v === "deliveryonly" ||
+                v === "711" ||
+                v === "7eleven" ||
+                raw.includes("僅宅配") ||
+                raw.includes("限宅配") ||
+                raw.includes("宅配限定") ||
+                raw.includes("店到店限定") ||
+                raw.includes("僅店到店")
+            ) {
+                return "delivery";
+            }
+            return "all";
+        }
+
         function normalizeProductForFrontend(product = {}) {
             const normalized = { ...product };
             normalized.name = (normalized.name || "").toString().trim();
             normalized.price = Number(normalized.price) || 0;
             normalized.stock = Number(normalized.stock) || 0;
             normalized.type = (normalized.type || "combo").toString().trim().toLowerCase();
-            normalized.shipping_rule = (normalized.shipping_rule || normalized.shipping || "all").toString().trim().toLowerCase();
+            normalized.shipping_rule = normalizeShippingRuleForFrontend(normalized.shipping_rule || normalized.shipping || normalized.delivery || "all");
             normalized.display = normalized.display === undefined || normalized.display === "" ? true : lilouIsTruthy(normalized.display);
             normalized.sort = Number(normalized.sort) || 9999;
             normalized.ingredients = (normalized.ingredients || "").toString().trim();
@@ -582,7 +614,7 @@
             let hasDeliveryOnly = false;
             cart.forEach(box => {
                 (box.flavors || []).forEach(f => {
-                    const rule = (f.shipping_rule || f.shippingRule || "all").toString().trim().toLowerCase();
+                    const rule = normalizeShippingRuleForFrontend(f.shipping_rule || f.shippingRule || "all");
                     if (rule === "pickup") hasPickupOnly = true;
                     if (rule === "delivery") hasDeliveryOnly = true;
                 });
@@ -1055,7 +1087,7 @@
                     cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === product.name); if (matchFlavor) occupiedInCart += matchFlavor.quantity; }); 
                     const virtualStock = product.stock - occupiedInCart; 
                     if ((qty * repeatQty) > virtualStock) { alert(`庫存不足！「${product.name}」重複 ${repeatQty} 組後需要 ${qty * repeatQty} 個，目前最多只能再填入 ${virtualStock >= 0 ? virtualStock : 0} 個。`); hasError = true; break; } 
-                    boxFlavors.push({ name: product.name, price: product.price, quantity: qty, shipping_rule: product.shipping_rule || "all" }); 
+                    boxFlavors.push({ name: product.name, price: product.price, quantity: qty, shipping_rule: normalizeShippingRuleForFrontend(product.shipping_rule || "all") }); 
                     totalFlavorsCountInBox += qty; 
                     boxFlavorsCost += (product.price * qty); 
                 } 
@@ -1063,8 +1095,8 @@
             if (hasError) return; 
             if(totalFlavorsCountInBox === 0) { alert("此組合內還沒有放入任何甜點喔！"); return; } 
             const existingFlags = getCartShippingFlags();
-            const newHasPickupOnly = boxFlavors.some(f => (f.shipping_rule || "all") === "pickup");
-            const newHasDeliveryOnly = boxFlavors.some(f => (f.shipping_rule || "all") === "delivery");
+            const newHasPickupOnly = boxFlavors.some(f => normalizeShippingRuleForFrontend(f.shipping_rule || "all") === "pickup");
+            const newHasDeliveryOnly = boxFlavors.some(f => normalizeShippingRuleForFrontend(f.shipping_rule || "all") === "delivery");
             if ((existingFlags.hasPickupOnly && newHasDeliveryOnly) || (existingFlags.hasDeliveryOnly && newHasPickupOnly) || (newHasPickupOnly && newHasDeliveryOnly)) {
                 alert("此組合會同時包含僅門市自取與僅宅配商品，請分開下單。");
                 return;
