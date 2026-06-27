@@ -178,7 +178,7 @@
   <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
       <div>
-        <h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統2.0</h1>
+        <h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統 2.0</h1>
       </div>
       <div class="flex items-center gap-2">
         <button id="adminReloadBtn" onclick="loadAll()" title="重新整理資料" class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10">重新整理</button>
@@ -1882,6 +1882,14 @@ function orderCard(order) {
   const displayStatus = normalizeAdminStatus(order.orderStatus);
   const amount = getOrderAmountNumbers(order);
   const timestampDisplay = formatOrderTimestampMinute(order.timestamp);
+  const internalNoteText = (order.internalNote || "").toString().replace(/\s+/g, " ").trim();
+  const internalNotePreview = internalNoteText
+    ? `<div class="mt-2 rounded-xl border border-stone-200 bg-stone-50/80 px-3 py-1.5 text-xs md:text-sm font-bold text-stone-600 flex items-center gap-1.5 min-w-0">
+        <span class="shrink-0 text-stone-400">📝</span>
+        <span class="shrink-0 text-stone-400 font-black">店內備註：</span>
+        <span class="min-w-0 flex-1" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(internalNoteText)}</span>
+      </div>`
+    : "";
   const statusFields = `
     <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">訂單狀態</span><select class="admin-status mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">${statuses.map(s => `<option value="${s}" ${displayStatus === s ? "selected" : ""}>${s}</option>`).join("")}</select></label>
     ${isDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">PChomePay 付款連結</span><input class="admin-payment mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.paymentLink || "")}" placeholder="PChomePay 付款連結"></label>` : `<input type="hidden" class="admin-payment" value="${escapeHtml(order.paymentLink || "")}">`}
@@ -1912,6 +1920,7 @@ function orderCard(order) {
       <div class="min-w-0"><span class="text-stone-400 font-black">取貨／到貨：</span><span class="text-stone-900 font-black">${escapeHtml(dateDisplay)}</span><span class="text-stone-300 mx-1">｜</span><span class="text-stone-400 font-black">下單時間：</span><span class="text-stone-900 font-black">${escapeHtml(timestampDisplay)}</span></div>
       <div class="min-w-0 break-words"><span class="text-stone-400 font-black">${isDelivery ? "收件地點：" : "取貨地點："}</span>${escapeHtml(order.address || "-")}</div>
       <div class="min-w-0 break-all"><span class="text-stone-400 font-black">Email：</span>${escapeHtml(order.email || "-")}</div>
+      ${internalNotePreview}
     </div>
 
     <div class="border-t border-stone-100 pt-2.5 text-sm leading-relaxed">
