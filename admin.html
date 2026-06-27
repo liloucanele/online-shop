@@ -2357,9 +2357,7 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
   const id = "tab-" + tab;
   const productNamingNotice = tab === "products" ? `
       <div class="rounded-2xl bg-stone-50 border border-stone-100 p-3 text-xs text-stone-500 font-bold leading-relaxed space-y-1">
-        <p>📌 商品規則已改為資料欄位控制，不再靠商品名稱判斷「限」或「限自取」。</p>
-        <p>商品類型：組合商品／單品｜配送規則：自取與宅配／僅自取／僅宅配｜上架狀態：上架／下架。</p>
-        <p class="text-[11px] text-stone-400">後台畫面顯示中文；系統仍會自動存入正確規則值，前台判斷不受影響。</p>
+        <p>📌 商品類型：組合商品／單品｜配送規則：自取與宅配／僅自取／僅宅配｜上架狀態：上架／下架。</p>
       </div>` : "";
   const couponOperationNotice = tab === "coupons" ? `
       <p class="text-xs text-stone-500 font-bold leading-relaxed">
