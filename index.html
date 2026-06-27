@@ -743,10 +743,6 @@
                 return;
             }
             container.innerHTML = products.map((p, idx) => {
-                const badges = [
-                    p.type === 'single' ? '單品' : '組合',
-                    p.shipping_rule === 'pickup' ? '僅自取' : p.shipping_rule === 'delivery' ? '僅宅配' : '自取/宅配'
-                ].map(b => `<span class="px-2 py-0.5 rounded-full bg-stone-100 text-stone-500 text-[10px] font-black">${b}</span>`).join('');
                 const details = [
                     buildNutritionBlock('成分', p.ingredients),
                     buildNutritionBlock('過敏原', p.allergens),
@@ -758,7 +754,7 @@
                     <button type="button" onclick="toggleNutritionItem(${idx})" class="nutrition-toggle w-full px-4 py-3 flex items-center justify-between gap-3 text-left" aria-expanded="false">
                         <div class="min-w-0">
                             <div class="font-black text-stone-900 text-sm md:text-base truncate">${lilouEscapeHtml(p.name)}</div>
-                            <div class="flex flex-wrap gap-1.5 mt-1">${badges}</div>
+                            ${p.weight ? `<div class="text-xs text-stone-400 font-bold mt-0.5">${lilouEscapeHtml(p.weight)}</div>` : ''}
                         </div>
                         <span class="nutrition-chevron text-stone-300 font-black text-lg shrink-0 transition-transform">⌄</span>
                     </button>
@@ -859,14 +855,14 @@
             const boxSelect = document.getElementById('boxSelect');
             const isBoxNotSelected = (boxSelect.value === ""); 
             const selectedOption = boxSelect.selectedOptions && boxSelect.selectedOptions[0];
-            const selectedPackagingType = selectedOption ? (selectedOption.getAttribute('data-packaging-type') || 'combo') : 'combo';
+            const selectedPackagingType = selectedOption ? (selectedOption.getAttribute('data-packaging-type') || 'combo') : '';
             const targetType = selectedPackagingType === 'single' ? 'single' : 'combo';
             const visibleProducts = localProducts
                 .map((p, originalIdx) => ({ p, originalIdx }))
-                .filter(({ p }) => p.type === targetType);
+                .filter(({ p }) => isBoxNotSelected || p.type === targetType);
 
             if (!visibleProducts.length) {
-                fMenu.innerHTML = `<div class="py-5 text-center text-xs md:text-sm text-stone-400 font-bold">目前沒有可選擇的商品。</div>`;
+                fMenu.innerHTML = `<div class="py-5 text-center text-xs md:text-sm text-stone-400 font-bold">目前沒有可顯示的商品。</div>`;
                 calculateCurrentBoxTotal(null);
                 return;
             }
