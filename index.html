@@ -216,7 +216,9 @@
             normalized.name = (normalized.name || "").toString().trim();
             normalized.extra_price = Number(normalized.extra_price) || 0;
             normalized.box_size = Number(normalized.box_size) || 0;
-            normalized.packaging_type = (normalized.packaging_type || normalized.type || (normalized.name.includes("期間限定") ? "single" : "combo")).toString().trim().toLowerCase();
+            normalized.packaging_type = (normalized.packaging_type || normalized.type || "combo").toString().trim().toLowerCase();
+            normalized.display = normalized.display === undefined || normalized.display === "" ? true : lilouIsTruthy(normalized.display);
+            normalized.sort = Number(normalized.sort) || 9999;
             return normalized;
         }
     </script>
@@ -635,9 +637,8 @@
         function handleShippingMethodChange() {
             let method = document.getElementById('shipMethod').value;
 
-            if (method === 'delivery' && enforcePickupOnlyShipping(true)) {
-                method = 'store';
-            }
+            enforcePickupOnlyShipping(true);
+            method = document.getElementById('shipMethod').value;
             const addrInput = document.getElementById('custAddress');
             const shipFeeDisplay = document.getElementById('shipFeeDisplay');
             const dateLabel = document.getElementById('dateLabel');
@@ -1219,7 +1220,8 @@
                             name: f.name || "",
                             price: price,
                             qty: qty,
-                            subtotal: price * qty
+                            subtotal: price * qty,
+                            shipping_rule: f.shipping_rule || "all"
                         };
                     })
                 };
@@ -1455,6 +1457,7 @@
                 discount_amount: amountSummary.discountAmount,
                 shipping_fee: amountSummary.shippingFee,
                 items_detail: JSON.stringify(itemsDetailSnapshot),
+                shipping_rules: JSON.stringify(cart.flatMap(box => (box.flavors || []).map(f => f.shipping_rule || "all"))),
                 note: document.getElementById('orderNote').value, coupon_code: appliedCoupon ? appliedCoupon.code : ""
             };
 
