@@ -1973,7 +1973,7 @@ function renderProducts() {
     "products",
     "Products",
     ["name","price","stock","type","display","shipping_rule","sort","ingredients","allergens","storage","weight","nutrition"],
-    ["商品名稱","價格","庫存","類型","顯示","配送","排序","成分","過敏原","保存方式","重量","營養標示"],
+    ["商品名稱","價格","庫存","類型","上架狀態","配送","排序","成分","過敏原","保存方式","重量","營養標示"],
     adminData.products || []
   );
 }
@@ -1982,7 +1982,7 @@ function renderPackaging() {
     "packaging",
     "Packaging",
     ["name","extra_price","box_size","type","display","sort"],
-    ["包裝名稱","加價","容量","類型","顯示","排序"],
+    ["包裝名稱","加價","容量","類型","上架狀態","排序"],
     adminData.packaging || []
   );
 }
@@ -2358,7 +2358,7 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
   const productNamingNotice = tab === "products" ? `
       <div class="rounded-2xl bg-stone-50 border border-stone-100 p-3 text-xs text-stone-500 font-bold leading-relaxed space-y-1">
         <p>📌 商品規則已改為資料欄位控制，不再靠商品名稱判斷「限」或「限自取」。</p>
-        <p>商品類型：組合商品／單品｜配送規則：自取與宅配／僅自取／僅宅配｜顯示狀態：顯示／隱藏。</p>
+        <p>商品類型：組合商品／單品｜配送規則：自取與宅配／僅自取／僅宅配｜上架狀態：上架／下架。</p>
         <p class="text-[11px] text-stone-400">後台畫面顯示中文；系統仍會自動存入正確規則值，前台判斷不受影響。</p>
       </div>` : "";
   const couponOperationNotice = tab === "coupons" ? `
@@ -2391,12 +2391,34 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
 
 
 function getAdminCellClass(tab, key) {
-  const numericKeys = ["price", "stock", "sort", "extra_price", "box_size", "value", "min_spend"];
+  const compactNumberMap = {
+    price: "w-20 min-w-[76px] max-w-[88px]",
+    stock: "w-20 min-w-[76px] max-w-[88px]",
+    sort: "w-20 min-w-[72px] max-w-[84px]",
+    extra_price: "w-24 min-w-[88px] max-w-[100px]",
+    box_size: "w-20 min-w-[72px] max-w-[84px]",
+    value: "w-24 min-w-[92px] max-w-[108px]",
+    min_spend: "w-24 min-w-[92px] max-w-[108px]"
+  };
+
+  if (compactNumberMap[key]) return compactNumberMap[key];
+
+  if (tab === "packaging") {
+    if (key === "name") return "w-72 min-w-[280px]";
+    if (key === "type") return "w-32 min-w-[120px] max-w-[140px]";
+    if (key === "display") return "w-32 min-w-[120px] max-w-[140px]";
+  }
+
+  if (tab === "products") {
+    if (key === "name") return "w-72 min-w-[280px]";
+    if (key === "type") return "w-32 min-w-[120px] max-w-[140px]";
+    if (key === "display") return "w-32 min-w-[120px] max-w-[140px]";
+    if (key === "shipping_rule") return "w-40 min-w-[150px] max-w-[170px]";
+  }
+
   const compactSelectKeys = ["type", "display", "shipping_rule"];
   const dateKeys = ["start_date", "end_date"];
 
-  if (numericKeys.includes(key)) return "w-24 min-w-[92px] max-w-[108px]";
-  if (key === "sort") return "w-20 min-w-[76px] max-w-[88px]";
   if (compactSelectKeys.includes(key)) return "w-32 min-w-[120px] max-w-[150px]";
   if (dateKeys.includes(key)) return "w-36 min-w-[136px] max-w-[150px]";
   if (key === "name" || key === "code") return "w-56 min-w-[220px]";
@@ -2420,8 +2442,8 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false) {
     } else if ((tab === "products" || tab === "packaging") && key === "display") {
       const cleanVal = (val === undefined || val === "") ? "TRUE" : val.toString().trim().toUpperCase();
       field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        <option value="TRUE" ${cleanVal !== "FALSE" ? "selected" : ""}>顯示</option>
-        <option value="FALSE" ${cleanVal === "FALSE" ? "selected" : ""}>隱藏</option>
+        <option value="TRUE" ${cleanVal !== "FALSE" ? "selected" : ""}>上架</option>
+        <option value="FALSE" ${cleanVal === "FALSE" ? "selected" : ""}>下架</option>
       </select>`;
     } else if (tab === "products" && key === "shipping_rule") {
       const cleanVal = (val || "all").toString().trim().toLowerCase();
