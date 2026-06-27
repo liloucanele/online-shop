@@ -185,7 +185,35 @@
       padding-right: 10px !important;
       text-align: left;
     }
-  </style>
+  
+/* 訂單卡片一般資訊：降低字重，手機版日期與下單時間分行 */
+.order-meta-line {
+  font-weight: 400 !important;
+  color: #78716C !important;
+  line-height: 1.6 !important;
+}
+.order-meta-date-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.35rem;
+}
+.order-meta-date-row .order-meta-part {
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .order-meta-date-row {
+    display: block;
+  }
+  .order-meta-date-row .order-meta-separator {
+    display: none;
+  }
+  .order-meta-date-row .order-meta-part {
+    display: block;
+    white-space: nowrap;
+  }
+}
+
+</style>
 </head>
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
   <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
