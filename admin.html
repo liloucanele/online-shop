@@ -1714,9 +1714,9 @@ function renderOrders() {
           </select>
 
           <select id="orderSortFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
+            <option value="orderDesc">訂單日期近到遠</option>
             <option value="arrivalAsc">取貨／到貨日期近到遠</option>
             <option value="arrivalDesc">取貨／到貨日期遠到近</option>
-            <option value="orderDesc">訂單日期近到遠</option>
             <option value="orderAsc">訂單日期遠到近</option>
             <option value="amountDesc">金額高到低</option>
             <option value="amountAsc">金額低到高</option>
@@ -1804,7 +1804,7 @@ function filterOrders() {
   const method = document.getElementById("orderMethodFilter")?.value || "";
   const startDate = document.getElementById("orderStartDate")?.value || "";
   const endDate = document.getElementById("orderEndDate")?.value || "";
-  const sortMode = document.getElementById("orderSortFilter")?.value || "arrivalAsc";
+  const sortMode = document.getElementById("orderSortFilter")?.value || "orderDesc";
 
   const orders = (adminData.orders || []).filter(o => {
     const text = [o.id,o.name,o.phone,o.date,o.email,o.shippingMethod,o.address].join(" ").toLowerCase();
