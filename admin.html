@@ -186,8 +186,12 @@
       text-align: left;
     }
   
-/* 訂單卡片一般資訊：降低字重，手機版日期與下單時間分行 */
-.order-meta-line {
+
+/* 訂單卡片一般資訊：標題與內容皆取消粗體；手機版日期與下單時間固定分行 */
+.order-meta-line,
+.order-meta-line *,
+.order-meta-date-row,
+.order-meta-date-row * {
   font-weight: 400 !important;
   color: #78716C !important;
   line-height: 1.6 !important;
@@ -212,6 +216,7 @@
     white-space: nowrap;
   }
 }
+
 
 </style>
 </head>
@@ -690,7 +695,7 @@ function summaryList(summary) {
   if (!entries.length) return `<p class="text-stone-400 font-bold">目前無資料</p>`;
   return entries.map(([name, qty]) => `
     <div class="flex items-center justify-between gap-3 bg-stone-50 rounded-xl px-3 py-2 border border-stone-100">
-      <span class="font-bold text-stone-700">${escapeHtml(name)}</span>
+      <span class="font-normal text-stone-700 order-meta-line">${escapeHtml(name)}</span>
       <span class="font-black text-[#5B7290] mono">${qty}</span>
     </div>`).join("");
 }
@@ -959,7 +964,7 @@ function renderDashboardCoupons() {
       <div class="rounded-2xl bg-stone-50 border border-stone-100 px-3 py-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div>
           <div class="font-black text-stone-800">${escapeHtml(c.code)}</div>
-          <div class="text-xs font-bold text-stone-500">${couponTypeText(c.type, c.value)}｜${formatCouponDate(c.start_date)}～${formatCouponDate(c.end_date)}</div>
+          <div class="text-xs font-normal text-stone-500 order-meta-line">${couponTypeText(c.type, c.value)}｜${formatCouponDate(c.start_date)}～${formatCouponDate(c.end_date)}</div>
         </div>
         ${couponStatusBadge(c)}
       </div>`).join("")}</div>` : `<p class="text-stone-400 font-bold">目前沒有折扣碼。</p>`}
@@ -1165,7 +1170,7 @@ function renderSalesRankingChart(productionSummary) {
           return `<div class="flex items-center justify-between gap-3 rounded-xl bg-stone-50 border border-stone-100 px-3 py-1.5">
             <div class="min-w-0 flex items-center gap-2">
               <span class="inline-block w-3 h-3 rounded-full shrink-0" style="background:${colors[index % colors.length]}"></span>
-              <span class="font-semibold text-stone-700 truncate">${escapeHtml(name)}</span>
+              <span class="font-normal text-stone-700 truncate order-meta-line">${escapeHtml(name)}</span>
             </div>
             <div class="shrink-0 font-semibold text-[#5B7290] mono">${qty}｜${percent}%</div>
           </div>`;
@@ -1491,7 +1496,7 @@ function renderDashboardContent() {
   };
 
   document.getElementById("dashboardStatsArea").innerHTML = `
-    <div class="text-xs md:text-sm font-medium text-stone-500 -mt-1">目前顯示：${escapeHtml(periodLabel)}｜${state.method === "store" ? "門市自取" : state.method === "delivery" ? "7-11 店到店" : "全部配送"}｜依下單日期統計</div>
+    <div class="text-xs md:text-sm font-normal text-stone-500 -mt-1 order-meta-line">目前顯示：${escapeHtml(periodLabel)}｜${state.method === "store" ? "門市自取" : state.method === "delivery" ? "7-11 店到店" : "全部配送"}｜依下單日期統計</div>
     ${renderDashboardOpenOrdersReminder(allOrders)}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       ${dashboardOverviewCard("今日新增訂單", todayNewOrders.length, `今日下單｜門市 ${todayNewStoreOrders}｜店到店 ${todayNewDeliveryOrders}`)}
@@ -1754,12 +1759,12 @@ function renderOrders() {
           <input id="orderEndDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
 
           <div class="flex gap-2 md:col-span-2">
-            <button data-order-range="future" onclick="setOrderDateFutureDefault()" class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">未來</button>
-            <button data-order-range="month" onclick="setOrderDateDefaultMonth()" class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">本月</button>
-            <button data-order-range="all" onclick="clearOrderDateFilter()" class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">全部</button>
+            <button data-order-range="future" onclick="setOrderDateFutureDefault()" class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-normal text-stone-600 bg-white hover:bg-stone-50 text-xs order-meta-line">未來</button>
+            <button data-order-range="month" onclick="setOrderDateDefaultMonth()" class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-normal text-stone-600 bg-white hover:bg-stone-50 text-xs order-meta-line">本月</button>
+            <button data-order-range="all" onclick="clearOrderDateFilter()" class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-normal text-stone-600 bg-white hover:bg-stone-50 text-xs order-meta-line">全部</button>
           </div>
         </div>
-        <div id="orderCount" class="text-sm font-medium text-stone-500"></div>
+        <div id="orderCount" class="text-sm font-normal text-stone-500 order-meta-line"></div>
       </div>
     </details>
 
@@ -1924,7 +1929,7 @@ function orderCard(order) {
   const timestampDisplay = formatOrderTimestampMinute(order.timestamp);
   const internalNoteText = (order.internalNote || "").toString().replace(/\s+/g, " ").trim();
   const internalNotePreview = internalNoteText
-    ? `<div class="mt-2 rounded-xl border border-stone-200 bg-stone-50/80 px-3 py-1.5 text-xs md:text-sm font-bold text-stone-600 flex items-center gap-1.5 min-w-0">
+    ? `<div class="mt-2 rounded-xl border border-stone-200 bg-stone-50/80 px-3 py-1.5 text-xs md:text-sm font-normal text-stone-600 flex items-center gap-1.5 min-w-0 order-meta-line">
         <span class="shrink-0 text-stone-400">📝</span>
         <span class="shrink-0 text-stone-400 font-black">店內備註：</span>
         <span class="min-w-0 flex-1" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(internalNoteText)}</span>
@@ -1948,7 +1953,7 @@ function orderCard(order) {
           <span class="inline-flex w-fit px-2 py-0.5 rounded-full border text-[11px] font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span>
           <span class="inline-flex w-fit px-2 py-0.5 rounded-full border text-[11px] font-black ${statusClass(displayStatus)}">${escapeHtml(displayStatus || "未設定")}</span>
         </div>
-        <div class="min-w-0 text-sm font-bold text-stone-700 md:text-right">
+        <div class="min-w-0 text-sm font-normal text-stone-700 md:text-right order-meta-line">
           <span class="font-black text-stone-900">${escapeHtml(order.name || "-")}</span>
           <span class="text-stone-300">｜</span>
           <a href="tel:${escapeHtml(order.phone)}" class="text-[#5B7290] font-black">${escapeHtml(order.phone || "-")}</a>
@@ -1956,7 +1961,7 @@ function orderCard(order) {
       </div>
     </div>
 
-    <div class="space-y-1 text-sm font-bold text-stone-700">
+    <div class="space-y-1 text-sm font-normal text-stone-700 order-meta-line">
       <div class="min-w-0"><span class="text-stone-400 font-black">取貨／到貨：</span><span class="text-stone-900 font-black">${escapeHtml(dateDisplay)}</span><span class="text-stone-300 mx-1">｜</span><span class="text-stone-400 font-black">下單時間：</span><span class="text-stone-900 font-black">${escapeHtml(timestampDisplay)}</span></div>
       <div class="min-w-0 break-words"><span class="text-stone-400 font-black">${isDelivery ? "收件地點：" : "取貨地點："}</span>${escapeHtml(order.address || "-")}</div>
       <div class="min-w-0 break-all"><span class="text-stone-400 font-black">Email：</span>${escapeHtml(order.email || "-")}</div>
@@ -2141,7 +2146,7 @@ function renderRevenueShare() {
         </div>
       </div>
 
-      <div id="revenueRateNote" class="rounded-2xl bg-stone-50 border border-stone-100 p-3 text-sm font-bold text-stone-600"></div>
+      <div id="revenueRateNote" class="rounded-2xl bg-stone-50 border border-stone-100 p-3 text-sm font-normal text-stone-600 order-meta-line"></div>
     </div>
 
     <div id="revenueShareResult" class="space-y-4"></div>`;
@@ -2274,8 +2279,8 @@ function revenueMethodCard(item) {
       <span class="text-xs font-black text-stone-400">${item.count} 筆</span>
     </div>
     <div class="space-y-2 text-sm">
-      <div class="flex justify-between gap-3"><span class="font-bold text-stone-500">銷售額</span><span class="font-black text-stone-900 mono">${formatCurrency(item.amount)}</span></div>
-      <div class="flex justify-between gap-3"><span class="font-bold text-stone-500">分潤</span><span class="font-black text-[#5B7290] mono">${formatCurrency(item.commission)}</span></div>
+      <div class="flex justify-between gap-3"><span class="font-normal text-stone-500 order-meta-line">銷售額</span><span class="font-black text-stone-900 mono">${formatCurrency(item.amount)}</span></div>
+      <div class="flex justify-between gap-3"><span class="font-normal text-stone-500 order-meta-line">分潤</span><span class="font-black text-[#5B7290] mono">${formatCurrency(item.commission)}</span></div>
     </div>
   </div>`;
 }
