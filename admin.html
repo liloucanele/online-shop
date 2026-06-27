@@ -492,7 +492,6 @@ function normalizeProductLookupKey(value) {
     .toLowerCase()
     .replace(/[\s\u3000]/g, "")
     .replace(/[()（）【】\[\]・·,，、\/／\-＿_]/g, "")
-    .replace(/限自取|限定|限/g, "")
     .replace(/迷你可麗露|大顆可麗露|可麗露|迷你露|口味|兩入袋|兩入|袋裝|袋/g, "")
     .trim();
 }
@@ -1961,10 +1960,22 @@ async function updateOrder(orderId) {
 }
 
 function renderProducts() {
-  renderEditableTable("products", "Products", ["name","price","stock"], ["商品名稱","價格","庫存"], adminData.products || []);
+  renderEditableTable(
+    "products",
+    "Products",
+    ["name","price","stock","type","display","shipping_rule","sort","ingredients","allergens","storage","weight","nutrition"],
+    ["商品名稱","價格","庫存","類型","顯示","配送","排序","成分","過敏原","保存方式","重量","營養標示"],
+    adminData.products || []
+  );
 }
 function renderPackaging() {
-  renderEditableTable("packaging", "Packaging", ["name","extra_price"], ["包裝名稱","加價"], adminData.packaging || []);
+  renderEditableTable(
+    "packaging",
+    "Packaging",
+    ["name","extra_price","box_size","type","display","sort"],
+    ["包裝名稱","加價","容量","類型","顯示","排序"],
+    adminData.packaging || []
+  );
 }
 function renderCoupons() {
   renderEditableTable("coupons", "Coupons", ["code","type","value","min_spend","start_date","end_date"], ["折扣碼","類型","折扣值","低消","開始日","結束日"], adminData.coupons || []);
@@ -2336,9 +2347,10 @@ function renderSettingDateTags(dates) {
 function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = false) {
   const id = "tab-" + tab;
   const productNamingNotice = tab === "products" ? `
-      <p class="text-xs text-stone-500 font-bold leading-relaxed">
-        📌 （限）＝限定品項，僅顯示在「期間限定商品」內｜（自取）＝限門市自取｜例：開心果可麗露（限）、巴斯克蛋糕（限自取）
-      </p>` : "";
+      <div class="rounded-2xl bg-stone-50 border border-stone-100 p-3 text-xs text-stone-500 font-bold leading-relaxed space-y-1">
+        <p>📌 商品規則已改為資料欄位控制，不再靠商品名稱判斷「限」或「限自取」。</p>
+        <p><span class="font-black text-stone-700">type</span>：combo＝組合商品、single＝單品｜<span class="font-black text-stone-700">shipping_rule</span>：all＝自取/宅配、pickup＝僅自取、delivery＝僅宅配｜<span class="font-black text-stone-700">display</span>：TRUE＝前台顯示、FALSE＝隱藏。</p>
+      </div>` : "";
   const couponOperationNotice = tab === "coupons" ? `
       <p class="text-xs text-stone-500 font-bold leading-relaxed">
         📌 現折金額請直接輸入金額，例如 100；折扣比例請輸入小數，例如 0.9 代表 9 折。
@@ -2359,7 +2371,7 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
       ${productNamingNotice}
       ${couponOperationNotice}
       <div class="overflow-x-auto">
-        <table class="w-full text-sm min-w-[720px]" data-edit-table="${tab}" data-keys="${keys.join(",")}">
+        <table class="w-full text-sm ${tab === "products" ? "min-w-[1600px]" : "min-w-[720px]"}" data-edit-table="${tab}" data-keys="${keys.join(",")}">
           <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2">${l}</th>`).join("")}<th class="px-2 py-2"></th></tr></thead>
           <tbody>${rows.map(row => editRowHtml(tab, keys, row, textareaLong)).join("")}</tbody>
         </table>
@@ -2372,7 +2384,29 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false) {
     const val = row[key] || "";
     let field = "";
 
-    if (tab === "coupons" && key === "type") {
+    if ((tab === "products" || tab === "packaging") && key === "type") {
+      const cleanVal = (val || "combo").toString().trim().toLowerCase();
+      field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        <option value="combo" ${cleanVal === "combo" ? "selected" : ""}>combo｜組合</option>
+        <option value="single" ${cleanVal === "single" ? "selected" : ""}>single｜單品</option>
+      </select>`;
+    } else if ((tab === "products" || tab === "packaging") && key === "display") {
+      const cleanVal = (val === undefined || val === "") ? "TRUE" : val.toString().trim().toUpperCase();
+      field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        <option value="TRUE" ${cleanVal !== "FALSE" ? "selected" : ""}>TRUE｜顯示</option>
+        <option value="FALSE" ${cleanVal === "FALSE" ? "selected" : ""}>FALSE｜隱藏</option>
+      </select>`;
+    } else if (tab === "products" && key === "shipping_rule") {
+      const cleanVal = (val || "all").toString().trim().toLowerCase();
+      field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
+        <option value="all" ${cleanVal === "all" ? "selected" : ""}>all｜自取/宅配</option>
+        <option value="pickup" ${cleanVal === "pickup" ? "selected" : ""}>pickup｜僅自取</option>
+        <option value="delivery" ${cleanVal === "delivery" ? "selected" : ""}>delivery｜僅宅配</option>
+      </select>`;
+    } else if (tab === "products" && ["ingredients","allergens","storage","nutrition"].includes(key)) {
+      const heightClass = key === "nutrition" ? "min-h-[112px]" : "min-h-[72px]";
+      field = `<textarea data-key="${key}" class="w-full ${heightClass} rounded-xl border border-stone-200 px-3 py-2 bg-stone-50 leading-relaxed">${escapeHtml(val)}</textarea>`;
+    } else if (tab === "coupons" && key === "type") {
       field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
         <option value="minus" ${val === "minus" ? "selected" : ""}>現折金額</option>
         <option value="discount" ${val === "discount" ? "selected" : ""}>折扣比例</option>
@@ -2486,7 +2520,8 @@ function addRow(tab) {
   const table = document.querySelector(`[data-edit-table="${tab}"]`);
   const keys = table.dataset.keys.split(",");
   const textareaLong = tab === "settings";
-  table.querySelector("tbody").insertAdjacentHTML("beforeend", editRowHtml(tab, keys, {}, textareaLong));
+  const defaults = tab === "products" ? { type: "combo", display: "TRUE", shipping_rule: "all", sort: "10" } : {};
+  table.querySelector("tbody").insertAdjacentHTML("beforeend", editRowHtml(tab, keys, defaults, textareaLong));
 }
 
 function collectRows(tab) {
