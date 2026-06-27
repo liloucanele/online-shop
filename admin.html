@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
   <link rel="manifest" href="images/site.webmanifest">
   
-  <title>Lilou｜後台管理系統</title>
+  <title>Lilou｜後台管理系統2.0</title>
   <meta name="robots" content="noindex,nofollow">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <!--Developed by TylerChen Design 2026-->
@@ -2349,7 +2349,8 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
   const productNamingNotice = tab === "products" ? `
       <div class="rounded-2xl bg-stone-50 border border-stone-100 p-3 text-xs text-stone-500 font-bold leading-relaxed space-y-1">
         <p>📌 商品規則已改為資料欄位控制，不再靠商品名稱判斷「限」或「限自取」。</p>
-        <p><span class="font-black text-stone-700">type</span>：combo＝組合商品、single＝單品｜<span class="font-black text-stone-700">shipping_rule</span>：all＝自取/宅配、pickup＝僅自取、delivery＝僅宅配｜<span class="font-black text-stone-700">display</span>：TRUE＝前台顯示、FALSE＝隱藏。</p>
+        <p>商品類型：組合商品／單品｜配送規則：自取與宅配／僅自取／僅宅配｜顯示狀態：顯示／隱藏。</p>
+        <p class="text-[11px] text-stone-400">後台畫面顯示中文；系統仍會自動存入正確規則值，前台判斷不受影響。</p>
       </div>` : "";
   const couponOperationNotice = tab === "coupons" ? `
       <p class="text-xs text-stone-500 font-bold leading-relaxed">
@@ -2379,6 +2380,23 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
     </div>`;
 }
 
+
+function getAdminCellClass(tab, key) {
+  const numericKeys = ["price", "stock", "sort", "extra_price", "box_size", "value", "min_spend"];
+  const compactSelectKeys = ["type", "display", "shipping_rule"];
+  const dateKeys = ["start_date", "end_date"];
+
+  if (numericKeys.includes(key)) return "w-24 min-w-[92px] max-w-[108px]";
+  if (key === "sort") return "w-20 min-w-[76px] max-w-[88px]";
+  if (compactSelectKeys.includes(key)) return "w-32 min-w-[120px] max-w-[150px]";
+  if (dateKeys.includes(key)) return "w-36 min-w-[136px] max-w-[150px]";
+  if (key === "name" || key === "code") return "w-56 min-w-[220px]";
+  if (key === "weight") return "w-24 min-w-[92px] max-w-[110px]";
+  if (["ingredients", "allergens", "storage"].includes(key)) return "w-72 min-w-[280px]";
+  if (key === "nutrition") return "w-96 min-w-[360px]";
+  return "min-w-[140px]";
+}
+
 function editRowHtml(tab, keys, row = {}, textareaLong = false) {
   return `<tr class="border-t border-stone-100">${keys.map((key, idx) => {
     const val = row[key] || "";
@@ -2387,21 +2405,21 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false) {
     if ((tab === "products" || tab === "packaging") && key === "type") {
       const cleanVal = (val || "combo").toString().trim().toLowerCase();
       field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        <option value="combo" ${cleanVal === "combo" ? "selected" : ""}>combo｜組合</option>
-        <option value="single" ${cleanVal === "single" ? "selected" : ""}>single｜單品</option>
+        <option value="combo" ${cleanVal === "combo" ? "selected" : ""}>組合商品</option>
+        <option value="single" ${cleanVal === "single" ? "selected" : ""}>單品</option>
       </select>`;
     } else if ((tab === "products" || tab === "packaging") && key === "display") {
       const cleanVal = (val === undefined || val === "") ? "TRUE" : val.toString().trim().toUpperCase();
       field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        <option value="TRUE" ${cleanVal !== "FALSE" ? "selected" : ""}>TRUE｜顯示</option>
-        <option value="FALSE" ${cleanVal === "FALSE" ? "selected" : ""}>FALSE｜隱藏</option>
+        <option value="TRUE" ${cleanVal !== "FALSE" ? "selected" : ""}>顯示</option>
+        <option value="FALSE" ${cleanVal === "FALSE" ? "selected" : ""}>隱藏</option>
       </select>`;
     } else if (tab === "products" && key === "shipping_rule") {
       const cleanVal = (val || "all").toString().trim().toLowerCase();
       field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        <option value="all" ${cleanVal === "all" ? "selected" : ""}>all｜自取/宅配</option>
-        <option value="pickup" ${cleanVal === "pickup" ? "selected" : ""}>pickup｜僅自取</option>
-        <option value="delivery" ${cleanVal === "delivery" ? "selected" : ""}>delivery｜僅宅配</option>
+        <option value="all" ${cleanVal === "all" ? "selected" : ""}>自取與宅配</option>
+        <option value="pickup" ${cleanVal === "pickup" ? "selected" : ""}>僅自取</option>
+        <option value="delivery" ${cleanVal === "delivery" ? "selected" : ""}>僅宅配</option>
       </select>`;
     } else if (tab === "products" && ["ingredients","allergens","storage","nutrition"].includes(key)) {
       const heightClass = key === "nutrition" ? "min-h-[112px]" : "min-h-[72px]";
@@ -2419,7 +2437,8 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false) {
       field = `<input data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(val)}">`;
     }
 
-    return `<td class="px-2 py-2 align-top">${field}</td>`;
+    const cellClass = getAdminCellClass(tab, key);
+    return `<td class="px-2 py-2 align-top ${cellClass}">${field}</td>`;
   }).join("")}<td class="px-2 py-2 align-top text-center">
     <button onclick="this.closest('tr').remove()" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">
       ✕
