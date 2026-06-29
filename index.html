@@ -823,18 +823,53 @@
         }
 
         async function fetchOptions() {
-            const CACHE_KEY = "lilou_shop_fast_cache"; 
+            const CACHE_KEY = "lilou_shop_fast_cache";
             const TIME_KEY = "lilou_shop_cache_time";
-            const now = new Date().getTime();
-            
+            const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 小時，避免離線或久未更新時顯示太舊資料
+            const now = Date.now();
+
+            let hasRenderedCache = false;
+
+            // 1) 先讀取瀏覽器快取，讓回訪或重新整理時可以立即顯示商品
+            try {
+                const cachedText = localStorage.getItem(CACHE_KEY);
+                const cachedTime = Number(localStorage.getItem(TIME_KEY) || 0);
+                const isFreshEnough = cachedTime && (now - cachedTime) < CACHE_MAX_AGE;
+
+                if (cachedText && isFreshEnough) {
+                    const cachedData = JSON.parse(cachedText);
+                    renderUIWithData(cachedData);
+                    hasRenderedCache = true;
+                }
+            } catch (err) {
+                console.warn("讀取快取失敗，改用線上資料。", err);
+            }
+
+            // 2) 背景同步 Google Sheet 最新資料；成功後更新畫面與快取
             try {
                 const cacheBuster = `&_=${now}`;
                 const res = await fetch(`${API_URL}?action=getFormOptions${cacheBuster}`);
                 const data = await res.json();
-                localStorage.setItem(CACHE_KEY, JSON.stringify(data)); 
-                localStorage.setItem(TIME_KEY, now.toString());
+
+                localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+                localStorage.setItem(TIME_KEY, Date.now().toString());
+
                 renderUIWithData(data);
-            } catch (err) { console.error("同步失敗", err); }
+            } catch (err) {
+                console.error("同步失敗", err);
+
+                if (!hasRenderedCache) {
+                    const boxSelect = document.getElementById('boxSelect');
+                    const packBtn = document.getElementById('packBtn');
+                    if (boxSelect) {
+                        boxSelect.innerHTML = `<option value="" disabled selected>資料暫時無法載入，請稍後再試</option>`;
+                    }
+                    if (packBtn) {
+                        packBtn.disabled = true;
+                        packBtn.innerText = "資料暫時無法載入";
+                    }
+                }
+            }
         }
 
         function renderUIWithData(data) {
@@ -2010,8 +2045,6 @@
         });
 
 
-        localStorage.removeItem("lilou_shop_fast_cache");
-        localStorage.removeItem("lilou_shop_cache_time");
         fetchOptions();
     </script>
 </body>
