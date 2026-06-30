@@ -784,9 +784,27 @@
 
         function hasLilouDraftContent(draft) {
             if (!draft) return false;
+
+            const hasCart = Array.isArray(draft.cart) && draft.cart.some(box => {
+                const flavors = Array.isArray(box?.flavors) ? box.flavors : [];
+                return (box?.boxName || "").toString().trim() !== "" && flavors.length > 0;
+            });
+            if (hasCart) return true;
+
             const form = draft.form || {};
-            return (Array.isArray(draft.cart) && draft.cart.length > 0) ||
-                Object.values(form).some(value => (value || "").toString().trim() !== "");
+            const textFields = [
+                form.custName,
+                form.custPhone,
+                form.custEmail,
+                form.shipDate,
+                form.couponInput,
+                form.orderNote
+            ];
+            const hasTypedText = textFields.some(value => (value || "").toString().trim() !== "");
+            const hasChangedShipping = (form.shipMethod || "store") !== "store";
+            const hasDeliveryAddress = hasChangedShipping && (form.custAddress || "").toString().trim() !== "";
+
+            return hasTypedText || hasChangedShipping || hasDeliveryAddress;
         }
 
         function saveLilouDraftNow() {
@@ -829,7 +847,10 @@
                 return false;
             }
 
-            if (!hasLilouDraftContent(draft)) return false;
+            if (!hasLilouDraftContent(draft)) {
+                clearLilouDraft();
+                return false;
+            }
 
             const form = draft.form || {};
             if (Array.isArray(draft.cart)) {
