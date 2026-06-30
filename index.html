@@ -259,6 +259,47 @@
             normalized.sort = Number(normalized.sort) || 9999;
             return normalized;
         }
+
+
+        function lilouIsDeliveryMethod(method) {
+            return method === "delivery" || method === "delivery_cod";
+        }
+
+        function lilouIsPrepaidDeliveryMethod(method) {
+            return method === "delivery";
+        }
+
+        function lilouShippingMethodBackendValue(method) {
+            if (method === "store") return "Store Pickup";
+            if (method === "delivery_cod") return "7-11 COD Pickup";
+            return "7-11 Pickup";
+        }
+
+        function lilouShippingMethodDisplayLabel(method) {
+            if (method === "store") return "門市自取付款";
+            if (method === "delivery_cod") return "7-11取貨付款";
+            return "7-11取貨（信用卡付款）";
+        }
+
+        function lilouOrderMethodIsStore(method) {
+            return (method || "").toString().toLowerCase().includes("store");
+        }
+
+        function lilouOrderMethodIsCod(method) {
+            const raw = (method || "").toString().toLowerCase();
+            return raw.includes("取貨付款") || raw.includes("cod");
+        }
+
+        function lilouOrderMethodIsPrepaidDelivery(method) {
+            const raw = (method || "").toString().toLowerCase();
+            return !lilouOrderMethodIsStore(method) && !lilouOrderMethodIsCod(method) && (raw.includes("7-11") || raw.includes("711") || raw.includes("pickup"));
+        }
+
+        function lilouOrderMethodLabelFromBackend(method) {
+            if (lilouOrderMethodIsStore(method)) return "門市自取付款";
+            if (lilouOrderMethodIsCod(method)) return "7-11取貨付款";
+            return "7-11取貨（信用卡付款）";
+        }
     </script>
 
     <nav class="bg-[#5B7290] text-white p-4 md:p-5 shadow-sm sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
@@ -379,7 +420,8 @@
                                 <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">配送方式 *</label>
                                 <select id="shipMethod" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] cursor-pointer h-12 md:h-14 bg-stone-50/50" onchange="handleShippingMethodChange()" required>
                                     <option value="store">門市自取付款</option>
-                                    <option value="delivery">7-11 店到店取貨（運費+$129）</option>
+                                    <option value="delivery">7-11取貨（信用卡付款，運費+$129）</option>
+                                    <option value="delivery_cod">7-11取貨付款（運費+$129）</option>
                                 </select>
                             </div>
                             <div>
@@ -402,9 +444,8 @@
 
 
                         <div id="deliveryPaymentNotice" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs md:text-sm text-amber-900 font-bold leading-relaxed">
-                            <div class="font-black mb-1">7-11 店到店付款提醒</div>
-                            <div>若您選擇 7-11 店到店取貨，付款連結將由 PChomePay 寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的「前往PChomePay付款」按鈕完成付款。
-</div>
+                            <div class="font-black mb-1">7-11取貨信用卡付款提醒</div>
+                            <div>若您選擇 7-11取貨（信用卡付款），付款連結將寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的付款按鈕完成付款。</div>
                         </div>
 
                         <div>
@@ -560,7 +601,7 @@
 
 
             <div id="overlayPaymentNotice" class="hidden bg-amber-50 border border-amber-200 p-4 rounded-xl text-left text-xs md:text-sm text-amber-900 font-bold leading-relaxed">
-                若您選擇 7-11 店到店取貨，付款連結將由 PChomePay 寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的「前往PChomePay付款」按鈕完成付款。
+                若您選擇 7-11取貨（信用卡付款），付款連結將寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的付款按鈕完成付款。
 
             </div>
 
@@ -641,9 +682,11 @@
             if (!shipSelect) return;
             const storeOption = shipSelect.querySelector('option[value="store"]');
             const deliveryOption = shipSelect.querySelector('option[value="delivery"]');
+            const deliveryCodOption = shipSelect.querySelector('option[value="delivery_cod"]');
             const flags = getCartShippingFlags();
             if (storeOption) storeOption.disabled = flags.hasDeliveryOnly && !flags.hasPickupOnly;
             if (deliveryOption) deliveryOption.disabled = flags.hasPickupOnly && !flags.hasDeliveryOnly;
+            if (deliveryCodOption) deliveryCodOption.disabled = flags.hasPickupOnly && !flags.hasDeliveryOnly;
         }
 
         function enforcePickupOnlyShipping(showAlert = true) {
@@ -656,14 +699,14 @@
                 return true;
             }
 
-            if (shipSelect.value === 'delivery' && flags.hasPickupOnly) {
+            if (lilouIsDeliveryMethod(shipSelect.value) && flags.hasPickupOnly) {
                 if (showAlert) alert("您的購物車包含僅門市自取商品，配送方式已自動切換為門市自取付款。");
                 shipSelect.value = 'store';
                 return true;
             }
 
             if (shipSelect.value === 'store' && flags.hasDeliveryOnly) {
-                if (showAlert) alert("您的購物車包含僅宅配商品，配送方式已自動切換為 7-11 店到店取貨。");
+                if (showAlert) alert("您的購物車包含僅宅配商品，配送方式已自動切換為 7-11取貨（信用卡付款）。");
                 shipSelect.value = 'delivery';
                 return true;
             }
@@ -683,7 +726,7 @@
             const addressLabel = document.getElementById('addressLabel');
             const deliveryNotice = document.getElementById('deliveryPaymentNotice');
             
-            if(method === 'delivery') {
+            if(lilouIsDeliveryMethod(method)) {
                 addressLabel.innerText = "7-11 取貨門市名稱 *";
                 mapLink.style.display = 'inline-flex'; 
                 addrInput.required = true;
@@ -696,7 +739,7 @@
                 shipFeeDisplay.querySelector('span').innerText = `+$${shippingFee}`;
                 shipFeeDisplay.classList.remove('hidden');
                 dateLabel.innerText = "希望到貨日期 *";
-                if (deliveryNotice) deliveryNotice.classList.remove("hidden");
+                if (deliveryNotice) deliveryNotice.classList.toggle("hidden", !lilouIsPrepaidDeliveryMethod(method));
             } else {
                 addressLabel.innerText = "自取門市地址";
                 mapLink.style.display = 'none'; 
@@ -736,8 +779,8 @@
 
         window.renderAvailableDates = function(method) {
             const dateSelect = document.getElementById('shipDate');
-            const textPrompt = method === 'delivery' ? '希望到貨日期' : '自取日期';
-            const targetDates = method === 'delivery' ? localDeliveryDates : localPickupDates;
+            const textPrompt = lilouIsDeliveryMethod(method) ? '希望到貨日期' : '自取日期';
+            const targetDates = lilouIsDeliveryMethod(method) ? localDeliveryDates : localPickupDates;
             
             let optionsHtml = "";
             let hasValidDate = false;
@@ -755,7 +798,7 @@
             }
 
             if (!hasValidDate) {
-                const limitDays = method === 'delivery' ? 7 : 2;
+                const limitDays = lilouIsDeliveryMethod(method) ? 7 : 2;
                 optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 --</option>`;
             } else {
                 optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
@@ -775,7 +818,7 @@
                     custEmail: document.getElementById('custEmail')?.value || "",
                     shipMethod: shipMethodVal,
                     shipDate: document.getElementById('shipDate')?.value || "",
-                    custAddress: shipMethodVal === 'delivery' ? (document.getElementById('custAddress')?.value || "") : "",
+                    custAddress: lilouIsDeliveryMethod(shipMethodVal) ? (document.getElementById('custAddress')?.value || "") : "",
                     couponInput: document.getElementById('couponInput')?.value || "",
                     orderNote: document.getElementById('orderNote')?.value || ""
                 }
@@ -886,7 +929,7 @@
                 dateEl.value = form.shipDate;
             }
 
-            if ((form.shipMethod || 'store') === 'delivery') {
+            if (lilouIsDeliveryMethod(form.shipMethod || 'store')) {
                 setValue('custAddress', form.custAddress);
             }
 
@@ -1408,7 +1451,7 @@
             document.getElementById('subtotalDisplay').innerText = `$${subtotal}`; 
             const shipMethod = document.getElementById('shipMethod').value; 
             let finalTotal = subtotal; 
-            if(shipMethod === 'delivery') finalTotal += shippingFee; 
+            if(lilouIsDeliveryMethod(shipMethod)) finalTotal += shippingFee; 
             if (appliedCoupon) { 
                 const minSpendRequirement = Number(appliedCoupon.min_spend) || 0; 
                 if (subtotal < minSpendRequirement) { 
@@ -1436,7 +1479,7 @@
         function getOrderAmountSummary() {
             const subtotal = cart.reduce((sum, box) => sum + (Number(box.boxTotalCost) || 0), 0);
             const shipMethodVal = document.getElementById('shipMethod').value;
-            const shippingFeeValue = shipMethodVal === 'delivery' ? shippingFee : 0;
+            const shippingFeeValue = lilouIsDeliveryMethod(shipMethodVal) ? shippingFee : 0;
             let discountAmount = 0;
             if (appliedCoupon && subtotal > 0) {
                 if (appliedCoupon.type === 'minus') discountAmount = Number(appliedCoupon.value) || 0;
@@ -1576,14 +1619,14 @@
                 alert("購物車同時包含僅門市自取與僅宅配商品，請分開下單。");
                 return;
             }
-            if (shipMethodVal === 'delivery' && shippingFlags.hasPickupOnly) {
+            if (lilouIsDeliveryMethod(shipMethodVal) && shippingFlags.hasPickupOnly) {
                 alert("您的購物車包含僅門市自取商品，請改為門市自取付款。");
                 document.getElementById('shipMethod').value = 'store';
                 handleShippingMethodChange();
                 return;
             }
             if (shipMethodVal === 'store' && shippingFlags.hasDeliveryOnly) {
-                alert("您的購物車包含僅宅配商品，請改為 7-11 店到店取貨。");
+                alert("您的購物車包含僅宅配商品，請改為 7-11取貨（信用卡付款）。");
                 document.getElementById('shipMethod').value = 'delivery';
                 handleShippingMethodChange();
                 return;
@@ -1596,9 +1639,9 @@
             const custAddress = document.getElementById('custAddress').value.trim();
             const finalTotal = calculateTotal();
             const orderId = "TEMP-" + new Date().getTime();
-            const methodText = shipMethodVal === 'delivery' ? `7-11 店到店 (${custAddress})` : `門市自取付款 (高雄市前鎮區景德路72巷12號)`;
+            const methodText = lilouIsDeliveryMethod(shipMethodVal) ? `${lilouShippingMethodDisplayLabel(shipMethodVal)} (${custAddress})` : `門市自取付款 (高雄市前鎮區景德路72巷12號)`;
             
-            document.getElementById('overlayDateLabel').innerText = shipMethodVal === 'delivery' ? "希望到貨日期：" : "門市自取日期：";
+            document.getElementById('overlayDateLabel').innerText = lilouIsDeliveryMethod(shipMethodVal) ? "希望到貨日期：" : "門市自取日期：";
             document.getElementById('overlayMainTitle').innerText = "請再次確認取貨資訊";
             document.getElementById('overlaySubTitle').innerText = "倒數結束前可隨時確認或調整";
             document.getElementById('overlayBottomPrompt').innerText = "訂單準備送出中";
@@ -1610,14 +1653,14 @@
             document.getElementById('overlayTotal').innerText = `$${finalTotal} 元`;
             const overlayPaymentNotice = document.getElementById('overlayPaymentNotice');
             if (overlayPaymentNotice) {
-                if (shipMethodVal === 'delivery') overlayPaymentNotice.classList.remove('hidden');
+                if (lilouIsPrepaidDeliveryMethod(shipMethodVal)) overlayPaymentNotice.classList.remove('hidden');
                 else overlayPaymentNotice.classList.add('hidden');
             }
 
             trackLilouEvent('begin_checkout', {
                 value: finalTotal,
                 currency: 'TWD',
-                shipping_method: shipMethodVal === 'delivery' ? '7-11 Pickup' : 'Store Pickup'
+                shipping_method: lilouShippingMethodBackendValue(shipMethodVal)
             });
 
             pendingOrderSnapshot = { orderId, custName, custPhone, custEmail, shipDate: shipDateWithWeekday, shipMethodVal, custAddress, finalTotal };
@@ -1659,7 +1702,7 @@
                 pendingOrderSnapshot = null;
                 return;
             }
-            if (s.shipMethodVal === 'delivery' && shippingFlags.hasPickupOnly) {
+            if (lilouIsDeliveryMethod(s.shipMethodVal) && shippingFlags.hasPickupOnly) {
                 alert("您的購物車包含僅門市自取商品，請改為門市自取付款。");
                 document.getElementById('shipMethod').value = 'store';
                 handleShippingMethodChange();
@@ -1667,7 +1710,7 @@
                 return;
             }
             if (s.shipMethodVal === 'store' && shippingFlags.hasDeliveryOnly) {
-                alert("您的購物車包含僅宅配商品，請改為 7-11 店到店取貨。");
+                alert("您的購物車包含僅宅配商品，請改為 7-11取貨（信用卡付款）。");
                 document.getElementById('shipMethod').value = 'delivery';
                 handleShippingMethodChange();
                 pendingOrderSnapshot = null;
@@ -1698,7 +1741,7 @@
 
             const orderData = {
                 action: "submitOrder", name: custName, phone: custPhone, email: custEmail, date: shipDate,
-                shipping_method: shipMethodVal === 'store' ? "Store Pickup" : "7-11 Pickup",
+                shipping_method: lilouShippingMethodBackendValue(shipMethodVal),
                 address: finalDatabaseAddress, product_name: orderProductSummary, quantity: totalQtyAll,
                 packaging_name: orderPackSummary, total_price: finalTotal,
                 subtotal_amount: amountSummary.subtotal,
@@ -1722,7 +1765,7 @@
                         transaction_id: officialOrderId,
                         value: finalTotal,
                         currency: 'TWD',
-                        shipping_method: shipMethodVal === 'delivery' ? '7-11 Pickup' : 'Store Pickup'
+                        shipping_method: lilouShippingMethodBackendValue(shipMethodVal)
                     });
                     document.getElementById('formContainer').classList.add('hidden');
                     let cartDetailsHtml = cart.map((box, idx) => {
@@ -1737,7 +1780,7 @@
                     
                     document.getElementById('receiptContent').innerHTML = `
                         <div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">重要提醒：請務必留存或截圖此訂購明細！方便您取貨時確認內容。</div>
-                        ${shipMethodVal === 'delivery' ? `<div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">提醒您：7-11 店到店訂單的付款連結將由 PChomePay 另行寄送至您的 Email，請留意收件並於期限內完成付款。若未收到付款通知信件，也可以至網站左上角「查詢訂單」，輸入訂購時填寫的手機號碼後，點選「前往PChomePay付款」完成付款。</div>` : ``}
+                        ${lilouIsPrepaidDeliveryMethod(shipMethodVal) ? `<div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">提醒您：7-11取貨（信用卡付款）的付款連結將另行寄送至您的 Email，請留意收件並於期限內完成付款。若未收到付款通知信件，也可以至網站左上角「查詢訂單」，輸入訂購時填寫的手機號碼後，點選付款按鈕完成付款。</div>` : ``}
                         <div class="space-y-3 text-stone-700 text-sm font-mono">
                             <div><strong>訂單編號：</strong>${officialOrderId}</div>
                             ${officialOrderDate ? `<div><strong>下單日期：</strong>${officialOrderDate}</div>` : ``}
@@ -1745,7 +1788,7 @@
                             <div><strong>聯絡電話：</strong>${custPhone}</div>
                             <div><strong>Email：</strong>${custEmail}</div>
                             <div><strong>取貨門市：</strong>${finalDatabaseAddress}</div>
-                            <div><strong>配送方式：</strong>${shipMethodVal === 'delivery' ? '7-11 店到店取貨' : '門市自取付款'}</div>
+                            <div><strong>配送方式：</strong>${lilouShippingMethodDisplayLabel(shipMethodVal)}</div>
                             <div><strong>預定日期：</strong>${shipDate}</div>
                         </div>
                         <div class="border-t border-dashed border-stone-200 my-4 pt-4 text-sm font-mono text-stone-600 space-y-1"><div class="font-bold text-stone-800 mb-1">購物明細：</div>${cartDetailsHtml}</div>
@@ -1755,7 +1798,7 @@
                     document.getElementById('receiptContainer').classList.remove('hidden');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-                    sharePlainText = `✨ Lilou 預購成功確認單 ✨\n\n訂單編號：${officialOrderId}\n顧客姓名：${custName}\n聯絡電話：${custPhone}\nEmail：${custEmail}\n配送方式：${shipMethodVal === 'delivery' ? '7-11 店到店' : '門市自取'}\n預定日期：${shipDate}\n總金額：$${finalTotal} 元\n\n如有調整需求，請私訊官方官方，謝謝您的支持！`;
+                    sharePlainText = `✨ Lilou 預購成功確認單 ✨\n\n訂單編號：${officialOrderId}\n顧客姓名：${custName}\n聯絡電話：${custPhone}\nEmail：${custEmail}\n配送方式：${lilouShippingMethodDisplayLabel(shipMethodVal)}\n預定日期：${shipDate}\n總金額：$${finalTotal} 元\n\n如有調整需求，請私訊官方官方，謝謝您的支持！`;
                     cart = []; appliedCoupon = null; 
                     clearLilouDraft();
                 } else if (result.status === "error") { alert(result.message); }
@@ -1791,7 +1834,7 @@
             return "bg-stone-50 text-stone-700 border-stone-200";
         }
 
-        function getOrderStatusMessage(order, isStorePickup) {
+        function getOrderStatusMessage(order, isStorePickup, isPrepaidDelivery) {
             const status = (order.status || "訂單確認中").toString().trim();
 
             if (status === "已完成") {
@@ -1809,8 +1852,8 @@
                 return "您的訂單已收到，正在確認中。";
             }
 
-            if (status === "待付款") {
-                return "您的訂單已成立。請點擊下方「前往 PChomePay 付款」按鈕進行付款，如有疑慮請私訊 Lilou 官方 LINE 或 Instagram。";
+            if (status === "待付款" && isPrepaidDelivery) {
+                return "您的訂單已成立。請點擊下方「前往信用卡付款」按鈕進行付款，如有疑慮請私訊 Lilou 官方 LINE 或 Instagram。";
             }
 
             if (status === "待出貨") {
@@ -2023,28 +2066,30 @@
             resultArea.innerHTML = sortedOrders.map((order, index) => {
                 const isLatestOrder = index === 0;
                 const method = order.method || "";
-                const isStorePickup = method.toLowerCase().includes("store");
+                const isStorePickup = lilouOrderMethodIsStore(method);
+                const isCodPickup = lilouOrderMethodIsCod(method);
+                const isPrepaidDelivery = lilouOrderMethodIsPrepaidDelivery(method);
                 const status = order.status || "訂單確認中";
                 const statusClass = getOrderStatusClass(status);
-                const statusMessage = getOrderStatusMessage(order, isStorePickup);
+                const statusMessage = getOrderStatusMessage(order, isStorePickup, isPrepaidDelivery);
                 const orderTotal = formatTwd(order.total || 0);
                 const orderDateLabel = order.orderDate || order.date || "-";
 
                 let actionHtml = "";
 
-                if (!isStorePickup && status === "待付款" && order.paymentLink) {
+                if (isPrepaidDelivery && status === "待付款" && order.paymentLink) {
                     actionHtml += `
                         <div class="bg-orange-50 border border-orange-200 p-4 rounded-xl space-y-3">
                             <div class="text-sm font-black text-orange-800 leading-relaxed">
-                                ⚠️ 請於 PChomePay 頁面顯示之付款期限內完成付款，逾期系統將自動取消訂單。
+                                ⚠️ 請於 付款頁面顯示之付款期限內完成付款，逾期系統將自動取消訂單。
                             </div>
                             <a href="${escapeHtml(order.paymentLink)}" target="_blank" rel="noopener"
                                class="block w-full text-center bg-[#3E2D20] text-white font-black rounded-xl h-12 leading-[3rem] hover:bg-[#2B1F16] transition-colors">
-                                前往 PChomePay 付款
+                                前往信用卡付款
                             </a>
                         </div>
                     `;
-                } else if (!isStorePickup && status === "待付款") {
+                } else if (isPrepaidDelivery && status === "待付款") {
                     actionHtml += `
                         <div class="bg-orange-50 border border-orange-200 p-4 rounded-xl text-sm font-black text-orange-800 leading-relaxed">
                             ⚠️ 付款連結尚未建立，請稍後再查詢或私訊 Lilou。
@@ -2123,7 +2168,7 @@
                         ${pickupInfo}
 
                         <div class="space-y-2 text-sm text-stone-700">
-                            <div><strong>配送方式：</strong>${isStorePickup ? "門市自取付款" : "7-11 店到店取貨"}</div>
+                            <div><strong>配送方式：</strong>${lilouOrderMethodLabelFromBackend(method)}</div>
                             ${renderCustomerOrderDetailBlock(order)}
                             ${order.lastUpdate ? `<div><strong>最後更新：</strong>${escapeHtml(order.lastUpdate)}</div>` : ""}
                             ${order.statusNote && status !== "已出貨" ? `<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-2"><strong>狀態備註：</strong>${escapeHtml(order.statusNote)}</div>` : ""}
