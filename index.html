@@ -169,6 +169,11 @@
         let pendingOrderSnapshot = null;
         let sharePlainText = "";
 
+        const LILOU_DRAFT_KEY = "lilou_unfinished_order_draft_v1";
+        const LILOU_DRAFT_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+        let lilouDraftSaveTimer = null;
+        let lilouDraftRestored = false;
+
         function trackLilouEvent(eventName, params = {}) {
             try {
                 if (typeof gtag === "function") {
@@ -705,6 +710,7 @@
             }
             renderAvailableDates(method);
             calculateTotal();
+            scheduleLilouDraftSave();
         }
 
         function getWeekdayStr(dateStr) {
@@ -755,6 +761,126 @@
                 optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
             }
             dateSelect.innerHTML = optionsHtml;
+        }
+
+        function getLilouDraftPayload() {
+            const shipMethodEl = document.getElementById('shipMethod');
+            const shipMethodVal = shipMethodEl ? shipMethodEl.value : 'store';
+            return {
+                savedAt: Date.now(),
+                cart: cart || [],
+                form: {
+                    custName: document.getElementById('custName')?.value || "",
+                    custPhone: document.getElementById('custPhone')?.value || "",
+                    custEmail: document.getElementById('custEmail')?.value || "",
+                    shipMethod: shipMethodVal,
+                    shipDate: document.getElementById('shipDate')?.value || "",
+                    custAddress: shipMethodVal === 'delivery' ? (document.getElementById('custAddress')?.value || "") : "",
+                    couponInput: document.getElementById('couponInput')?.value || "",
+                    orderNote: document.getElementById('orderNote')?.value || ""
+                }
+            };
+        }
+
+        function hasLilouDraftContent(draft) {
+            if (!draft) return false;
+            const form = draft.form || {};
+            return (Array.isArray(draft.cart) && draft.cart.length > 0) ||
+                Object.values(form).some(value => (value || "").toString().trim() !== "");
+        }
+
+        function saveLilouDraftNow() {
+            try {
+                const draft = getLilouDraftPayload();
+                if (!hasLilouDraftContent(draft)) {
+                    localStorage.removeItem(LILOU_DRAFT_KEY);
+                    return;
+                }
+                localStorage.setItem(LILOU_DRAFT_KEY, JSON.stringify(draft));
+            } catch (err) {
+                console.warn("未完成訂單暫存失敗", err);
+            }
+        }
+
+        function scheduleLilouDraftSave() {
+            if (lilouDraftSaveTimer) clearTimeout(lilouDraftSaveTimer);
+            lilouDraftSaveTimer = setTimeout(saveLilouDraftNow, 250);
+        }
+
+        function clearLilouDraft() {
+            try { localStorage.removeItem(LILOU_DRAFT_KEY); } catch (err) {}
+        }
+
+        function restoreLilouDraftIfNeeded() {
+            if (lilouDraftRestored) return false;
+            lilouDraftRestored = true;
+
+            let draft = null;
+            try {
+                const raw = localStorage.getItem(LILOU_DRAFT_KEY);
+                if (!raw) return false;
+                draft = JSON.parse(raw);
+                if (!draft?.savedAt || (Date.now() - Number(draft.savedAt)) > LILOU_DRAFT_MAX_AGE) {
+                    clearLilouDraft();
+                    return false;
+                }
+            } catch (err) {
+                clearLilouDraft();
+                return false;
+            }
+
+            if (!hasLilouDraftContent(draft)) return false;
+
+            const form = draft.form || {};
+            if (Array.isArray(draft.cart)) {
+                cart = draft.cart.map(box => ({
+                    ...box,
+                    boxExtra: Number(box.boxExtra) || 0,
+                    repeatQty: Number(box.repeatQty) || 1,
+                    flavorsCost: Number(box.flavorsCost) || 0,
+                    totalQty: Number(box.totalQty) || 0,
+                    singleBoxQty: Number(box.singleBoxQty) || 0,
+                    boxTotalCost: Number(box.boxTotalCost) || 0,
+                    singleBoxCost: Number(box.singleBoxCost) || 0,
+                    flavors: Array.isArray(box.flavors) ? box.flavors : []
+                })).filter(box => box.boxName && box.flavors.length);
+            }
+
+            const setValue = (id, value) => {
+                const el = document.getElementById(id);
+                if (el && value !== undefined && value !== null) el.value = value;
+            };
+
+            setValue('custName', form.custName);
+            setValue('custPhone', form.custPhone);
+            setValue('custEmail', form.custEmail);
+            setValue('shipMethod', form.shipMethod || 'store');
+            setValue('couponInput', form.couponInput);
+            setValue('orderNote', form.orderNote);
+
+            handleShippingMethodChange();
+
+            const dateEl = document.getElementById('shipDate');
+            if (dateEl && form.shipDate && Array.from(dateEl.options).some(option => option.value === form.shipDate)) {
+                dateEl.value = form.shipDate;
+            }
+
+            if ((form.shipMethod || 'store') === 'delivery') {
+                setValue('custAddress', form.custAddress);
+            }
+
+            if ((form.couponInput || '').trim()) applyCouponCode(false);
+            showToastNotification('已為您恢復上次未完成的購物車');
+            return true;
+        }
+
+        function bindLilouDraftAutoSave() {
+            ['custName', 'custPhone', 'custEmail', 'shipMethod', 'shipDate', 'custAddress', 'couponInput', 'orderNote'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const eventName = el.tagName === 'SELECT' ? 'change' : 'input';
+                el.addEventListener(eventName, scheduleLilouDraftSave);
+            });
         }
 
         function buildNutritionBlock(label, value) {
@@ -913,7 +1039,8 @@
             packBtn.innerText = "確定組合，打包放入購物車"; 
             packBtn.disabled = false;
             
-            handleShippingMethodChange(); 
+            const restoredDraft = restoreLilouDraftIfNeeded();
+            if (!restoredDraft) handleShippingMethodChange(); 
             renderFlavorMenu(); 
             renderCart();
         }
@@ -1164,6 +1291,7 @@
                 currentBoxLimit = null; 
                 renderFlavorMenu(); 
                 renderCart(); 
+                scheduleLilouDraftSave();
                 showToastNotification(`🛍️ 已成功打包 ${repeatQty} 組【${boxName}】放入明細！`);
                 packBtn.disabled = false;
                 packBtn.className = "w-full bg-[#5B7290] text-white font-extrabold tracking-widest h-12 rounded-xl hover:bg-[#3E4F66] transition-colors text-sm md:text-base uppercase shadow-xs cursor-pointer";
@@ -1183,7 +1311,7 @@
             }, 3000);
         }
 
-        window.removeFromCart = function(cartIdx) { cart.splice(cartIdx, 1); renderFlavorMenu(); renderCart(); }
+        window.removeFromCart = function(cartIdx) { cart.splice(cartIdx, 1); renderFlavorMenu(); renderCart(); scheduleLilouDraftSave(); }
 
         function renderCart() { 
             const container = document.getElementById('cartListContainer'); 
@@ -1372,6 +1500,7 @@
             } 
 
             calculateTotal(); 
+            scheduleLilouDraftSave();
         }
 
         window.handleOrderSubmit = function(e) {
@@ -1573,6 +1702,7 @@
 
                     sharePlainText = `✨ Lilou 預購成功確認單 ✨\n\n訂單編號：${officialOrderId}\n顧客姓名：${custName}\n聯絡電話：${custPhone}\nEmail：${custEmail}\n配送方式：${shipMethodVal === 'delivery' ? '7-11 店到店' : '門市自取'}\n預定日期：${shipDate}\n總金額：$${finalTotal} 元\n\n如有調整需求，請私訊官方官方，謝謝您的支持！`;
                     cart = []; appliedCoupon = null; 
+                    clearLilouDraft();
                 } else if (result.status === "error") { alert(result.message); }
             } catch(err) { 
                 document.getElementById('countdownOverlay').classList.add('hidden');
@@ -2046,6 +2176,8 @@
             }
         });
 
+
+        document.addEventListener('DOMContentLoaded', bindLilouDraftAutoSave);
 
         fetchOptions();
     </script>
