@@ -240,6 +240,7 @@
             normalized.storage = (normalized.storage || "").toString().trim();
             normalized.weight = (normalized.weight || "").toString().trim();
             normalized.nutrition = (normalized.nutrition || "").toString().trim();
+            normalized.origin_manufacturer = (normalized.origin_manufacturer || normalized.originManufacturer || normalized.origin || normalized.manufacturer || "").toString().trim();
             return normalized;
         }
 
@@ -779,6 +780,7 @@
                     buildNutritionBlock('過敏原', p.allergens),
                     buildNutritionBlock('保存方式', p.storage),
                     buildNutritionBlock('重量', p.weight),
+                    buildNutritionBlock('原產地與製造商', p.origin_manufacturer),
                     buildNutritionBlock('營養標示', p.nutrition || '營養標示整理中，請以店家現場標示為準。')
                 ].join('');
                 return `<div class="border border-stone-200 rounded-2xl overflow-hidden bg-white">
