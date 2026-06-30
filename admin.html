@@ -829,7 +829,7 @@ function renderTodayPickupCard() {
   const today = getTodayDateInputValue();
   const orders = (adminData.orders || []).filter(o =>
     normalizeOrderDateForCompare(o.date) === today &&
-    getOrderMethodType(o) === "store" &&
+    getOrderMethodFamily(o) === "store" &&
     o.orderStatus !== "已完成" &&
     o.orderStatus !== "已取消"
   );
@@ -863,8 +863,8 @@ function renderFutureSevenDayPreview() {
 
     rows.push({
       date,
-      store: dayOrders.filter(o => getOrderMethodType(o) === "store").length,
-      delivery: dayOrders.filter(o => getOrderMethodType(o) === "delivery").length
+      store: dayOrders.filter(o => getOrderMethodFamily(o) === "store").length,
+      delivery: dayOrders.filter(o => getOrderMethodFamily(o) === "delivery").length
     });
   }
 
@@ -1380,7 +1380,8 @@ function renderDashboardFilterPanel() {
       <select id="dashboardMethodFilter" onchange="filterDashboard()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
         <option value="">全部配送</option>
         <option value="store">門市自取</option>
-        <option value="delivery">7-11 店到店</option>
+        <option value="delivery">7-11店到店／信用卡付款</option>
+        <option value="delivery_cod">7-11店到店／取貨付款</option>
       </select>
       <div class="flex gap-2 md:col-span-4">
         ${dashboardRangeButton("today", "今天")}
@@ -1418,7 +1419,7 @@ function setDashboardRange(mode) {
 function updateDashboardFilterSummary(state) {
   const el = document.getElementById("dashboardFilterMobileSummary");
   if (!el) return;
-  const methodText = state.method === "store" ? "門市自取" : state.method === "delivery" ? "7-11 店到店" : "全部配送";
+  const methodText = getMethodFilterLabel(state.method);
   el.textContent = `${getDashboardPeriodLabel(state.start, state.end)}｜${methodText}`;
 }
 
@@ -1465,8 +1466,8 @@ function renderDashboardContent() {
   const allOrders = adminData.orders || [];
   const activeOrders = allOrders.filter(o => o.orderStatus !== "已取消");
   const filteredActiveOrders = activeOrders.filter(o => orderPassDashboardFilter(o, state));
-  const methodStoreOrders = filteredActiveOrders.filter(o => getOrderMethodType(o) === "store");
-  const methodDeliveryOrders = filteredActiveOrders.filter(o => getOrderMethodType(o) === "delivery");
+  const methodStoreOrders = filteredActiveOrders.filter(o => getOrderMethodFamily(o) === "store");
+  const methodDeliveryOrders = filteredActiveOrders.filter(o => getOrderMethodFamily(o) === "delivery");
   const summary = summarizeDetailsFromOrders(filteredActiveOrders);
   const revenueRows = getRevenueRowsForRange(filteredActiveOrders, state.start, state.end);
   const periodLabel = getDashboardPeriodLabel(state.start, state.end);
@@ -1476,8 +1477,8 @@ function renderDashboardContent() {
   const deliveryRevenue = methodDeliveryOrders.reduce((sum, order) => sum + parseMoneyNumber(order.total), 0);
 
   const todayNewOrders = activeOrders.filter(o => getOrderCreatedDate(o) === today);
-  const todayNewStoreOrders = todayNewOrders.filter(o => getOrderMethodType(o) === "store").length;
-  const todayNewDeliveryOrders = todayNewOrders.filter(o => getOrderMethodType(o) === "delivery").length;
+  const todayNewStoreOrders = todayNewOrders.filter(o => getOrderMethodFamily(o) === "store").length;
+  const todayNewDeliveryOrders = todayNewOrders.filter(o => getOrderMethodFamily(o) === "delivery").length;
 
   const d = {
     totalOrders: filteredActiveOrders.length,
@@ -1491,7 +1492,7 @@ function renderDashboardContent() {
   };
 
   document.getElementById("dashboardStatsArea").innerHTML = `
-    <div class="text-xs md:text-sm font-medium text-stone-500 -mt-1">目前顯示：${escapeHtml(periodLabel)}｜${state.method === "store" ? "門市自取" : state.method === "delivery" ? "7-11 店到店" : "全部配送"}｜依下單日期統計</div>
+    <div class="text-xs md:text-sm font-medium text-stone-500 -mt-1">目前顯示：${escapeHtml(periodLabel)}｜${getMethodFilterLabel(state.method)}｜依下單日期統計</div>
     ${renderDashboardOpenOrdersReminder(allOrders)}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       ${dashboardOverviewCard("今日新增訂單", todayNewOrders.length, `今日下單｜門市 ${todayNewStoreOrders}｜店到店 ${todayNewDeliveryOrders}`)}
@@ -1584,25 +1585,52 @@ function revenueKpi(label, value, note) {
 
 function getOrderMethodType(order) {
   const method = (order.shippingMethod || "").toString().trim().toLowerCase();
-  if (method.includes("store")) return "store";
-  if (method.includes("7-11") || method.includes("711")) return "delivery";
-
   const raw = [order.shippingMethod || "", order.address || ""].join(" ").toLowerCase();
+  if (method.includes("store")) return "store";
+  if (method.includes("取貨付款") || method.includes("cod")) return "delivery_cod";
+  if (method.includes("7-11") || method.includes("711")) return "delivery";
+  if (raw.includes("取貨付款") || raw.includes("cod")) return "delivery_cod";
   if (raw.includes("7-11") || raw.includes("711")) return "delivery";
   return "store";
 }
+function getOrderMethodFamily(order) {
+  const type = getOrderMethodType(order);
+  return type === "store" ? "store" : "delivery";
+}
+function getOrderShippingLabel(order) {
+  return getOrderMethodFamily(order) === "delivery" ? "🚚 7-11 店到店" : "🏪 門市自取";
+}
+function getOrderPaymentLabel(order) {
+  const type = getOrderMethodType(order);
+  if (type === "delivery") return "💳 信用卡付款";
+  if (type === "delivery_cod") return "💵 取貨付款";
+  return "💰 現場付款";
+}
 function getOrderMethodLabel(order) {
-  return getOrderMethodType(order) === "delivery" ? "7-11 店到店" : "門市自取";
+  return `${getOrderShippingLabel(order)}｜${getOrderPaymentLabel(order)}`;
 }
 function methodBadgeClass(order) {
-  return getOrderMethodType(order) === "delivery"
-    ? "bg-amber-50 text-amber-700 border-amber-200"
-    : "bg-blue-50 text-blue-700 border-blue-200";
+  return getOrderMethodFamily(order) === "delivery"
+    ? "bg-sky-50 text-sky-700 border-sky-200"
+    : "bg-stone-100 text-stone-700 border-stone-200";
+}
+function paymentBadgeClass(order) {
+  const type = getOrderMethodType(order);
+  if (type === "delivery") return "bg-blue-50 text-blue-700 border-blue-200";
+  if (type === "delivery_cod") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  return "bg-amber-50 text-amber-700 border-amber-200";
 }
 function methodCardClass(order) {
-  return getOrderMethodType(order) === "delivery"
-    ? "border-l-4 border-l-amber-400"
-    : "border-l-4 border-l-blue-400";
+  const type = getOrderMethodType(order);
+  if (type === "delivery") return "border-l-4 border-l-blue-400";
+  if (type === "delivery_cod") return "border-l-4 border-l-emerald-400";
+  return "border-l-4 border-l-stone-400";
+}
+function getMethodFilterLabel(method) {
+  if (method === "store") return "門市自取／現場付款";
+  if (method === "delivery") return "7-11店到店／信用卡付款";
+  if (method === "delivery_cod") return "7-11店到店／取貨付款";
+  return "全部配送／付款";
 }
 
 function statusClass(status) {
@@ -1738,7 +1766,8 @@ function renderOrders() {
           <select id="orderMethodFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
             <option value="">全部配送</option>
             <option value="store">門市自取</option>
-            <option value="delivery">7-11 店到店</option>
+            <option value="delivery">7-11店到店／信用卡付款</option>
+        <option value="delivery_cod">7-11店到店／取貨付款</option>
           </select>
 
           <select id="orderSortFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
@@ -1788,7 +1817,7 @@ function getOrderRangeLabel(startDate, endDate) {
 function updateOrderFilterSummary(startDate, endDate, method, sortMode) {
   const el = document.getElementById("orderMobileFilterSummary");
   if (!el) return;
-  const methodText = method === "store" ? "門市自取" : method === "delivery" ? "7-11 店到店" : "全部配送";
+  const methodText = getMethodFilterLabel(method);
   el.textContent = `${getOrderRangeLabel(startDate, endDate)}｜${methodText}｜${getOrderSortLabel(sortMode)}`;
 }
 
@@ -1882,13 +1911,14 @@ function filterOrders() {
   const effectiveOrders = orders;
   const voidCount = (adminData.orders || []).filter(o => o.orderStatus === "已取消").length;
   const storeCount = effectiveOrders.filter(o => getOrderMethodType(o) === "store").length;
-  const deliveryCount = effectiveOrders.filter(o => getOrderMethodType(o) === "delivery").length;
+  const deliveryCreditCount = effectiveOrders.filter(o => getOrderMethodType(o) === "delivery").length;
+  const deliveryCodCount = effectiveOrders.filter(o => getOrderMethodType(o) === "delivery_cod").length;
   const rangeText = startDate && !endDate ? `｜日期：${startDate} 之後` : startDate && endDate ? `｜日期：${startDate}～${endDate}` : !startDate && endDate ? `｜日期：${endDate} 以前` : "｜日期：全部";
   updateOrderFilterSummary(startDate, endDate, method, sortMode);
   updateOrderRangeButtons(getOrderRangeMode(startDate, endDate));
   const countLabel = status === "已取消" ? "筆已取消訂單" : "筆有效訂單";
   const hiddenVoidText = status === "已取消" || voidCount <= 0 ? "" : `｜已隱藏取消 ${voidCount}`;
-  document.getElementById("orderCount").textContent = `${effectiveOrders.length} ${countLabel}｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}${hiddenVoidText}${rangeText}｜排序：${getOrderSortLabel(sortMode)}`;
+  document.getElementById("orderCount").textContent = `${effectiveOrders.length} ${countLabel}｜門市自取 ${storeCount}｜信用卡 ${deliveryCreditCount}｜取貨付款 ${deliveryCodCount}${hiddenVoidText}${rangeText}｜排序：${getOrderSortLabel(sortMode)}`;
   const area = document.getElementById("ordersArea");
   if (!orders.length) {
     area.innerHTML = `<div class="bg-white rounded-3xl border border-stone-100 p-8 text-center text-stone-400 font-bold">目前沒有符合條件的訂單</div>`;
@@ -1917,7 +1947,8 @@ function formatOrderTimestampMinute(value) {
 function orderCard(order) {
   const statuses = ["訂單確認中", "可取貨", "待付款", "待出貨", "已出貨", "已完成", "已取消"];
   const methodType = getOrderMethodType(order);
-  const isDelivery = methodType === "delivery";
+  const isDelivery = methodType !== "store";
+  const isPrepaidDelivery = methodType === "delivery";
   const dateDisplay = formatDateDisplayWithWeekday(order.date) || escapeHtml(order.date || "-");
   const displayStatus = normalizeAdminStatus(order.orderStatus);
   const amount = getOrderAmountNumbers(order);
@@ -1932,7 +1963,7 @@ function orderCard(order) {
     : "";
   const statusFields = `
     <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">訂單狀態</span><select class="admin-status mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">${statuses.map(s => `<option value="${s}" ${displayStatus === s ? "selected" : ""}>${s}</option>`).join("")}</select></label>
-    ${isDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">PChomePay 付款連結</span><input class="admin-payment mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.paymentLink || "")}" placeholder="PChomePay 付款連結"></label>` : `<input type="hidden" class="admin-payment" value="${escapeHtml(order.paymentLink || "")}">`}
+    ${isPrepaidDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">信用卡付款連結</span><input class="admin-payment mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.paymentLink || "")}" placeholder="信用卡付款連結"></label>` : `<input type="hidden" class="admin-payment" value="${escapeHtml(order.paymentLink || "")}">`}
     ${isDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">貨運編號</span><input class="admin-tracking mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.trackingNo || "")}" placeholder="貨運編號"></label>` : `<input type="hidden" class="admin-tracking" value="${escapeHtml(order.trackingNo || "")}">`}
     <label class="block ${isDelivery ? "" : "md:col-span-1"}"><span class="text-xs font-black text-stone-500 tracking-widest">訂單備註</span><input class="admin-note mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.statusNote || "")}" placeholder="給客人看的訂單備註"></label>
     <label class="block md:col-span-2"><span class="text-xs font-black text-stone-500 tracking-widest">店內備註（客人看不到）</span><textarea class="admin-internal-note mt-1 w-full rounded-xl border border-stone-200 px-3 py-2 bg-stone-50" rows="2" placeholder="例如：已電話確認、改時間、特殊包裝需求">${escapeHtml(order.internalNote || "")}</textarea></label>`;
@@ -1945,7 +1976,8 @@ function orderCard(order) {
       </div>
       <div class="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <div class="flex flex-wrap items-center gap-1.5">
-          <span class="inline-flex w-fit px-2 py-0.5 rounded-full border text-[11px] font-black ${methodBadgeClass(order)}">${getOrderMethodLabel(order)}</span>
+          <span class="inline-flex w-fit px-2 py-0.5 rounded-full border text-[11px] font-black ${methodBadgeClass(order)}">${getOrderShippingLabel(order)}</span>
+          <span class="inline-flex w-fit px-2 py-0.5 rounded-full border text-[11px] font-black ${paymentBadgeClass(order)}">${getOrderPaymentLabel(order)}</span>
           <span class="inline-flex w-fit px-2 py-0.5 rounded-full border text-[11px] font-black ${statusClass(displayStatus)}">${escapeHtml(displayStatus || "未設定")}</span>
         </div>
         <div class="min-w-0 text-sm font-bold text-stone-700 md:text-right">
@@ -1958,6 +1990,7 @@ function orderCard(order) {
 
     <div class="space-y-1 text-sm font-normal text-stone-700">
       <div class="min-w-0"><span class="text-stone-400 font-normal">取貨／到貨：</span><span class="text-stone-900 font-normal">${escapeHtml(dateDisplay)}</span><span class="text-stone-300 mx-1">｜</span><span class="text-stone-400 font-normal">下單時間：</span><span class="text-stone-900 font-normal">${escapeHtml(timestampDisplay)}</span></div>
+      <div class="min-w-0"><span class="text-stone-400 font-normal">配送方式：</span><span class="text-stone-900 font-semibold">${escapeHtml(getOrderShippingLabel(order).replace(/^\S+\s*/, ""))}</span><span class="text-stone-300 mx-1">｜</span><span class="text-stone-400 font-normal">付款方式：</span><span class="text-stone-900 font-semibold">${escapeHtml(getOrderPaymentLabel(order).replace(/^\S+\s*/, ""))}</span></div>
       <div class="min-w-0 break-words"><span class="text-stone-400 font-normal">${isDelivery ? "收件地點：" : "取貨地點："}</span>${escapeHtml(order.address || "-")}</div>
       <div class="min-w-0 break-all"><span class="text-stone-400 font-normal">Email：</span>${escapeHtml(order.email || "-")}</div>
       ${internalNotePreview}
@@ -2093,7 +2126,7 @@ function getRevenueRateForOrder(order) {
   const month = date ? date.slice(0, 7) : "";
   const setting = getRevenueSettingByMonth(month);
   const methodType = getOrderMethodType(order);
-  const rawRate = methodType === "delivery" ? setting?.deliveryRate : setting?.storeRate;
+  const rawRate = getOrderMethodFamily(order) === "delivery" ? setting?.deliveryRate : setting?.storeRate;
   const rate = Number(rawRate);
   return {
     month,
@@ -2132,7 +2165,8 @@ function renderRevenueShare() {
           <select id="revenueMethodFilter" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
             <option value="">全部</option>
             <option value="store">門市自取</option>
-            <option value="delivery">7-11 店到店</option>
+            <option value="delivery">7-11店到店／信用卡付款</option>
+        <option value="delivery_cod">7-11店到店／取貨付款</option>
           </select>
         </label>
         <div class="md:col-span-2 flex items-end gap-2">
@@ -2202,7 +2236,8 @@ function filterRevenueShare() {
 
   const summary = {
     store: { label: "門市自取", count: 0, amount: 0, commission: 0 },
-    delivery: { label: "7-11 店到店", count: 0, amount: 0, commission: 0 }
+    delivery: { label: "7-11店到店／信用卡付款", count: 0, amount: 0, commission: 0 },
+    delivery_cod: { label: "7-11店到店／取貨付款", count: 0, amount: 0, commission: 0 }
   };
   rows.forEach(row => {
     const target = summary[row.methodType] || summary.store;
