@@ -739,7 +739,7 @@ function getOrderAmountNumbers(order) {
 }
 
 function normalizeAdminStatus(status) {
-  return status === "付款已確認" ? "待出貨" : (status || "");
+  return status || "";
 }
 
 function renderAdminAmountDetails(order) {
@@ -831,7 +831,7 @@ function renderTodayPickupCard() {
     normalizeOrderDateForCompare(o.date) === today &&
     getOrderMethodType(o) === "store" &&
     o.orderStatus !== "已完成" &&
-    o.orderStatus !== "已作廢"
+    o.orderStatus !== "已取消"
   );
 
   return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
@@ -858,7 +858,7 @@ function renderFutureSevenDayPreview() {
     const dayOrders = (adminData.orders || []).filter(o =>
       normalizeOrderDateForCompare(o.date) === date &&
       o.orderStatus !== "已完成" &&
-      o.orderStatus !== "已作廢"
+      o.orderStatus !== "已取消"
     );
 
     rows.push({
@@ -1285,7 +1285,7 @@ function isDashboardUnfinishedOrder(order) {
 
 function renderDashboardOpenOrdersReminder(allOrders) {
   const openOrders = (allOrders || [])
-    .filter(o => o.orderStatus !== "已作廢" && isDashboardUnfinishedOrder(o))
+    .filter(o => o.orderStatus !== "已取消" && isDashboardUnfinishedOrder(o))
     .sort((a, b) => compareTextValue(normalizeOrderDateForCompare(a.date) || "9999-12-31", normalizeOrderDateForCompare(b.date) || "9999-12-31"));
   if (!openOrders.length) return "";
 
@@ -1463,7 +1463,7 @@ function renderDashboardContent() {
   updateDashboardRangeButtons(state);
   const today = getTodayDateInputValue();
   const allOrders = adminData.orders || [];
-  const activeOrders = allOrders.filter(o => o.orderStatus !== "已作廢");
+  const activeOrders = allOrders.filter(o => o.orderStatus !== "已取消");
   const filteredActiveOrders = activeOrders.filter(o => orderPassDashboardFilter(o, state));
   const methodStoreOrders = filteredActiveOrders.filter(o => getOrderMethodType(o) === "store");
   const methodDeliveryOrders = filteredActiveOrders.filter(o => getOrderMethodType(o) === "delivery");
@@ -1487,7 +1487,7 @@ function renderDashboardContent() {
     readyPickup: filteredActiveOrders.filter(o => o.orderStatus === "可取貨").length,
     shipped: filteredActiveOrders.filter(o => o.orderStatus === "已出貨").length,
     pickedUp: filteredActiveOrders.filter(o => o.orderStatus === "已完成").length,
-    voided: allOrders.filter(o => o.orderStatus === "已作廢" && orderPassDashboardFilter(o, state)).length
+    voided: allOrders.filter(o => o.orderStatus === "已取消" && orderPassDashboardFilter(o, state)).length
   };
 
   document.getElementById("dashboardStatsArea").innerHTML = `
@@ -1495,7 +1495,7 @@ function renderDashboardContent() {
     ${renderDashboardOpenOrdersReminder(allOrders)}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       ${dashboardOverviewCard("今日新增訂單", todayNewOrders.length, `今日下單｜門市 ${todayNewStoreOrders}｜店到店 ${todayNewDeliveryOrders}`)}
-      ${dashboardOverviewCard("總訂單", d.totalOrders, `已完成 ${d.pickedUp}｜已作廢 ${d.voided}`)}
+      ${dashboardOverviewCard("總訂單", d.totalOrders, `已完成 ${d.pickedUp}｜已取消 ${d.voided}`)}
       ${dashboardOverviewCard(periodLabel === "全部期間" ? "總營業額" : periodLabel === "近 7 日" ? "近7天營業額" : "區間營業額", formatCurrency(rangeRevenue), `門市 ${formatCurrency(storeRevenue)}｜店到店 ${formatCurrency(deliveryRevenue)}`)}
     </div>
 
@@ -1546,7 +1546,7 @@ function renderDashboardStatusBar(d) {
         ${dashboardStatusChip("可取貨", d.readyPickup, "可取貨", "bg-emerald-50 text-emerald-700 border-emerald-200")}
         ${dashboardStatusChip("已出貨", d.shipped, "已出貨")}
         ${dashboardStatusChip("已完成", d.pickedUp, "已完成")}
-        ${dashboardStatusChip("已作廢", d.voided, "已作廢", "bg-red-50 text-red-700 border-red-200")}
+        ${dashboardStatusChip("已取消", d.voided, "已取消", "bg-red-50 text-red-700 border-red-200")}
       </div>
     </div>
   </div>`;
@@ -1607,7 +1607,7 @@ function methodCardClass(order) {
 
 function statusClass(status) {
   status = normalizeAdminStatus(status);
-  if (status === "已作廢") return "bg-red-50 text-red-700 border-red-200";
+  if (status === "已取消") return "bg-red-50 text-red-700 border-red-200";
   if (status === "已完成") return "bg-emerald-100 text-emerald-800 border-emerald-300";
   if (status === "已出貨") return "bg-emerald-50 text-emerald-700 border-emerald-200";
   if (status === "待出貨" || status === "可取貨") return "bg-blue-50 text-blue-700 border-blue-200";
@@ -1732,7 +1732,7 @@ function renderOrders() {
             <option value="待出貨">待出貨</option>
             <option value="已出貨">已出貨</option>
             <option value="已完成">已完成</option>
-            <option value="已作廢">已作廢</option>
+            <option value="已取消">已取消</option>
           </select>
 
           <select id="orderMethodFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
@@ -1841,9 +1841,9 @@ function filterOrders() {
 
     const keywordOk = !q || text.includes(q);
     const statusOk =
-      status === "已作廢"
-        ? o.orderStatus === "已作廢"
-        : ((!status || o.orderStatus === status) && o.orderStatus !== "已作廢");
+      status === "已取消"
+        ? o.orderStatus === "已取消"
+        : ((!status || o.orderStatus === status) && o.orderStatus !== "已取消");
     const methodOk = !method || methodType === method;
     const startOk = !startDate || (orderDate && orderDate >= startDate);
     const endOk = !endDate || (orderDate && orderDate <= endDate);
@@ -1880,14 +1880,14 @@ function filterOrders() {
     return compareTextValue(a.id, b.id);
   });
   const effectiveOrders = orders;
-  const voidCount = (adminData.orders || []).filter(o => o.orderStatus === "已作廢").length;
+  const voidCount = (adminData.orders || []).filter(o => o.orderStatus === "已取消").length;
   const storeCount = effectiveOrders.filter(o => getOrderMethodType(o) === "store").length;
   const deliveryCount = effectiveOrders.filter(o => getOrderMethodType(o) === "delivery").length;
   const rangeText = startDate && !endDate ? `｜日期：${startDate} 之後` : startDate && endDate ? `｜日期：${startDate}～${endDate}` : !startDate && endDate ? `｜日期：${endDate} 以前` : "｜日期：全部";
   updateOrderFilterSummary(startDate, endDate, method, sortMode);
   updateOrderRangeButtons(getOrderRangeMode(startDate, endDate));
-  const countLabel = status === "已作廢" ? "筆已作廢訂單" : "筆有效訂單";
-  const hiddenVoidText = status === "已作廢" || voidCount <= 0 ? "" : `｜已隱藏作廢 ${voidCount}`;
+  const countLabel = status === "已取消" ? "筆已取消訂單" : "筆有效訂單";
+  const hiddenVoidText = status === "已取消" || voidCount <= 0 ? "" : `｜已隱藏取消 ${voidCount}`;
   document.getElementById("orderCount").textContent = `${effectiveOrders.length} ${countLabel}｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}${hiddenVoidText}${rangeText}｜排序：${getOrderSortLabel(sortMode)}`;
   const area = document.getElementById("ordersArea");
   if (!orders.length) {
@@ -1915,7 +1915,7 @@ function formatOrderTimestampMinute(value) {
 }
 
 function orderCard(order) {
-  const statuses = ["訂單確認中", "可取貨", "待付款", "待出貨", "已出貨", "已完成", "已作廢"];
+  const statuses = ["訂單確認中", "可取貨", "待付款", "待出貨", "已出貨", "已完成", "已取消"];
   const methodType = getOrderMethodType(order);
   const isDelivery = methodType === "delivery";
   const dateDisplay = formatDateDisplayWithWeekday(order.date) || escapeHtml(order.date || "-");
@@ -2113,7 +2113,7 @@ function renderRevenueShare() {
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h2 class="text-xl font-black text-stone-900">分潤統計</h2>
-          <p class="text-sm text-stone-500 mt-1">自動排除已作廢訂單。</p>
+          <p class="text-sm text-stone-500 mt-1">自動排除已取消訂單。</p>
         </div>
         <button type="button" onclick="exportRevenueShareCsv()" class="h-10 rounded-xl border border-stone-200 bg-white px-4 font-black text-stone-600 hover:bg-stone-50">匯出 CSV</button>
       </div>
@@ -2156,7 +2156,7 @@ function getRevenueShareRows() {
 
   return (adminData.orders || [])
     .filter(order => {
-      if (normalizeAdminStatus(order.orderStatus) === "已作廢") return false;
+      if (normalizeAdminStatus(order.orderStatus) === "已取消") return false;
       const orderDate = normalizeOrderDateForCompare(order.date || order.timestamp || "");
       if (startDate && (!orderDate || orderDate < startDate)) return false;
       if (endDate && (!orderDate || orderDate > endDate)) return false;
@@ -2215,7 +2215,7 @@ function filterRevenueShare() {
   const totalCommission = rows.reduce((sum, row) => sum + row.commission, 0);
   area.innerHTML = `
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-      ${revenueShareKpi("訂單數", rows.length + " 筆", "不含已作廢")}
+      ${revenueShareKpi("訂單數", rows.length + " 筆", "不含已取消")}
       ${revenueShareKpi("總營業額", formatCurrency(totalAmount), "依篩選區間")}
       ${revenueShareKpi("預估分潤", formatCurrency(totalCommission), "依每月比例")}
     </div>
