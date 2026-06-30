@@ -329,9 +329,9 @@
                                     <div class="text-[11px] md:text-xs text-stone-400 font-bold">大量訂購可調整，一般訂購維持 1 組即可</div>
                                 </div>
                                 <div class="no-zoom-area flex items-center bg-white rounded-xl p-1 border border-stone-200 gap-1 w-fit">
-                                    <button type="button" onclick="changeRepeatBoxQty(-1)" style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer text-sm">—</button>
+                                    <button type="button" onpointerdown="startLilouStepperPress(event, 'changeRepeatBoxQty', [-1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer text-sm">—</button>
                                     <input type="number" id="repeatBoxQty" min="1" max="99" value="1" inputmode="numeric" oninput="handleRepeatBoxInput(this)" onblur="handleRepeatBoxBlur(this)" style="width: 52px; height: 34px;" class="text-center text-base font-black bg-transparent border-0 focus:outline-none text-stone-800">
-                                    <button type="button" onclick="changeRepeatBoxQty(1)" style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer text-sm">＋</button>
+                                    <button type="button" onpointerdown="startLilouStepperPress(event, 'changeRepeatBoxQty', [1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer text-sm">＋</button>
                                 </div>
                             </div>
 
@@ -1082,9 +1082,9 @@
                         <span class="text-[10px] md:text-xs ${virtualStock <= 0 ? 'text-red-500 font-bold' : 'text-stone-400'} ml-0.5">${statusText}</span>${shippingBadge}
                     </div>
                     <div class="no-zoom-area shrink-0 flex items-center bg-stone-100 rounded-xl p-1 border border-stone-200 gap-1 ${(isBoxNotSelected || shouldDisable) ? 'opacity-30 select-none' : ''}">
-                        <button type="button" onclick="stepFlavorQty(${originalIdx}, -1)" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">—</button>
+                        <button type="button" onpointerdown="startLilouStepperPress(event, 'stepFlavorQty', [${originalIdx}, -1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">—</button>
                         <input type="number" id="flavorQty_${originalIdx}" data-idx="${originalIdx}" min="0" max="${virtualStock >= 0 ? virtualStock : 0}" value="0" ${shouldDisable ? 'disabled' : ''} oninput="handleFlavorInput(this, ${originalIdx})" onblur="handleFlavorBlur(this)" style="width: 44px; height: 32px;" class="flavor-input text-center text-base md:text-base font-black bg-transparent border-0 focus:outline-none text-stone-800">
-                        <button type="button" id="plusBtn_${originalIdx}" onclick="stepFlavorQty(${originalIdx}, 1)" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">＋</button>
+                        <button type="button" id="plusBtn_${originalIdx}" onpointerdown="startLilouStepperPress(event, 'stepFlavorQty', [${originalIdx}, 1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">＋</button>
                     </div>
                 </div>`;
             }).join('');
@@ -1210,6 +1210,40 @@
             if (value < 1) value = 1;
             if (value > 99) value = 99;
             input.value = value;
+        }
+
+
+        let lilouStepperTimer = null;
+        let lilouStepperDelayTimer = null;
+
+        window.stopLilouStepperPress = function() {
+            if (lilouStepperDelayTimer) {
+                clearTimeout(lilouStepperDelayTimer);
+                lilouStepperDelayTimer = null;
+            }
+            if (lilouStepperTimer) {
+                clearInterval(lilouStepperTimer);
+                lilouStepperTimer = null;
+            }
+        }
+
+        window.startLilouStepperPress = function(event, functionName, args = []) {
+            const target = event?.currentTarget;
+            if (target && target.disabled) return;
+            if (event) event.preventDefault();
+
+            window.stopLilouStepperPress();
+
+            const runStep = () => {
+                const fn = window[functionName];
+                if (typeof fn === 'function') fn(...args);
+            };
+
+            runStep();
+
+            lilouStepperDelayTimer = setTimeout(() => {
+                lilouStepperTimer = setInterval(runStep, 95);
+            }, 360);
         }
 
         window.handleRepeatBoxInput = function(input) {
