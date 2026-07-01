@@ -213,13 +213,74 @@
   }
 }
 
+
+/* 商品／包裝管理優化 */
+.admin-switch {
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid #d6d3d1;
+  background: #d6d3d1;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease;
+  cursor: pointer;
+}
+.admin-switch.is-on {
+  background: #5B7290;
+  border-color: #5B7290;
+  justify-content: flex-end;
+}
+.admin-switch span {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(28,23,21,.18);
+  display: block;
+}
+.admin-edit-row.is-inactive {
+  background: #f5f5f4;
+  opacity: .66;
+}
+.admin-edit-row.is-inactive input,
+.admin-edit-row.is-inactive select,
+.admin-edit-row.is-inactive textarea {
+  color: #78716c !important;
+}
+.admin-stock-zero {
+  border-color: #fecaca !important;
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+}
+.admin-stock-low {
+  border-color: #fed7aa !important;
+  background: #fff7ed !important;
+  color: #c2410c !important;
+}
+.admin-edit-search {
+  min-width: 180px;
+}
+@media (min-width: 768px) {
+  table[data-edit-table="products"] thead,
+  table[data-edit-table="packaging"] thead {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #fff;
+    box-shadow: 0 1px 0 rgba(231,229,228,.9);
+  }
+}
+
 </style>
 </head>
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
   <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
       <div>
-        <h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統 2.0</h1>
+        <h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統 2.1.0</h1>
       </div>
       <div class="flex items-center gap-2">
         <button id="adminReloadBtn" onclick="loadAll()" title="重新整理資料" class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10">重新整理</button>
@@ -2571,14 +2632,23 @@ function getEditableTableColgroup(tab, keys) {
 
 function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = false) {
   const id = "tab-" + tab;
+  const isProductOrPackaging = tab === "products" || tab === "packaging";
   const productNamingNotice = tab === "products" ? `
       <div class="rounded-2xl bg-stone-50 border border-stone-100 p-3 text-xs text-stone-500 font-bold leading-relaxed space-y-1">
-        <p>📌 商品類型：組合商品／單品｜配送規則：自取與宅配／僅自取／僅宅配｜上架狀態：上架／下架。</p>
+        <p>商品類型：組合商品／單品｜配送規則：自取與宅配／僅自取／僅宅配｜上架狀態可直接點擊開關切換。</p>
       </div>` : "";
   const couponOperationNotice = tab === "coupons" ? `
       <p class="text-xs text-stone-500 font-bold leading-relaxed">
-        📌 現折金額請直接輸入金額，例如 100；折扣比例請輸入小數，例如 0.9 代表 9 折。
+        現折金額請直接輸入金額，例如 100；折扣比例請輸入小數，例如 0.9 代表 9 折。
       </p>` : "";
+  const stats = isProductOrPackaging ? getEditableTableStats(rows) : null;
+  const searchBox = isProductOrPackaging ? `
+        <div class="flex flex-col md:flex-row md:items-center gap-2 md:justify-end">
+          <div id="${tab}Stats" class="text-sm text-stone-500 font-bold whitespace-nowrap">
+            共 ${stats.total} 個${tab === "products" ? "商品" : "包裝"}｜上架 ${stats.active}｜下架 ${stats.inactive}
+          </div>
+          <input type="search" id="${tab}Search" oninput="filterEditableTable('${tab}')" class="admin-edit-search h-10 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold" placeholder="搜尋${tab === "products" ? "商品" : "包裝"}">
+        </div>` : "";
 
   document.getElementById(id).innerHTML = `
     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4">
@@ -2587,23 +2657,31 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
           <h2 class="text-xl font-black text-stone-900">${sheetName}</h2>
           <p class="text-sm text-stone-500 mt-1">修改後請按「儲存 ${sheetName}」。</p>
         </div>
-        <div class="flex gap-2">
-          <button onclick="addRow('${tab}')" class="h-10 rounded-xl border border-stone-200 px-4 font-black text-stone-600 bg-white hover:bg-stone-50">新增一列</button>
-          <button onclick="saveSheet('${tab}','${sheetName}')" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 ${sheetName}</button>
+        <div class="flex flex-col md:flex-row md:items-center gap-2">
+          ${searchBox}
+          <div class="flex gap-2">
+            <button onclick="addRow('${tab}')" class="h-10 rounded-xl border border-stone-200 px-4 font-black text-stone-600 bg-white hover:bg-stone-50">新增一列</button>
+            <button onclick="saveSheet('${tab}','${sheetName}')" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 ${sheetName}</button>
+          </div>
         </div>
       </div>
       ${productNamingNotice}
       ${couponOperationNotice}
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto max-h-[70vh]">
         <table class="w-full text-sm table-fixed ${getEditableTableMinWidth(tab)}" data-edit-table="${tab}" data-keys="${keys.join(",")}">
           ${getEditableTableColgroup(tab, keys)}
-          <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2 whitespace-nowrap">${l}</th>`).join("")}<th class="px-1 py-2"></th></tr></thead>
+          <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2 whitespace-nowrap bg-white">${l}</th>`).join("")}<th class="px-1 py-2 bg-white"></th></tr></thead>
           <tbody>${rows.map(row => editRowHtml(tab, keys, row, textareaLong)).join("")}</tbody>
         </table>
       </div>
     </div>`;
+  if (isProductOrPackaging) {
+    requestAnimationFrame(() => {
+      document.querySelectorAll(`#${id} tbody tr`).forEach(updateEditableRowState);
+      updateEditableTableStats(tab);
+    });
+  }
 }
-
 
 function getAdminCellClass(tab, key) {
   if (tab === "products") {
@@ -2628,7 +2706,10 @@ function getAdminCellClass(tab, key) {
 
 function editRowHtml(tab, keys, row = {}, textareaLong = false) {
   const rowAttr = tab === "coupons" && (row.code || "").toString().trim() ? ` data-coupon-code="${escapeHtml((row.code || "").toString().trim())}"` : "";
-  return `<tr class="border-t border-stone-100 transition-colors"${rowAttr}>${keys.map((key, idx) => {
+  const displayValue = row.display === undefined || row.display === "" ? "TRUE" : row.display;
+  const inactiveClass = (tab === "products" || tab === "packaging") && !isDisplayOn(displayValue) ? " is-inactive" : "";
+
+  return `<tr class="admin-edit-row border-t border-stone-100 transition-colors${inactiveClass}"${rowAttr}>${keys.map((key, idx) => {
     const val = row[key] || "";
     let field = "";
 
@@ -2639,11 +2720,10 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false) {
         <option value="single" ${cleanVal === "single" ? "selected" : ""}>單品</option>
       </select>`;
     } else if ((tab === "products" || tab === "packaging") && key === "display") {
-      const cleanVal = (val === undefined || val === "") ? "TRUE" : val.toString().trim().toUpperCase();
-      field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
-        <option value="TRUE" ${cleanVal !== "FALSE" ? "selected" : ""}>上架</option>
-        <option value="FALSE" ${cleanVal === "FALSE" ? "selected" : ""}>下架</option>
-      </select>`;
+      const on = isDisplayOn(val === undefined || val === "" ? "TRUE" : val);
+      field = `${renderDisplaySwitch(on)}<input type="hidden" data-key="${key}" value="${on ? "TRUE" : "FALSE"}">`;
+    } else if (tab === "products" && key === "stock") {
+      field = `<input data-key="${key}" type="number" inputmode="numeric" oninput="updateStockInputClass(this)" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50 ${stockInputClass(val)}" value="${escapeHtml(val)}">`;
     } else if (tab === "products" && key === "shipping_rule") {
       const cleanVal = (val || "all").toString().trim().toLowerCase();
       field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">
@@ -2670,11 +2750,88 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false) {
     const cellClass = getAdminCellClass(tab, key);
     return `<td class="px-2 py-2 align-top ${cellClass}">${field}</td>`;
   }).join("")}<td class="px-1 py-2 align-top text-center">
-    <button onclick="this.closest('tr').remove()" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">
+    <button onclick="this.closest('tr').remove(); updateEditableTableStats('${tab}');" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">
       ✕
     </button>
   </td></tr>`;
 }
+
+function isDisplayOn(value) {
+  const v = (value ?? "").toString().trim().toUpperCase();
+  return v !== "FALSE" && v !== "0" && v !== "下架";
+}
+
+function renderDisplaySwitch(on) {
+  return `<button type="button" onclick="toggleDisplaySwitch(this)" class="admin-switch ${on ? "is-on" : ""}" aria-label="${on ? "上架" : "下架"}" title="${on ? "上架" : "下架"}"><span></span></button>`;
+}
+
+function toggleDisplaySwitch(button) {
+  const input = button.parentElement.querySelector('input[data-key="display"]');
+  const nextOn = !button.classList.contains("is-on");
+  button.classList.toggle("is-on", nextOn);
+  button.setAttribute("aria-label", nextOn ? "上架" : "下架");
+  button.setAttribute("title", nextOn ? "上架" : "下架");
+  if (input) input.value = nextOn ? "TRUE" : "FALSE";
+  const row = button.closest("tr");
+  updateEditableRowState(row);
+  const table = button.closest("table[data-edit-table]");
+  if (table) updateEditableTableStats(table.dataset.editTable);
+}
+
+function updateEditableRowState(row) {
+  if (!row) return;
+  const displayInput = row.querySelector('input[data-key="display"]');
+  if (displayInput) row.classList.toggle("is-inactive", !isDisplayOn(displayInput.value));
+  const stockInput = row.querySelector('input[data-key="stock"]');
+  if (stockInput) updateStockInputClass(stockInput);
+}
+
+function stockInputClass(value) {
+  const n = Number(value || 0);
+  if (!isNaN(n) && n <= 0) return "admin-stock-zero";
+  if (!isNaN(n) && n <= 5) return "admin-stock-low";
+  return "";
+}
+
+function updateStockInputClass(input) {
+  if (!input) return;
+  input.classList.remove("admin-stock-zero", "admin-stock-low");
+  const cls = stockInputClass(input.value);
+  if (cls) input.classList.add(cls);
+}
+
+function getEditableTableStats(rows) {
+  const list = rows || [];
+  const total = list.length;
+  const active = list.filter(row => isDisplayOn(row.display === undefined || row.display === "" ? "TRUE" : row.display)).length;
+  return { total, active, inactive: total - active };
+}
+
+function updateEditableTableStats(tab) {
+  if (!(tab === "products" || tab === "packaging")) return;
+  const table = document.querySelector(`[data-edit-table="${tab}"]`);
+  const statsEl = document.getElementById(`${tab}Stats`);
+  if (!table || !statsEl) return;
+  const rows = [...table.querySelectorAll("tbody tr")];
+  const total = rows.length;
+  const active = rows.filter(row => {
+    const input = row.querySelector('input[data-key="display"]');
+    return !input || isDisplayOn(input.value);
+  }).length;
+  statsEl.textContent = `共 ${total} 個${tab === "products" ? "商品" : "包裝"}｜上架 ${active}｜下架 ${total - active}`;
+}
+
+function filterEditableTable(tab) {
+  const table = document.querySelector(`[data-edit-table="${tab}"]`);
+  const input = document.getElementById(`${tab}Search`);
+  if (!table || !input) return;
+  const q = input.value.trim().toLowerCase();
+  table.querySelectorAll("tbody tr").forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = !q || text.includes(q) ? "" : "none";
+  });
+}
+
 
 function getSettingBlock(button) {
   return button.closest("[data-setting-row]");
@@ -2769,8 +2926,11 @@ function addRow(tab) {
   const table = document.querySelector(`[data-edit-table="${tab}"]`);
   const keys = table.dataset.keys.split(",");
   const textareaLong = tab === "settings";
-  const defaults = tab === "products" ? { type: "combo", display: "TRUE", shipping_rule: "all", sort: "10" } : {};
+  const defaults = tab === "products" ? { type: "combo", display: "TRUE", shipping_rule: "all", sort: "10" } : tab === "packaging" ? { type: "combo", display: "TRUE", sort: "10" } : {};
   table.querySelector("tbody").insertAdjacentHTML("beforeend", editRowHtml(tab, keys, defaults, textareaLong));
+  const newRow = table.querySelector("tbody tr:last-child");
+  updateEditableRowState(newRow);
+  updateEditableTableStats(tab);
 }
 
 function collectRows(tab) {
