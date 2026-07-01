@@ -300,6 +300,29 @@
             if (lilouOrderMethodIsCod(method)) return "7-11取貨付款";
             return "7-11取貨（信用卡付款）";
         }
+
+        function lilouGetOrderShippingMethod(order = {}) {
+            const candidates = [
+                order.shipping_method,
+                order.Shipping_Method,
+                order.shippingMethod,
+                order.method,
+                order.Method,
+                order.shipping,
+                order.deliveryMethod
+            ].map(v => (v ?? "").toString().trim()).filter(Boolean);
+
+            const codValue = candidates.find(v => lilouOrderMethodIsCod(v));
+            if (codValue) return codValue;
+
+            const storeValue = candidates.find(v => lilouOrderMethodIsStore(v));
+            if (storeValue) return storeValue;
+
+            const deliveryValue = candidates.find(v => /7-11|711|pickup/i.test(v));
+            if (deliveryValue) return deliveryValue;
+
+            return candidates[0] || "";
+        }
     </script>
 
     <nav class="bg-[#5B7290] text-white p-4 md:p-5 shadow-sm sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
@@ -2065,7 +2088,7 @@
 
             resultArea.innerHTML = sortedOrders.map((order, index) => {
                 const isLatestOrder = index === 0;
-                const method = order.method || "";
+                const method = lilouGetOrderShippingMethod(order);
                 const isStorePickup = lilouOrderMethodIsStore(method);
                 const isCodPickup = lilouOrderMethodIsCod(method);
                 const isPrepaidDelivery = lilouOrderMethodIsPrepaidDelivery(method);
