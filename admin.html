@@ -274,6 +274,33 @@
   }
 }
 
+/* 商品／包裝欄寬整理：數字與開關置中，避免配送與上下架欄位過寬 */
+table[data-edit-table="products"] input[data-key="price"],
+table[data-edit-table="products"] input[data-key="stock"],
+table[data-edit-table="products"] input[data-key="sort"],
+table[data-edit-table="packaging"] input[data-key="extra_price"],
+table[data-edit-table="packaging"] input[data-key="box_size"],
+table[data-edit-table="packaging"] input[data-key="sort"] {
+  text-align: center !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+table[data-edit-table="products"] select[data-key="type"],
+table[data-edit-table="products"] select[data-key="shipping_rule"],
+table[data-edit-table="packaging"] select[data-key="type"] {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+table[data-edit-table="products"] td:has(input[data-key="display"]),
+table[data-edit-table="packaging"] td:has(input[data-key="display"]) {
+  text-align: center;
+}
+table[data-edit-table="products"] .admin-switch,
+table[data-edit-table="packaging"] .admin-switch {
+  margin-left: auto;
+  margin-right: auto;
+}
+
 </style>
 </head>
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
@@ -2586,8 +2613,8 @@ function renderSettingDateTags(dates) {
 
 
 function getEditableTableMinWidth(tab) {
-  if (tab === "products") return "min-w-[2350px]";
-  if (tab === "packaging") return "min-w-[980px]";
+  if (tab === "products") return "min-w-[2380px]";
+  if (tab === "packaging") return "min-w-[820px]";
   if (tab === "coupons") return "min-w-[980px]";
   return "min-w-[720px]";
 }
@@ -2595,27 +2622,27 @@ function getEditableTableMinWidth(tab) {
 function getEditableTableColgroup(tab, keys) {
   const widthMap = {
     products: {
-      name: "180px",
+      name: "190px",
       price: "70px",
       stock: "70px",
-      type: "125px",
-      display: "115px",
-      shipping_rule: "150px",
-      sort: "70px",
-      ingredients: "380px",
-      allergens: "360px",
-      storage: "360px",
-      weight: "90px",
-      nutrition: "430px",
-      origin_manufacturer: "360px"
+      type: "105px",
+      display: "82px",
+      shipping_rule: "112px",
+      sort: "60px",
+      ingredients: "330px",
+      allergens: "300px",
+      storage: "300px",
+      weight: "80px",
+      nutrition: "380px",
+      origin_manufacturer: "320px"
     },
     packaging: {
-      name: "42%",
-      extra_price: "100px",
-      box_size: "90px",
-      type: "140px",
-      display: "130px",
-      sort: "90px"
+      name: "280px",
+      extra_price: "85px",
+      box_size: "80px",
+      type: "115px",
+      display: "82px",
+      sort: "70px"
     },
     coupons: {
       code: "34%",
