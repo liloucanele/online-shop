@@ -1786,10 +1786,10 @@ function renderOrders() {
       </summary>
 
       <div class="admin-filter-body pt-3 md:pt-0 space-y-3">
-        <div class="flex flex-col md:grid md:grid-cols-[150px_92px_130px_150px_112px_112px_204px] gap-3 md:items-center">
-          <input id="orderSearch" oninput="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 min-w-0" placeholder="搜尋訂單">
+        <div class="flex flex-col md:grid md:grid-cols-[1.12fr_0.78fr_1.02fr_1.18fr_0.86fr_0.86fr_0.42fr_0.42fr_0.72fr] gap-2 md:items-center">
+          <input id="orderSearch" oninput="filterOrders()" class="h-11 w-full rounded-xl border border-stone-200 px-2.5 bg-stone-50 min-w-0 text-sm" placeholder="搜尋訂單">
 
-          <select id="orderStatusFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-2 bg-stone-50 min-w-0">
+          <select id="orderStatusFilter" onchange="filterOrders()" class="h-11 w-full rounded-xl border border-stone-200 px-2 bg-stone-50 min-w-0">
             <option value="">全部狀態</option>
             <option value="訂單確認中">訂單確認中</option>
             <option value="可取貨">可取貨(門市)</option>
@@ -1800,14 +1800,14 @@ function renderOrders() {
             <option value="已取消">已取消</option>
           </select>
 
-          <select id="orderMethodFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-2 bg-stone-50 min-w-0">
+          <select id="orderMethodFilter" onchange="filterOrders()" class="h-11 w-full rounded-xl border border-stone-200 px-2 bg-stone-50 min-w-0">
             <option value="">全部配送</option>
             <option value="store">門市自取</option>
             <option value="delivery">7-11店到店／信用卡付款</option>
             <option value="delivery_cod">7-11店到店／取貨付款</option>
           </select>
 
-          <select id="orderSortFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-2 bg-stone-50 min-w-0">
+          <select id="orderSortFilter" onchange="filterOrders()" class="h-11 w-full rounded-xl border border-stone-200 px-2 bg-stone-50 min-w-0">
             <option value="orderDesc">訂單日期(近到遠)</option>
             <option value="orderAsc">訂單日期(遠到近)</option>
             <option value="arrivalAsc">取到貨日期(近到遠)</option>
@@ -1816,14 +1816,12 @@ function renderOrders() {
             <option value="amountAsc">訂單金額(低到高)</option>
           </select>
 
-          <input id="orderStartDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-2 bg-stone-50 min-w-0">
-          <input id="orderEndDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-2 bg-stone-50 min-w-0">
+          <input id="orderStartDate" type="date" onchange="filterOrders()" class="h-11 w-full rounded-xl border border-stone-200 px-2 bg-stone-50 min-w-0">
+          <input id="orderEndDate" type="date" onchange="filterOrders()" class="h-11 w-full rounded-xl border border-stone-200 px-2 bg-stone-50 min-w-0">
 
-          <div class="grid grid-cols-[52px_52px_84px] gap-2 min-w-0">
-            <button data-order-range="month" onclick="setOrderDateDefaultMonth()" class="order-range-btn h-11 rounded-xl border border-stone-200 px-2 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs whitespace-nowrap">本月</button>
-            <button data-order-range="all" onclick="clearOrderDateFilter()" class="order-range-btn h-11 rounded-xl border border-stone-200 px-2 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs whitespace-nowrap">全部</button>
-            <button type="button" onclick="clearOrderAllFilters()" class="h-11 rounded-xl border border-stone-200 bg-white px-1.5 text-xs font-black text-stone-600 hover:bg-stone-50 whitespace-nowrap">清除篩選</button>
-          </div>
+          <button data-order-range="month" onclick="setOrderDateDefaultMonth()" class="order-range-btn h-11 w-full rounded-xl border border-stone-200 px-2 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs whitespace-nowrap">本月</button>
+          <button data-order-range="all" onclick="clearOrderDateFilter()" class="order-range-btn h-11 w-full rounded-xl border border-stone-200 px-2 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs whitespace-nowrap">全部</button>
+          <button type="button" onclick="clearOrderAllFilters()" class="h-11 w-full rounded-xl border border-stone-200 bg-white px-2 text-xs font-black text-stone-600 hover:bg-stone-50 whitespace-nowrap">清除篩選</button>
         </div>
         <div id="orderCount" class="min-w-0 text-sm font-medium text-stone-500"></div>
       </div>
