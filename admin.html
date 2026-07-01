@@ -42,6 +42,7 @@
     .tab-btn { font-size: var(--admin-text-base) !important; }
     .mono { font-variant-numeric: tabular-nums; }
 
+    /* 字級重新整理：保留清楚閱讀感，僅縮小篩選與表格欄位，不壓到內容文字 */
     #adminPanel input,
     #adminPanel select,
     #adminPanel textarea {
@@ -185,6 +186,7 @@
       text-align: left;
     }
   
+/* 訂單卡片一般資訊：降低字重，手機版日期與下單時間分行 */
 .order-meta-line {
   font-weight: 500 !important;
   color: #44403C !important;
@@ -1784,10 +1786,10 @@ function renderOrders() {
       </summary>
 
       <div class="admin-filter-body pt-3 md:pt-0 space-y-3">
-        <div class="grid grid-cols-1 md:grid-cols-10 gap-3">
-          <input id="orderSearch" oninput="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2" placeholder="搜尋訂單編號、姓名、電話、日期">
+        <div class="flex flex-col md:flex-row md:flex-nowrap md:items-center gap-2.5">
+          <input id="orderSearch" oninput="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 w-full md:flex-1 md:min-w-[240px] md:max-w-[320px]" placeholder="搜尋訂單編號、姓名、電話、日期">
 
-          <select id="orderStatusFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+          <select id="orderStatusFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 w-full md:w-[135px] md:shrink-0">
             <option value="">全部狀態</option>
             <option value="訂單確認中">訂單確認中</option>
             <option value="可取貨">可取貨(門市)</option>
@@ -1798,14 +1800,14 @@ function renderOrders() {
             <option value="已取消">已取消</option>
           </select>
 
-          <select id="orderMethodFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+          <select id="orderMethodFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 w-full md:w-[150px] md:shrink-0">
             <option value="">全部配送</option>
             <option value="store">門市自取</option>
             <option value="delivery">7-11店到店／信用卡付款</option>
             <option value="delivery_cod">7-11店到店／取貨付款</option>
           </select>
 
-          <select id="orderSortFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
+          <select id="orderSortFilter" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 w-full md:w-[205px] md:shrink-0">
             <option value="orderDesc">訂單日期(近到遠)</option>
             <option value="orderAsc">訂單日期(遠到近)</option>
             <option value="arrivalAsc">取到貨日期(近到遠)</option>
@@ -1814,18 +1816,17 @@ function renderOrders() {
             <option value="amountAsc">訂單金額(低到高)</option>
           </select>
 
-          <input id="orderStartDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
-          <input id="orderEndDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
+          <input id="orderStartDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 w-full md:w-[150px] md:shrink-0">
+          <input id="orderEndDate" type="date" onchange="filterOrders()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 w-full md:w-[150px] md:shrink-0">
 
-          <div class="flex gap-2 md:col-span-2">
-            <button data-order-range="future" onclick="setOrderDateFutureDefault()" class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">未來</button>
-            <button data-order-range="month" onclick="setOrderDateDefaultMonth()" class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">本月</button>
-            <button data-order-range="all" onclick="clearOrderDateFilter()" class="order-range-btn flex-1 h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs">全部</button>
+          <div class="grid grid-cols-3 gap-2 w-full md:w-auto md:shrink-0">
+            <button data-order-range="month" onclick="setOrderDateDefaultMonth()" class="order-range-btn h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs whitespace-nowrap">本月</button>
+            <button data-order-range="all" onclick="clearOrderDateFilter()" class="order-range-btn h-11 rounded-xl border border-stone-200 px-3 font-semibold text-stone-600 bg-white hover:bg-stone-50 text-xs whitespace-nowrap">全部</button>
+            <button type="button" onclick="clearOrderAllFilters()" class="h-11 rounded-xl border border-stone-200 bg-white px-3 text-xs font-black text-stone-600 hover:bg-stone-50 whitespace-nowrap">清除篩選</button>
           </div>
         </div>
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div class="flex items-center justify-between gap-2">
           <div id="orderCount" class="text-sm font-medium text-stone-500"></div>
-          <button type="button" onclick="clearOrderAllFilters()" class="h-10 rounded-xl border border-stone-200 bg-white px-4 text-sm font-black text-stone-600 hover:bg-stone-50">清除篩選</button>
         </div>
       </div>
     </details>
