@@ -1,20 +1,19 @@
 <!DOCTYPE html>
+
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  
-  <link rel="icon" href="images/favicon.ico" sizes="any">
-  <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
-  <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
-  <link rel="manifest" href="images/site.webmanifest">
-  
-  <title>Lilou｜後台管理系統</title>
-  <meta name="robots" content="noindex,nofollow">
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <!--Developed by TylerChen Design 2026-->
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<link href="images/favicon.ico" rel="icon" sizes="any"/>
+<link href="images/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="images/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png"/>
+<link href="images/apple-touch-icon.png" rel="apple-touch-icon"/>
+<link href="images/site.webmanifest" rel="manifest"/>
+<title>Lilou｜後台管理系統</title>
+<meta content="noindex,nofollow" name="robots"/>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<!--Developed by TylerChen Design 2026-->
+<style>
     :root {
       --admin-text-xs: 13px;
       --admin-text-sm: 14px;
@@ -304,58 +303,51 @@ table[data-edit-table="packaging"] .admin-switch {
 </style>
 </head>
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
-  <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-      <div>
-        <h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統 2.1.0</h1>
-      </div>
-      <div class="flex items-center gap-2">
-        <button id="adminReloadBtn" onclick="loadAll()" title="重新整理資料" class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10">重新整理</button>
-        <button id="logoutBtn" onclick="logoutAdmin()" class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10">登出</button>
-      </div>
-    </div>
-  </header>
-
-  <main class="max-w-7xl mx-auto p-4 md:p-6">
-    <section id="loginPanel" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-5 md:p-8 max-w-md mx-auto mt-10 space-y-4">
-      <div>
-        <h2 class="text-xl font-black text-stone-900">後台登入</h2>
-        <p class="text-sm text-stone-500 mt-1">此頁不會顯示在前台，請輸入管理密碼。</p>
-      </div>
-      <div>
-        <label class="text-xs font-black text-stone-500 tracking-widest">管理密碼</label>
-        <input id="adminPassword" type="password" class="mt-1 w-full h-12 rounded-xl border border-stone-200 px-3 bg-stone-50 focus:outline-none focus:border-[#5B7290]" placeholder="請輸入密碼">
-      </div>
-      <button onclick="adminLogin()" class="w-full h-12 rounded-xl bg-[#5B7290] text-white font-black tracking-widest hover:bg-[#3E4F66]">登入</button>
-      <p id="loginMessage" class="hidden text-sm font-bold"></p>
-    </section>
-
-    <section id="adminPanel" class="hidden space-y-5">
-      <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-3 overflow-x-auto">
-        <div id="tabs" class="flex gap-2 min-w-max">
-          <button onclick="switchTab('dashboard')" data-tab="dashboard" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-active">Dashboard</button>
-          <button onclick="switchTab('orders')" data-tab="orders" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">訂單管理</button>
-          <button onclick="switchTab('products')" data-tab="products" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">產品</button>
-          <button onclick="switchTab('packaging')" data-tab="packaging" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">包裝</button>
-          <button onclick="switchTab('coupons')" data-tab="coupons" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">優惠券</button>
-          <button onclick="switchTab('settings')" data-tab="settings" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">日期設定</button>
-          <button onclick="switchTab('revenue')" data-tab="revenue" class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle">分潤統計</button>
-        </div>
-      </div>
-
-      <p id="adminMessage" class="hidden text-sm font-bold" aria-live="polite"></p>
-
-      <section id="tab-dashboard" class="tab-page space-y-5"></section>
-      <section id="tab-orders" class="tab-page hidden space-y-5"></section>
-      <section id="tab-products" class="tab-page hidden space-y-5"></section>
-      <section id="tab-packaging" class="tab-page hidden space-y-5"></section>
-      <section id="tab-coupons" class="tab-page hidden space-y-5"></section>
-      <section id="tab-settings" class="tab-page hidden space-y-5"></section>
-      <section id="tab-revenue" class="tab-page hidden space-y-5"></section>
-    </section>
-  </main>
-  <div id="adminToastArea" class="fixed right-4 bottom-4 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
-
+<header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
+<div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">Version 2.1.0</span></div></div>
+<div class="flex items-center gap-2">
+<button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
+<button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto p-4 md:p-6">
+<section class="bg-white rounded-3xl border border-stone-100 shadow-sm p-5 md:p-8 max-w-md mx-auto mt-10 space-y-4" id="loginPanel">
+<div>
+<h2 class="text-xl font-black text-stone-900">後台登入</h2>
+<p class="text-sm text-stone-500 mt-1">此頁不會顯示在前台，請輸入管理密碼。</p>
+</div>
+<div>
+<label class="text-xs font-black text-stone-500 tracking-widest">管理密碼</label>
+<input class="mt-1 w-full h-12 rounded-xl border border-stone-200 px-3 bg-stone-50 focus:outline-none focus:border-[#5B7290]" id="adminPassword" placeholder="請輸入密碼" type="password"/>
+</div>
+<button class="w-full h-12 rounded-xl bg-[#5B7290] text-white font-black tracking-widest hover:bg-[#3E4F66]" onclick="adminLogin()">登入</button>
+<p class="hidden text-sm font-bold" id="loginMessage"></p>
+</section>
+<section class="hidden space-y-5" id="adminPanel">
+<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-3 overflow-x-auto">
+<div class="flex gap-2 min-w-max" id="tabs">
+<button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard</button>
+<button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="orders" onclick="switchTab('orders')">訂單管理</button>
+<button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="products" onclick="switchTab('products')">產品</button>
+<button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="packaging" onclick="switchTab('packaging')">包裝</button>
+<button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="coupons" onclick="switchTab('coupons')">優惠券</button>
+<button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="settings" onclick="switchTab('settings')">日期設定</button>
+<button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="revenue" onclick="switchTab('revenue')">分潤統計</button>
+</div>
+</div>
+<p aria-live="polite" class="hidden text-sm font-bold" id="adminMessage"></p>
+<section class="tab-page space-y-5" id="tab-dashboard"></section>
+<section class="tab-page hidden space-y-5" id="tab-orders"></section>
+<section class="tab-page hidden space-y-5" id="tab-products"></section>
+<section class="tab-page hidden space-y-5" id="tab-packaging"></section>
+<section class="tab-page hidden space-y-5" id="tab-coupons"></section>
+<section class="tab-page hidden space-y-5" id="tab-settings"></section>
+<section class="tab-page hidden space-y-5" id="tab-revenue"></section>
+</section>
+</main>
+<div class="fixed right-4 bottom-4 z-[9999] flex flex-col gap-2 pointer-events-none" id="adminToastArea"></div>
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyA3ovLtC-hDYGL-_9CMNKk9A--TcrU-W-mN6Hc0GaZ8eDrvAsew3ZdtYBLSyimuiU/exec";
 const TOKEN_KEY = "lilou_admin_token";
