@@ -1957,7 +1957,7 @@ function filterOrders() {
   updateOrderRangeButtons(getOrderRangeMode(startDate, endDate));
   const countLabel = status === "已取消" ? "筆已取消訂單" : "筆有效訂單";
   const deliveryCount = deliveryCreditCount + deliveryCodCount;
-  const hiddenVoidText = status === "已取消" || voidCount <= 0 ? "" : `｜已取消 ${voidCount}（已隱藏）`;
+  const hiddenVoidText = status === "已取消" || voidCount <= 0 ? "" : `｜已取消 ${voidCount}`;
   document.getElementById("orderCount").textContent = `${effectiveOrders.length} ${countLabel}｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCount}${hiddenVoidText}${rangeText}｜排序：${getOrderSortLabel(sortMode)}`;
   const area = document.getElementById("ordersArea");
   if (!orders.length) {
