@@ -879,13 +879,13 @@ function renderFutureSevenDayPreview() {
   return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-1.5 mb-3">
       <h3 class="font-semibold text-[#5B7290] tracking-wide">📦 未來 7 天訂單預覽</h3>
-      <div class="text-xs text-stone-400 font-medium">依客人選擇日期統計｜${escapeHtml(today)}～${escapeHtml(endDate)}</div>
+      <div class="text-xs text-stone-400 font-medium">依客人選擇日期統計｜${escapeHtml(today)}～${escapeHtml(endDate)}｜點擊日期查看訂單</div>
     </div>
 
     <div class="md:hidden overflow-x-auto -mx-1 px-1 pb-1">
       <div class="flex gap-2 min-w-max">
         ${rows.map(row => `
-          <div class="w-[132px] shrink-0 rounded-2xl border border-stone-100 bg-stone-50 px-3 py-2.5">
+          <button type="button" data-dashboard-date="${escapeHtml(row.date)}" onclick="openOrdersByDashboardDate(this.dataset.dashboardDate)" class="w-[132px] shrink-0 rounded-2xl border border-stone-100 bg-stone-50 px-3 py-2.5 text-left transition hover:bg-white hover:border-[#5B7290]/40 hover:shadow-sm active:bg-white cursor-pointer">
             <div class="text-sm font-semibold text-stone-800 mb-2">${formatMonthDayWithWeekday(row.date)}</div>
 
             <div class="space-y-1.5 text-xs font-medium">
@@ -899,14 +899,14 @@ function renderFutureSevenDayPreview() {
                 <span class="mono font-semibold text-amber-700">${row.delivery}</span>
               </div>
             </div>
-          </div>
+          </button>
         `).join("")}
       </div>
     </div>
 
     <div class="hidden md:grid md:grid-cols-7 gap-2">
       ${rows.map(row => `
-        <div class="rounded-2xl border border-stone-100 bg-stone-50 p-3 space-y-2">
+        <button type="button" data-dashboard-date="${escapeHtml(row.date)}" onclick="openOrdersByDashboardDate(this.dataset.dashboardDate)" class="rounded-2xl border border-stone-100 bg-stone-50 p-3 space-y-2 text-left transition hover:bg-white hover:border-[#5B7290]/40 hover:shadow-sm active:bg-white cursor-pointer">
           <div class="text-base font-semibold text-stone-800">${formatMonthDayWithWeekday(row.date)}</div>
 
           <div class="flex items-center justify-between gap-2 text-sm font-medium">
@@ -918,13 +918,41 @@ function renderFutureSevenDayPreview() {
             <span class="text-stone-500">店到店</span>
             <span class="mono font-semibold text-amber-700">${row.delivery}</span>
           </div>
-        </div>
+        </button>
       `).join("")}
     </div>
   </div>`;
 }
 
+function openOrdersByDashboardDate(dateValue) {
+  const date = normalizeOrderDateForCompare(dateValue);
+  if (!date) return;
 
+  switchTab("orders");
+
+  requestAnimationFrame(() => {
+    const searchInput = document.getElementById("orderSearch");
+    const statusFilter = document.getElementById("orderStatusFilter");
+    const methodFilter = document.getElementById("orderMethodFilter");
+    const sortFilter = document.getElementById("orderSortFilter");
+    const startInput = document.getElementById("orderStartDate");
+    const endInput = document.getElementById("orderEndDate");
+
+    if (searchInput) searchInput.value = "";
+    if (statusFilter) statusFilter.value = "";
+    if (methodFilter) methodFilter.value = "";
+    if (sortFilter) sortFilter.value = "arrivalAsc";
+    if (startInput) startInput.value = date;
+    if (endInput) endInput.value = date;
+    updateOrderRangeButtons("");
+
+    filterOrders();
+
+    requestAnimationFrame(() => {
+      document.getElementById("orderFilterDetails")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+}
 function normalizeCouponDate(value) {
   return normalizeOrderDateForCompare(value) || "";
 }
@@ -972,19 +1000,49 @@ function renderDashboardCoupons() {
   return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
     <div class="flex items-center justify-between gap-3 mb-3">
       <h3 class="font-black text-[#5B7290] tracking-widest">🎟️ 近期優惠券</h3>
-      <span class="text-xs text-stone-400 font-bold">即將到期優先</span>
+      <span class="text-xs text-stone-400 font-bold">即將到期優先｜點擊可編輯</span>
     </div>
     ${coupons.length ? `<div class="space-y-2">${coupons.map(c => `
-      <div class="rounded-2xl bg-stone-50 border border-stone-100 px-3 py-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+      <button type="button" data-coupon-code="${escapeHtml((c.code || "").toString().trim())}" onclick="openCouponFromDashboard(this.dataset.couponCode)" class="w-full text-left rounded-2xl bg-stone-50 border border-stone-100 px-3 py-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2 transition hover:bg-white hover:border-[#5B7290]/40 hover:shadow-sm active:bg-white cursor-pointer">
         <div>
           <div class="font-black text-stone-800">${escapeHtml(c.code)}</div>
           <div class="text-xs font-bold text-stone-500">${couponTypeText(c.type, c.value)}｜${formatCouponDate(c.start_date)}～${formatCouponDate(c.end_date)}</div>
         </div>
         ${couponStatusBadge(c)}
-      </div>`).join("")}</div>` : `<p class="text-stone-400 font-bold">目前沒有折扣碼。</p>`}
+      </button>`).join("")}</div>` : `<p class="text-stone-400 font-bold">目前沒有折扣碼。</p>`}
   </div>`;
 }
 
+function openCouponFromDashboard(code) {
+  const cleanCode = (code || "").toString().trim();
+  switchTab("coupons");
+
+  requestAnimationFrame(() => {
+    const target = cleanCode
+      ? document.querySelector(`[data-coupon-code="${(window.CSS && CSS.escape) ? CSS.escape(cleanCode) : cleanCode.replace(/"/g, '\\"')}"]`)
+      : null;
+
+    if (!target) {
+      document.getElementById("tab-coupons")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    const originalBoxShadow = target.style.boxShadow;
+    const originalBackground = target.style.backgroundColor;
+    target.style.boxShadow = "0 0 0 3px rgba(91, 114, 144, .24)";
+    target.style.backgroundColor = "#fffdf5";
+
+    const firstInput = target.querySelector('input[data-key="code"], select, input, textarea');
+    if (firstInput) firstInput.focus({ preventScroll: true });
+
+    setTimeout(() => {
+      target.style.boxShadow = originalBoxShadow;
+      target.style.backgroundColor = originalBackground;
+    }, 2200);
+  });
+}
 function formatCurrency(value) {
   const n = Number(value || 0);
   return "NT$" + Math.round(isNaN(n) ? 0 : n).toLocaleString("zh-TW");
@@ -2569,7 +2627,8 @@ function getAdminCellClass(tab, key) {
 }
 
 function editRowHtml(tab, keys, row = {}, textareaLong = false) {
-  return `<tr class="border-t border-stone-100">${keys.map((key, idx) => {
+  const rowAttr = tab === "coupons" && (row.code || "").toString().trim() ? ` data-coupon-code="${escapeHtml((row.code || "").toString().trim())}"` : "";
+  return `<tr class="border-t border-stone-100 transition-colors"${rowAttr}>${keys.map((key, idx) => {
     const val = row[key] || "";
     let field = "";
 
