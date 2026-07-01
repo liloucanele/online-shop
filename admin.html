@@ -1389,25 +1389,26 @@ function renderDashboardFilterPanel() {
     <summary class="cursor-pointer flex items-center justify-between gap-3 px-1 py-1">
       <div>
         <div class="font-semibold text-[#5B7290]">篩選 Dashboard</div>
-        <div id="dashboardFilterMobileSummary" class="text-xs text-stone-400 mt-0.5">近 7 日｜全部配送</div>
+        <div id="dashboardFilterMobileSummary" class="text-xs text-stone-400 mt-0.5">全部期間｜全部配送</div>
       </div>
       <span class="text-xs font-semibold text-stone-400">展開</span>
     </summary>
-    <div class="grid grid-cols-1 md:grid-cols-8 gap-3 pt-3 md:pt-0">
-      <input id="dashboardStartDate" type="date" onchange="filterDashboard()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${fallback.start}">
-      <input id="dashboardEndDate" type="date" onchange="filterDashboard()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${fallback.end}">
-      <select id="dashboardMethodFilter" onchange="filterDashboard()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 md:col-span-2">
-        <option value="">全部配送</option>
-        <option value="store">門市自取</option>
-        <option value="delivery">7-11店到店／信用卡付款</option>
-        <option value="delivery_cod">7-11店到店／取貨付款</option>
-      </select>
-      <div class="flex gap-2 md:col-span-4">
+    <div class="pt-3 md:pt-0 space-y-3">
+      <div class="grid grid-cols-1 md:grid-cols-[0.95fr_0.95fr_1.35fr_0.7fr_0.7fr_0.7fr_0.7fr] gap-3 md:items-center">
+        <input id="dashboardStartDate" type="date" onchange="filterDashboard()" class="h-11 w-full rounded-xl border border-stone-200 px-3 bg-stone-50 min-w-0" value="${fallback.start}">
+        <input id="dashboardEndDate" type="date" onchange="filterDashboard()" class="h-11 w-full rounded-xl border border-stone-200 px-3 bg-stone-50 min-w-0" value="${fallback.end}">
+        <select id="dashboardMethodFilter" onchange="filterDashboard()" class="h-11 w-full rounded-xl border border-stone-200 px-3 bg-stone-50 min-w-0">
+          <option value="">全部配送</option>
+          <option value="store">門市自取</option>
+          <option value="delivery">7-11店到店／信用卡付款</option>
+          <option value="delivery_cod">7-11店到店／取貨付款</option>
+        </select>
         ${dashboardRangeButton("today", "今天")}
         ${dashboardRangeButton("seven", "近7天")}
         ${dashboardRangeButton("month", "本月")}
         ${dashboardRangeButton("all", "全部")}
       </div>
+      <div id="dashboardFilterStatus" class="text-sm font-medium text-stone-500">目前顯示：全部期間｜全部配送｜依下單日期統計</div>
     </div>
   </details>`;
 }
@@ -1436,10 +1437,14 @@ function setDashboardRange(mode) {
 }
 
 function updateDashboardFilterSummary(state) {
-  const el = document.getElementById("dashboardFilterMobileSummary");
-  if (!el) return;
+  const periodText = getDashboardPeriodLabel(state.start, state.end);
   const methodText = getMethodFilterLabel(state.method);
-  el.textContent = `${getDashboardPeriodLabel(state.start, state.end)}｜${methodText}`;
+
+  const mobileEl = document.getElementById("dashboardFilterMobileSummary");
+  if (mobileEl) mobileEl.textContent = `${periodText}｜${methodText}`;
+
+  const statusEl = document.getElementById("dashboardFilterStatus");
+  if (statusEl) statusEl.textContent = `目前顯示：${periodText}｜${methodText}｜依下單日期統計`;
 }
 
 function updateDashboardRangeButtons(state){
@@ -1511,7 +1516,6 @@ function renderDashboardContent() {
   };
 
   document.getElementById("dashboardStatsArea").innerHTML = `
-    <div class="text-xs md:text-sm font-medium text-stone-500 -mt-1">目前顯示：${escapeHtml(periodLabel)}｜${getMethodFilterLabel(state.method)}｜依下單日期統計</div>
     ${renderDashboardOpenOrdersReminder(allOrders)}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       ${dashboardOverviewCard("今日新增訂單", todayNewOrders.length, `今日下單｜門市 ${todayNewStoreOrders}｜店到店 ${todayNewDeliveryOrders}`)}
