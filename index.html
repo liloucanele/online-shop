@@ -387,18 +387,6 @@
                                 <span class="text-stone-300 font-black text-lg leading-none shrink-0">›</span>
                             </button>
 
-                            <div class="bg-stone-50 border border-stone-100 rounded-xl p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                                <div class="space-y-0.5">
-                                    <div class="text-xs md:text-sm font-black text-stone-700 tracking-wider">重複此組合</div>
-                                    <div class="text-[11px] md:text-xs text-stone-400 font-bold">大量訂購可調整，一般訂購維持 1 組即可</div>
-                                </div>
-                                <div class="no-zoom-area flex items-center bg-white rounded-xl p-1 border border-stone-200 gap-1 w-fit">
-                                    <button type="button" onpointerdown="startLilouStepperPress(event, 'changeRepeatBoxQty', [-1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer text-sm">—</button>
-                                    <input type="number" id="repeatBoxQty" min="1" max="99" value="1" inputmode="numeric" oninput="handleRepeatBoxInput(this)" onblur="handleRepeatBoxBlur(this)" style="width: 52px; height: 34px;" class="text-center text-base font-black bg-transparent border-0 focus:outline-none text-stone-800">
-                                    <button type="button" onpointerdown="startLilouStepperPress(event, 'changeRepeatBoxQty', [1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer text-sm">＋</button>
-                                </div>
-                            </div>
-
                             <button type="button" onclick="packBoxToCart()" class="w-full bg-stone-300 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed transition-all duration-200" id="packBtn" disabled>
                                 正在同步最新庫存中...
                             </button>
@@ -410,7 +398,7 @@
                     <div id="cartSectionAnchor" class="space-y-4 scroll-mt-20">
                         <div class="flex items-center gap-2 border-b border-stone-100 pb-3">
                             <span class="bg-[#5B7290] text-white text-xs md:text-sm font-black px-2 py-0.5 rounded">02</span>
-                            <h3 class="text-sm md:text-base font-black text-[#5B7290] tracking-widest uppercase">確認已打包的組合明細</h3>
+                            <h3 class="text-sm md:text-base font-black text-[#5B7290] tracking-widest uppercase">購物車</h3>
                         </div>
                         <div id="cartListContainer" class="space-y-2.5 transition-all duration-300">
                             <p class="text-stone-400 text-center py-6 text-xs md:text-base">購物車目前空空的喔！</p>
@@ -1123,7 +1111,7 @@
             
             const packBtn = document.getElementById('packBtn');
             packBtn.className = "w-full bg-[#5B7290] text-white font-extrabold tracking-widest h-12 rounded-xl hover:bg-[#3E4F66] transition-colors text-sm md:text-base uppercase shadow-xs cursor-pointer";
-            packBtn.innerText = "確定組合，打包放入購物車"; 
+            packBtn.innerText = "加入購物車"; 
             packBtn.disabled = false;
             
             const restoredDraft = restoreLilouDraftIfNeeded();
@@ -1151,7 +1139,7 @@
             
             fMenu.innerHTML = visibleProducts.map(({ p, originalIdx }) => {
                 let occupiedInCart = 0; 
-                cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === p.name); if (matchFlavor) occupiedInCart += matchFlavor.quantity; });
+                cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === p.name); if (matchFlavor) occupiedInCart += (Number(matchFlavor.quantity) || 0) * (Number(savedBox.repeatQty) || 1); });
                 const virtualStock = p.stock - occupiedInCart; 
                 const shouldDisable = virtualStock <= 0 || isBoxNotSelected; 
                 let statusText = virtualStock <= 0 ? '已售完' : '剩 ' + virtualStock;
@@ -1274,7 +1262,7 @@
                     const product = localProducts[idx]; 
                     if (!product) return; 
                     let occupiedInCart = 0; 
-                    cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === product.name); if (matchFlavor) occupiedInCart += matchFlavor.quantity; }); 
+                    cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === product.name); if (matchFlavor) occupiedInCart += (Number(matchFlavor.quantity) || 0) * (Number(savedBox.repeatQty) || 1); }); 
                     const virtualStock = product.stock - occupiedInCart; 
                     const selfValue = parseInt(input.value) || 0; 
                     let allowedMax = selfValue + (currentBoxLimit - currentTotal); 
@@ -1357,7 +1345,7 @@
             if(boxSelect.value === "") { alert("請先挑選要使用的包裝類型！"); return; } 
             const boxName = boxSelect.value; 
             const boxExtra = parseInt(boxSelect.selectedOptions[0].getAttribute('data-extra')) || 0; 
-            const repeatQty = Math.max(1, Math.min(99, parseInt(document.getElementById('repeatBoxQty')?.value) || 1));
+            const repeatQty = 1;
             const inputs = document.querySelectorAll('.flavor-input'); 
             let boxFlavors = []; 
             let totalFlavorsCountInBox = 0; 
@@ -1369,7 +1357,7 @@
                     const idx = parseInt(input.getAttribute('data-idx')); 
                     const product = localProducts[idx]; 
                     let occupiedInCart = 0; 
-                    cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === product.name); if (matchFlavor) occupiedInCart += matchFlavor.quantity; }); 
+                    cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === product.name); if (matchFlavor) occupiedInCart += (Number(matchFlavor.quantity) || 0) * (Number(savedBox.repeatQty) || 1); }); 
                     const virtualStock = product.stock - occupiedInCart; 
                     if ((qty * repeatQty) > virtualStock) { alert(`庫存不足！「${product.name}」重複 ${repeatQty} 組後需要 ${qty * repeatQty} 個，目前最多只能再填入 ${virtualStock >= 0 ? virtualStock : 0} 個。`); hasError = true; break; } 
                     boxFlavors.push({ name: product.name, price: product.price, quantity: qty, shipping_rule: normalizeShippingRuleForFrontend(product.shipping_rule || "all") }); 
@@ -1407,16 +1395,14 @@
                     singleBoxCost: boxFlavorsCost + boxExtra
                 }); 
                 boxSelect.value = ""; 
-                const repeatInput = document.getElementById('repeatBoxQty');
-                if (repeatInput) repeatInput.value = "1";
                 currentBoxLimit = null; 
                 renderFlavorMenu(); 
                 renderCart(); 
                 scheduleLilouDraftSave();
-                showToastNotification(`🛍️ 已成功打包 ${repeatQty} 組【${boxName}】放入明細！`);
+                showToastNotification(`已加入購物車：【${boxName}】`);
                 packBtn.disabled = false;
                 packBtn.className = "w-full bg-[#5B7290] text-white font-extrabold tracking-widest h-12 rounded-xl hover:bg-[#3E4F66] transition-colors text-sm md:text-base uppercase shadow-xs cursor-pointer";
-                packBtn.innerText = "確定組合，打包放入購物車";
+                packBtn.innerText = "加入購物車";
             }, 600);
         }
 
@@ -1434,6 +1420,70 @@
 
         window.removeFromCart = function(cartIdx) { cart.splice(cartIdx, 1); renderFlavorMenu(); renderCart(); scheduleLilouDraftSave(); }
 
+        function getCartProductUsedQty(productName, excludeCartIdx = -1) {
+            return cart.reduce((sum, box, idx) => {
+                if (idx === excludeCartIdx) return sum;
+                const repeatQty = Number(box.repeatQty) || 1;
+                const match = (box.flavors || []).find(f => f.name === productName);
+                return sum + (match ? (Number(match.quantity) || 0) * repeatQty : 0);
+            }, 0);
+        }
+
+        function getCartBoxRepeatMax(cartIdx) {
+            const box = cart[cartIdx];
+            if (!box) return 1;
+            let maxRepeat = 99;
+            (box.flavors || []).forEach(f => {
+                const product = localProducts.find(p => p.name === f.name);
+                if (!product) return;
+                const perBoxQty = Number(f.quantity) || 0;
+                if (!perBoxQty) return;
+                const usedByOthers = getCartProductUsedQty(f.name, cartIdx);
+                const availableForThisBox = Math.max(0, (Number(product.stock) || 0) - usedByOthers);
+                maxRepeat = Math.min(maxRepeat, Math.floor(availableForThisBox / perBoxQty));
+            });
+            return Math.max(1, maxRepeat);
+        }
+
+        function setCartBoxRepeatQty(cartIdx, nextQty, showAlert = true) {
+            const box = cart[cartIdx];
+            if (!box) return;
+            const maxRepeat = getCartBoxRepeatMax(cartIdx);
+            let value = parseInt(nextQty, 10) || 1;
+            if (value < 1) value = 1;
+            if (value > maxRepeat) {
+                value = maxRepeat;
+                if (showAlert) showToastNotification(`此組合目前最多可購買 ${maxRepeat} 組`);
+            }
+            box.repeatQty = value;
+            box.totalQty = (Number(box.singleBoxQty) || (box.flavors || []).reduce((sum, f) => sum + (Number(f.quantity) || 0), 0)) * value;
+            box.boxTotalCost = (Number(box.singleBoxCost) || ((Number(box.flavorsCost) || 0) + (Number(box.boxExtra) || 0))) * value;
+            renderFlavorMenu();
+            renderCart();
+            scheduleLilouDraftSave();
+        }
+
+        window.changeCartBoxRepeatQty = function(cartIdx, change) {
+            const box = cart[cartIdx];
+            if (!box) return;
+            setCartBoxRepeatQty(cartIdx, (Number(box.repeatQty) || 1) + change, true);
+        }
+
+        window.handleCartRepeatInput = function(input, cartIdx) {
+            let value = (input.value || '').toString().replace(/\D/g, '');
+            if (value === '') { input.value = ''; return; }
+            const maxRepeat = getCartBoxRepeatMax(cartIdx);
+            let parsed = parseInt(value, 10) || 1;
+            if (parsed < 1) parsed = 1;
+            if (parsed > maxRepeat) parsed = maxRepeat;
+            input.value = parsed;
+            setCartBoxRepeatQty(cartIdx, parsed, false);
+        }
+
+        window.handleCartRepeatBlur = function(input, cartIdx) {
+            setCartBoxRepeatQty(cartIdx, parseInt(input.value, 10) || 1, false);
+        }
+
         function renderCart() { 
             const container = document.getElementById('cartListContainer'); 
             if(cart.length === 0) { 
@@ -1446,22 +1496,40 @@
             updateShippingSelectAvailability();
 
             container.innerHTML = cart.map((box, i) => { 
-                const repeatQty = box.repeatQty || 1;
-                const flavorDetailHtml = box.flavors.map(f => {
-                    const displayQty = f.quantity * repeatQty;
-                    return repeatQty > 1 ? `${f.name} x ${displayQty}個（${f.quantity}個 × ${repeatQty}組）` : `${f.name} x ${f.quantity}個`;
+                const repeatQty = Number(box.repeatQty) || 1;
+                const maxRepeat = getCartBoxRepeatMax(i);
+                const flavorDetailHtml = (box.flavors || []).map(f => {
+                    return `${lilouEscapeHtml(f.name)} × ${Number(f.quantity) || 0}個`;
                 }).join('、'); 
-                const repeatLabel = repeatQty > 1 ? ` × ${repeatQty}組` : "";
-                const priceHint = repeatQty > 1 && box.singleBoxCost ? `<div class="text-[11px] text-stone-400 font-bold mt-0.5">$${box.singleBoxCost} / 組</div>` : "";
+                const singleCost = Number(box.singleBoxCost) || ((Number(box.flavorsCost) || 0) + (Number(box.boxExtra) || 0));
+                const boxTotalCost = singleCost * repeatQty;
+                box.boxTotalCost = boxTotalCost;
+                box.totalQty = (Number(box.singleBoxQty) || (box.flavors || []).reduce((sum, f) => sum + (Number(f.quantity) || 0), 0)) * repeatQty;
+                const limitHint = maxRepeat <= repeatQty ? `<div class="text-[11px] text-amber-600 font-bold mt-1">已達目前可購買上限</div>` : "";
                 return `
-                <div class="border border-stone-200 rounded-xl p-3 md:p-4 flex items-center justify-between gap-3 bg-stone-50/50">
-                    <div class="flex-1 min-w-0 space-y-0.5">
-                        <div class="font-extrabold text-sm md:text-base text-stone-900 tracking-wide">組合 ${i+1}：${box.boxName}${repeatLabel}</div>
-                        <div class="text-xs md:text-sm text-[#5B7290] font-bold leading-relaxed break-words">內含：${flavorDetailHtml}</div>
+                <div class="border border-stone-200 rounded-xl p-3 md:p-4 bg-stone-50/50 space-y-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex-1 min-w-0 space-y-0.5">
+                            <div class="font-extrabold text-sm md:text-base text-stone-900 tracking-wide">組合 ${i+1}：${lilouEscapeHtml(box.boxName)}</div>
+                            <div class="text-xs md:text-sm text-[#5B7290] font-bold leading-relaxed break-words">內含：${flavorDetailHtml}</div>
+                        </div>
+                        <button type="button" onclick="removeFromCart(${i})" class="bg-stone-100 text-stone-400 p-1.5 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center font-bold text-xs md:text-sm cursor-pointer shrink-0">✕</button>
                     </div>
-                    <div class="flex items-center gap-4 shrink-0">
-                        <div class="text-right"><span class="font-black text-sm md:text-base text-stone-950">$${box.boxTotalCost}</span>${priceHint}</div>
-                        <button type="button" onclick="removeFromCart(${i})" class="bg-stone-100 text-stone-400 p-1.5 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center font-bold text-xs md:text-sm cursor-pointer">✕</button>
+
+                    <div class="flex items-center justify-between gap-3 border-t border-stone-200 pt-3">
+                        <div class="space-y-1">
+                            <div class="text-[11px] md:text-xs text-stone-500 font-black tracking-widest"></div>
+                            <div class="no-zoom-area flex items-center bg-white rounded-xl p-1 border border-stone-200 gap-1 w-fit">
+                                <button type="button" onpointerdown="startLilouStepperPress(event, 'changeCartBoxRepeatQty', [${i}, -1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${repeatQty <= 1 ? 'disabled' : ''} style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm">—</button>
+                                <input type="number" min="1" max="${maxRepeat}" value="${repeatQty}" inputmode="numeric" oninput="handleCartRepeatInput(this, ${i})" onblur="handleCartRepeatBlur(this, ${i})" style="width: 52px; height: 34px;" class="text-center text-base font-black bg-transparent border-0 focus:outline-none text-stone-800">
+                                <button type="button" onpointerdown="startLilouStepperPress(event, 'changeCartBoxRepeatQty', [${i}, 1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${repeatQty >= maxRepeat ? 'disabled' : ''} style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm">＋</button>
+                            </div>
+                            ${limitHint}
+                        </div>
+                        <div class="text-right">
+                            <div class="font-black text-sm md:text-base text-stone-950">$${boxTotalCost}</div>
+                            ${repeatQty > 1 ? `<div class="text-[11px] text-stone-400 font-bold mt-0.5">$${singleCost} / 組</div>` : ""}
+                        </div>
                     </div>
                 </div>`; 
             }).join(''); 
