@@ -305,7 +305,7 @@ table[data-edit-table="packaging"] .admin-switch {
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.1.0</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.1.1</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -2142,11 +2142,11 @@ function orderCard(order) {
       </div>`
     : "";
   const statusFields = `
-    <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">訂單狀態</span><select class="admin-status mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">${statuses.map(s => `<option value="${s}" ${displayStatus === s ? "selected" : ""}>${adminStatusOptionLabel(s)}</option>`).join("")}</select></label>
-    ${isPrepaidDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">信用卡付款連結</span><input class="admin-payment mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.paymentLink || "")}" placeholder="信用卡付款連結"></label>` : `<input type="hidden" class="admin-payment" value="${escapeHtml(order.paymentLink || "")}">`}
-    ${isDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">貨運編號</span><input class="admin-tracking mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.trackingNo || "")}" placeholder="貨運編號"></label>` : `<input type="hidden" class="admin-tracking" value="${escapeHtml(order.trackingNo || "")}">`}
-    <label class="block ${isDelivery ? "" : "md:col-span-1"}"><span class="text-xs font-black text-stone-500 tracking-widest">訂單備註</span><input class="admin-note mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.statusNote || "")}" placeholder="給客人看的訂單備註"></label>
-    <label class="block md:col-span-2"><span class="text-xs font-black text-stone-500 tracking-widest">店內備註（客人看不到）</span><textarea class="admin-internal-note mt-1 w-full rounded-xl border border-stone-200 px-3 py-2 bg-stone-50" rows="2" placeholder="例如：已電話確認、改時間、特殊包裝需求">${escapeHtml(order.internalNote || "")}</textarea></label>`;
+    <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">訂單狀態</span><select class="admin-status mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" data-original-value="${escapeHtml(displayStatus || "")}">${statuses.map(s => `<option value="${s}" ${displayStatus === s ? "selected" : ""}>${adminStatusOptionLabel(s)}</option>`).join("")}</select></label>
+    ${isPrepaidDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">信用卡付款連結</span><input class="admin-payment mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.paymentLink || "")}" data-original-value="${escapeHtml(order.paymentLink || "")}" placeholder="信用卡付款連結"></label>` : `<input type="hidden" class="admin-payment" value="${escapeHtml(order.paymentLink || "")}" data-original-value="${escapeHtml(order.paymentLink || "")}">`}
+    ${isDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">貨運編號</span><input class="admin-tracking mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.trackingNo || "")}" data-original-value="${escapeHtml(order.trackingNo || "")}" placeholder="貨運編號"></label>` : `<input type="hidden" class="admin-tracking" value="${escapeHtml(order.trackingNo || "")}" data-original-value="${escapeHtml(order.trackingNo || "")}">`}
+    <label class="block ${isDelivery ? "" : "md:col-span-1"}"><span class="text-xs font-black text-stone-500 tracking-widest">訂單備註</span><input class="admin-note mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.statusNote || "")}" data-original-value="${escapeHtml(order.statusNote || "")}" placeholder="給客人看的訂單備註"></label>
+    <label class="block md:col-span-2"><span class="text-xs font-black text-stone-500 tracking-widest">店內備註（客人看不到）</span><textarea class="admin-internal-note mt-1 w-full rounded-xl border border-stone-200 px-3 py-2 bg-stone-50" rows="2" data-original-value="${escapeHtml(order.internalNote || "")}" placeholder="例如：已電話確認、改時間、特殊包裝需求">${escapeHtml(order.internalNote || "")}</textarea></label>`;
 
   return `<article class="bg-white rounded-2xl border border-stone-100 shadow-sm px-4 py-3 md:px-5 md:py-4 space-y-3 ${methodCardClass(order)}" data-order-id="${escapeHtml(order.id)}">
     <div class="border-b border-stone-100 pb-2">
@@ -2198,7 +2198,10 @@ function orderCard(order) {
         </div>
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
           <div class="text-xs text-stone-400 font-bold">最後更新：${escapeHtml(order.lastUpdate || "-")}</div>
-          <button onclick="updateOrder('${escapeHtml(order.id)}')" class="h-11 rounded-xl bg-[#3E2D20] text-white px-5 font-black hover:bg-[#2B1F16]">儲存更新</button>
+          <div class="flex flex-col md:flex-row gap-2 md:items-center md:justify-end">
+            <button type="button" onclick="cancelOrderEdit('${escapeHtml(order.id)}')" class="h-11 rounded-xl border border-stone-200 bg-white text-stone-500 px-5 font-black hover:bg-stone-50">取消修改</button>
+            <button type="button" onclick="updateOrder('${escapeHtml(order.id)}')" class="h-11 rounded-xl bg-[#3E2D20] text-white px-5 font-black hover:bg-[#2B1F16]">儲存更新</button>
+          </div>
         </div>
       </div>
     </details>
@@ -2219,6 +2222,18 @@ async function updateOrder(orderId) {
     internalNote: card.querySelector(".admin-internal-note")?.value.trim() || ""
   };
   await postAdmin(payload, `${orderId} 已更新。`);
+}
+
+function cancelOrderEdit(orderId) {
+  const card = document.querySelector(`[data-order-id="${CSS.escape(orderId)}"]`);
+  if (!card) return;
+  [".admin-status", ".admin-payment", ".admin-tracking", ".admin-note", ".admin-internal-note"].forEach(selector => {
+    const field = card.querySelector(selector);
+    if (!field) return;
+    field.value = field.dataset.originalValue || "";
+    field.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  showAdminToast(`${orderId} 已取消修改。`, "info", 1800);
 }
 
 function renderProducts() {
