@@ -515,7 +515,7 @@
                     </div>
                 </div>
 
-                <form id="orderForm" class="bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-6 md:space-y-8" onsubmit="handleOrderSubmit(event)" onkeypress="return preventEnterSubmit(event)">
+                <form id="orderForm" class="hidden bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-6 md:space-y-8" onsubmit="handleOrderSubmit(event)" onkeypress="return preventEnterSubmit(event)">
                     <div id="cartSectionAnchor" class="space-y-4 scroll-mt-20">
                         <div class="border-b border-stone-100 pb-3">
                             <h3 id="cartSectionTitle" class="text-sm md:text-base font-black text-[#5B7290] tracking-widest uppercase">購物車</h3>
@@ -1263,6 +1263,12 @@
             if (section) section.classList.remove('hidden');
             if (submitBtn) submitBtn.classList.remove('hidden');
             if (action) action.classList.add('hidden');
+
+            if (section) {
+                requestAnimationFrame(() => {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            }
         }
 
         function syncOrderDetailsVisibility() {
@@ -1735,24 +1741,18 @@
         function renderCart() { 
             const container = document.getElementById('cartListContainer'); 
             const summaryCard = document.getElementById('orderAmountSummaryCard');
+            const orderForm = document.getElementById('orderForm');
             if(cart.length === 0) { 
                 updateFloatingCartButton();
+                if (orderForm) orderForm.classList.add('hidden');
                 if (summaryCard) summaryCard.classList.add('hidden');
-                container.innerHTML = `<div class="rounded-2xl border border-dashed border-stone-200 bg-stone-50/70 text-center py-8 px-4">
-                    <div class="w-9 h-9 mx-auto mb-2 rounded-full bg-white border border-stone-200 flex items-center justify-center text-[#5B7290]">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M6.75 8.25V7.5a5.25 5.25 0 0 1 10.5 0v.75" />
-                            <path d="M4.9 8.25h14.2l-.75 11.25a2.25 2.25 0 0 1-2.24 2.1H7.89a2.25 2.25 0 0 1-2.24-2.1L4.9 8.25Z" />
-                        </svg>
-                    </div>
-                    <p class="text-stone-400 text-xs md:text-base font-bold">購物車目前空空的喔！</p>
-                    <p class="text-[11px] text-stone-300 font-bold mt-1">先選擇包裝與口味，再加入購物車。</p>
-                </div>`; 
+                if (container) container.innerHTML = '';
                 updateShippingSelectAvailability();
                 calculateTotal(); 
                 syncOrderDetailsVisibility();
                 return; 
             } 
+            if (orderForm) orderForm.classList.remove('hidden');
             updateFloatingCartButton();
             if (summaryCard) summaryCard.classList.remove('hidden');
             enforcePickupOnlyShipping(false);
