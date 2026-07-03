@@ -2125,7 +2125,7 @@ function formatOrderTimestampMinute(value) {
 }
 
 function orderCard(order) {
-  const statuses = ["訂單確認中", "可取貨", "待付款", "待出貨", "已出貨", "已完成", "已取消"];
+  const statuses = ["訂單確認中", "待付款", "待出貨", "可取貨", "已出貨", "已完成", "已取消"];
   const methodType = getOrderMethodType(order);
   const isDelivery = methodType !== "store";
   const isPrepaidDelivery = methodType === "delivery";
