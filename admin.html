@@ -823,7 +823,9 @@ function normalizeAdminStatus(status) {
 }
 
 function adminStatusOptionLabel(status) {
-  return status === "可取貨" ? "可取貨（門市）" : status;
+  if (status === "可取貨") return "可取貨（門市）";
+  if (status === "已出貨") return "已出貨（店到店）";
+  return status;
 }
 
 function renderAdminAmountDetails(order) {
