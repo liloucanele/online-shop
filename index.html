@@ -788,19 +788,39 @@
             return "";
         }
 
+        function lilouDateThresholdString(daysAfterToday) {
+            const base = new Date();
+            base.setHours(0, 0, 0, 0);
+            base.setDate(base.getDate() + daysAfterToday);
+            return `${base.getFullYear()}/${String(base.getMonth() + 1).padStart(2, '0')}/${String(base.getDate()).padStart(2, '0')}`;
+        }
+
+        function lilouNormalizeDateForCompare(dateStr) {
+            if (!dateStr) return "";
+            const clean = dateStr.toString().replace(/["'\r\n]/g, '').replace(/\s+/g, '').trim().replace(/-/g, '/');
+            const parts = clean.split('/');
+            if (parts.length !== 3) return "";
+            const year = Number(parts[0]);
+            const month = Number(parts[1]);
+            const day = Number(parts[2]);
+            if (!year || !month || !day) return "";
+            return `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+        }
+
         window.renderAvailableDates = function(method) {
             const dateSelect = document.getElementById('shipDate');
-            const textPrompt = lilouIsDeliveryMethod(method) ? '希望到貨日期' : '自取日期';
-            const targetDates = lilouIsDeliveryMethod(method) ? localDeliveryDates : localPickupDates;
+            const isDelivery = lilouIsDeliveryMethod(method);
+            const textPrompt = isDelivery ? '希望到貨日期' : '自取日期';
+            const targetDates = isDelivery ? localDeliveryDates : localPickupDates;
+            const minDate = lilouDateThresholdString(isDelivery ? 7 : 3);
             
             let optionsHtml = "";
             let hasValidDate = false;
 
             if(targetDates && targetDates.length > 0 && targetDates[0] !== "目前無可選擇日期" && targetDates[0] !== "") {
                 targetDates.forEach(dateStr => {
-                    if (!dateStr) return;
-                    let cleanDate = dateStr.toString().replace(/["'\r\n]/g, '').replace(/\s+/g, '').trim().replace(/-/g, '/');
-                    if(cleanDate !== "") {
+                    const cleanDate = lilouNormalizeDateForCompare(dateStr);
+                    if(cleanDate !== "" && cleanDate >= minDate) {
                         let wStr = getWeekdayStr(cleanDate);
                         optionsHtml += `<option value="${cleanDate}">${cleanDate}${wStr}</option>`;
                         hasValidDate = true;
@@ -809,7 +829,6 @@
             }
 
             if (!hasValidDate) {
-                const limitDays = lilouIsDeliveryMethod(method) ? 7 : 2;
                 optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 --</option>`;
             } else {
                 optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
