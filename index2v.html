@@ -563,9 +563,19 @@
             color: #ef4444;
             font-weight: 700;
         }
+        .limited-product-description {
+            margin-top: 5px;
+            color: #78716c;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.55;
+            white-space: pre-line;
+            overflow-wrap: anywhere;
+        }
         @media (min-width: 768px) {
             .limited-product-name { font-size: 16px; }
             .limited-product-stock { font-size: 12px; }
+            .limited-product-description { font-size: 12px; }
         }
 
     </style>
@@ -736,6 +746,7 @@
             normalized.storage = (normalized.storage || "").toString().trim();
             normalized.weight = (normalized.weight || "").toString().trim();
             normalized.nutrition = (normalized.nutrition || "").toString().trim();
+            normalized.description = (normalized.description || normalized.product_description || normalized.desc || normalized.content || "").toString().trim();
             normalized.origin_manufacturer = (normalized.origin_manufacturer || normalized.originManufacturer || normalized.origin || normalized.manufacturer || "").toString().trim();
             return normalized;
         }
@@ -1038,6 +1049,9 @@
                                 查詢
                             </button>
                         </div>
+                        <p class="text-[11px] md:text-xs text-stone-400 font-medium leading-relaxed">
+                            僅會顯示與此手機號碼相符的訂單資料。
+                        </p>
                     </div>
                 </section>
 
@@ -1726,6 +1740,7 @@
                         <span class="font-bold text-stone-900 text-sm md:text-base break-words block">${lilouEscapeHtml(p.name)}</span>
                         <span class="text-[#5B7290] font-black text-sm md:text-base">$${Number(p.price || 0).toLocaleString('zh-TW')}</span>
                         <span class="text-[10px] md:text-xs ${available <= 0 ? 'text-red-500 font-bold' : 'text-stone-400'} ml-0.5">${stockText}</span>${shippingBadge}
+                        ${p.description ? `<span class="limited-product-description block">${lilouEscapeHtml(p.description)}</span>` : ''}
                     </div>
                     <div class="no-zoom-area shrink-0 flex items-center bg-stone-100 rounded-xl p-1 border border-stone-200 gap-1 ${available <= 0 ? 'opacity-30 select-none' : ''}">
                         <button type="button" onclick="changeLimitedAddonQty(${idx}, -1)" ${qty <= 0 || available <= 0 ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">—</button>
