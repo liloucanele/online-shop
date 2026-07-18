@@ -305,7 +305,7 @@ table[data-edit-table="packaging"] .admin-switch {
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.1.1</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.1.2</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -2362,8 +2362,7 @@ function renderRevenueShare() {
           <select id="revenueMethodFilter" onchange="filterRevenueShare()" class="mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50">
             <option value="">全部</option>
             <option value="store">門市自取</option>
-            <option value="delivery">7-11店到店／信用卡付款</option>
-            <option value="delivery_cod">7-11店到店／取貨付款</option>
+            <option value="delivery">7-11店到店</option>
           </select>
         </label>
         <div class="md:col-span-2 flex items-end gap-2">
@@ -2392,7 +2391,8 @@ function getRevenueShareRows() {
       if (startDate && (!orderDate || orderDate < startDate)) return false;
       if (endDate && (!orderDate || orderDate > endDate)) return false;
       const methodType = getOrderMethodType(order);
-      if (methodFilter && methodType !== methodFilter) return false;
+      const methodFamily = getOrderMethodFamily(order);
+      if (methodFilter && methodFamily !== methodFilter) return false;
       return true;
     })
     .map(order => {
@@ -2433,11 +2433,10 @@ function filterRevenueShare() {
 
   const summary = {
     store: { label: "門市自取", count: 0, amount: 0, commission: 0 },
-    delivery: { label: "7-11店到店／信用卡付款", count: 0, amount: 0, commission: 0 },
-    delivery_cod: { label: "7-11店到店／取貨付款", count: 0, amount: 0, commission: 0 }
+    delivery: { label: "7-11店到店", count: 0, amount: 0, commission: 0 }
   };
   rows.forEach(row => {
-    const target = summary[row.methodType] || summary.store;
+    const target = row.methodType === "store" ? summary.store : summary.delivery;
     target.count += 1;
     target.amount += row.amount;
     target.commission += row.commission;
