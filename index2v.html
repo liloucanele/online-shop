@@ -265,7 +265,9 @@
             border-radius: 999px;
             background: #3E2D20;
             color: #fff;
-            box-shadow: 0 14px 32px rgba(28,23,21,.24);
+            box-shadow: none;
+            -webkit-box-shadow: none;
+            filter: none;
             display: none;
             align-items: center;
             justify-content: center;
@@ -2287,6 +2289,42 @@
             setCartBoxRepeatQty(cartIdx, (Number(box.repeatQty) || 1) + change, true);
         }
 
+        window.changeCartSingleQty = function(cartIdx, change) {
+            const box = cart[cartIdx];
+            if (!box || !isSingleCartItem(box)) return;
+            const item = box.flavors?.[0];
+            if (!item) return;
+
+            const currentQty = Math.max(1, Number(item.quantity) || Number(box.totalQty) || 1);
+            const product = localProducts.find(p => p.name === item.name);
+            const usedByOthers = getCartProductUsedQty(item.name, cartIdx);
+            const maxQty = product
+                ? Math.max(1, (Number(product.stock) || 0) - usedByOthers)
+                : 99;
+            let nextQty = currentQty + Number(change || 0);
+
+            if (nextQty < 1) nextQty = 1;
+            if (nextQty > maxQty) {
+                nextQty = maxQty;
+                showToastNotification(`「${item.name}」目前最多可購買 ${maxQty} 個`);
+            }
+            if (nextQty === currentQty) return;
+
+            const unitPrice = Number(item.price) || 0;
+            const boxExtra = Number(box.boxExtra) || 0;
+            item.quantity = nextQty;
+            box.repeatQty = 1;
+            box.flavorsCost = unitPrice * nextQty;
+            box.singleBoxQty = nextQty;
+            box.totalQty = nextQty;
+            box.singleBoxCost = unitPrice * nextQty + boxExtra;
+            box.boxTotalCost = box.singleBoxCost;
+
+            renderFlavorMenu();
+            renderCart();
+            scheduleLilouDraftSave();
+        }
+
         window.handleCartRepeatInput = function(input, cartIdx) {
             let value = (input.value || '').toString().replace(/\D/g, '');
             if (value === '') { input.value = ''; return; }
@@ -2306,7 +2344,12 @@
             const button = document.getElementById('floatingCartButton');
             const count = document.getElementById('floatingCartCount');
             if (!button || !count) return;
-            const totalGroups = cart.reduce((sum, item) => sum + (Number(item.repeatQty) || 1), 0);
+            const totalGroups = cart.reduce((sum, item) => {
+                if (isSingleCartItem(item)) {
+                    return sum + (Number(item.flavors?.[0]?.quantity) || Number(item.totalQty) || 1);
+                }
+                return sum + (Number(item.repeatQty) || 1);
+            }, 0);
             count.textContent = totalGroups;
             button.classList.toggle('is-visible', totalGroups > 0 && !document.getElementById('shopContentWrapper')?.classList.contains('hidden'));
         }
@@ -2342,6 +2385,9 @@
                 if (singleItem) {
                     const item = flavors[0] || {};
                     const qty = Number(item.quantity) || Number(box.totalQty) || 1;
+                    const product = localProducts.find(p => p.name === item.name);
+                    const usedByOthers = getCartProductUsedQty(item.name, i);
+                    const maxQty = product ? Math.max(1, (Number(product.stock) || 0) - usedByOthers) : 99;
                     const itemTotal = (Number(item.price) || 0) * qty + (Number(box.boxExtra) || 0);
                     box.repeatQty = 1;
                     box.singleBoxQty = qty;
@@ -2350,16 +2396,18 @@
                     box.boxTotalCost = itemTotal;
 
                     return `
-                    <div class="border border-stone-200 rounded-xl p-3 md:p-4 bg-stone-50/50">
-                        <div class="flex items-center justify-between gap-3">
-                            <div class="min-w-0 flex-1">
-                                <div class="font-extrabold text-sm md:text-base text-stone-900 tracking-wide truncate">${lilouEscapeHtml(item.name || box.boxName)}</div>
-                                <div class="text-xs md:text-sm text-stone-500 font-bold mt-1">× ${qty}</div>
+                    <div class="border border-stone-200 rounded-xl p-3 md:p-4 bg-stone-50/50 space-y-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="font-extrabold text-sm md:text-base text-stone-900 tracking-wide min-w-0 break-words">${lilouEscapeHtml(item.name || box.boxName)}</div>
+                            <button type="button" onclick="removeFromCart(${i})" aria-label="刪除 ${lilouEscapeHtml(item.name || box.boxName)}" class="bg-stone-100 text-stone-400 p-1.5 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center font-bold text-xs md:text-sm cursor-pointer shrink-0">✕</button>
+                        </div>
+                        <div class="flex items-center justify-between gap-3 border-t border-stone-200 pt-3">
+                            <div class="no-zoom-area flex items-center bg-white rounded-xl p-1 border border-stone-200 gap-1 w-fit">
+                                <button type="button" onclick="changeCartSingleQty(${i}, -1)" ${qty <= 1 ? 'disabled' : ''} style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm">—</button>
+                                <span style="min-width: 42px;" class="text-center text-base font-black text-stone-800">${qty}</span>
+                                <button type="button" onclick="changeCartSingleQty(${i}, 1)" ${qty >= maxQty ? 'disabled' : ''} style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm">＋</button>
                             </div>
-                            <div class="flex items-center gap-3 shrink-0">
-                                <div class="font-black text-sm md:text-base text-stone-950">$${itemTotal}</div>
-                                <button type="button" onclick="removeFromCart(${i})" aria-label="刪除 ${lilouEscapeHtml(item.name || box.boxName)}" class="bg-stone-100 text-stone-400 p-1.5 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center font-bold text-xs md:text-sm cursor-pointer">✕</button>
-                            </div>
+                            <div class="font-black text-sm md:text-base text-stone-950 shrink-0">$${itemTotal}</div>
                         </div>
                     </div>`;
                 }
