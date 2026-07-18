@@ -167,9 +167,9 @@
                 display: flex !important;
                 overflow-x: auto;
                 gap: 10px;
-                margin-left: -16px;
-                margin-right: -16px;
-                padding: 2px 16px 10px;
+                margin-left: 0;
+                margin-right: 0;
+                padding: 2px 0 10px;
                 scroll-snap-type: x mandatory;
                 scrollbar-width: none;
                 -webkit-overflow-scrolling: touch;
@@ -180,7 +180,11 @@
                 min-width: 0;
                 scroll-snap-align: start;
             }
-            #customBoxSection, #limitedProductSection { padding: 16px; }
+            #customBoxSection, #limitedProductSection {
+                padding-left: 0;
+                padding-right: 0;
+                padding-bottom: 0;
+            }
             #customBoxSection { row-gap: 18px; }
             .lilou-package-card:hover, .lilou-entry-card:hover {
                 transform: none;
