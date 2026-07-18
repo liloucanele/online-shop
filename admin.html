@@ -2242,8 +2242,8 @@ function renderProducts() {
   renderEditableTable(
     "products",
     "Products",
-    ["name","price","stock","type","display","shipping_rule","sort","ingredients","allergens","storage","weight","nutrition","origin_manufacturer"],
-    ["商品名稱","價格","庫存","類型","上架狀態","配送","排序","成分","過敏原","保存方式","重量","營養標示","原產地與製造商"],
+    ["name","price","stock","type","display","shipping_rule","sort","description","ingredients","allergens","storage","weight","nutrition","origin_manufacturer"],
+    ["商品名稱","價格","庫存","類型","上架狀態","配送","排序","商品描述","成分","過敏原","保存方式","重量","營養標示","原產地與製造商"],
     adminData.products || []
   );
 }
@@ -2623,7 +2623,7 @@ function renderSettingDateTags(dates) {
 
 
 function getEditableTableMinWidth(tab) {
-  if (tab === "products") return "min-w-[2380px]";
+  if (tab === "products") return "min-w-[2680px]";
   if (tab === "packaging") return "min-w-[820px]";
   if (tab === "coupons") return "min-w-[980px]";
   return "min-w-[720px]";
@@ -2639,6 +2639,7 @@ function getEditableTableColgroup(tab, keys) {
       display: "82px",
       shipping_rule: "112px",
       sort: "60px",
+      description: "300px",
       ingredients: "330px",
       allergens: "300px",
       storage: "300px",
@@ -2768,7 +2769,7 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false) {
         <option value="pickup" ${cleanVal === "pickup" ? "selected" : ""}>僅自取</option>
         <option value="delivery" ${cleanVal === "delivery" ? "selected" : ""}>僅宅配</option>
       </select>`;
-    } else if (tab === "products" && ["ingredients","allergens","storage","nutrition","origin_manufacturer"].includes(key)) {
+    } else if (tab === "products" && ["description","ingredients","allergens","storage","nutrition","origin_manufacturer"].includes(key)) {
       const heightClass = key === "nutrition" ? "min-h-[112px]" : "min-h-[72px]";
       field = `<textarea data-key="${key}" class="w-full ${heightClass} rounded-xl border border-stone-200 px-3 py-2 bg-stone-50 leading-relaxed">${escapeHtml(val)}</textarea>`;
     } else if (tab === "coupons" && key === "type") {
