@@ -1,0 +1,3246 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <!--Developed by TylerChen Design 2026 | UX v15-->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lilou 粒露｜迷你可麗露專賣</title>
+    <meta name="description" content="高雄迷你可麗露專賣。客製化挑選您的精緻組合，每週限量甜點供應。">
+    
+    <meta property="og:title" content="Lilou｜迷你可麗露專賣">
+    <meta property="og:description" content="高雄迷你可麗露專賣。客製化挑選您的精緻組合，每週限量甜點供應。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.lilou.food">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lilou｜迷你可麗露專賣">
+    <meta name="twitter:description" content="高雄迷你可麗露專賣。客製化挑選您的精緻組合，每週限量甜點供應。">
+
+    <link rel="icon" href="images/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <link rel="manifest" href="images/site.webmanifest">
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FWB8L688BL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+    
+      gtag('config', 'G-FWB8L688BL');
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        :root {
+            --brand-color: #5B7290;       
+            --brand-dark: #3E4F66;        
+            --brand-bg: #F4F6F9;          
+            --brand-text-dark: #222222;   
+        }
+        input, select, textarea {
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        input[type="tel"],
+        input[type="text"],
+        input[type="email"],
+        input[type="number"],
+        textarea {
+            font-size: 16px;
+        }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        html { scroll-behavior: smooth; }
+        .spinner {
+            border: 3px solid rgba(91, 114, 144, 0.2);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #5B7290;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .no-zoom-area { touch-action: manipulation; }
+        .social-icon-svg {
+            width: 20px;
+            height: 20px;
+            display: block;
+            flex-shrink: 0;
+            object-fit: contain;
+        }
+    
+        html {
+            background: #1C1715;
+        }
+        body {
+            min-height: 100dvh;
+            background: #F5F7FB;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        footer {
+            padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
+            margin-bottom: calc(-1 * env(safe-area-inset-bottom));
+            background-color: #1C1715;
+        }
+        /* UX v1：商品入口與包裝卡片 */
+        .lilou-hero-card {
+            position: relative;
+            overflow: hidden;
+            min-height: 280px;
+            background: linear-gradient(135deg, #E8EDF4 0%, #DCE4EE 52%, #C8D3E1 100%);
+        }
+        .lilou-hero-card::after {
+            content: "";
+            position: absolute;
+            width: 240px;
+            height: 240px;
+            border-radius: 999px;
+            right: -70px;
+            bottom: -100px;
+            background: rgba(255,255,255,.34);
+        }
+        .lilou-hero-image {
+            width: 100%;
+            height: 100%;
+            min-height: 280px;
+            object-fit: cover;
+            display: block;
+        }
+        .lilou-hero-image-wrap {
+            position: absolute;
+            inset: 0 0 0 46%;
+            overflow: hidden;
+        }
+        .lilou-hero-image-wrap::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, #E8EDF4 0%, rgba(232,237,244,.55) 22%, rgba(232,237,244,0) 68%);
+        }
+        .lilou-entry-card,
+        .lilou-package-card {
+            transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+        }
+        .lilou-entry-card:hover,
+        .lilou-package-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(62,79,102,.10);
+        }
+        .lilou-package-card.is-selected {
+            border-color: #5B7290;
+            background: #F4F6F9;
+            box-shadow: 0 0 0 2px rgba(91,114,144,.12);
+        }
+        .lilou-package-card.is-selected .lilou-package-check {
+            background: #5B7290;
+            border-color: #5B7290;
+            color: #fff;
+        }
+        .lilou-package-card:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .lilou-product-thumb {
+            background: linear-gradient(145deg, #F4F6F9, #E6EBF2);
+        }
+        @media (max-width: 640px) {
+            .lilou-hero-card { min-height: 220px; }
+            .lilou-hero-image { min-height: 220px; }
+            .lilou-hero-image-wrap { inset: 0 0 0 56%; }
+            .lilou-hero-image-wrap::after {
+                background: linear-gradient(90deg, #E8EDF4 0%, rgba(232,237,244,.58) 32%, rgba(232,237,244,0) 78%);
+            }
+            .lilou-entry-grid { display: none; }
+            #comboPackageCards {
+                display: flex !important;
+                overflow-x: auto;
+                gap: 10px;
+                margin-left: -16px;
+                margin-right: -16px;
+                padding: 2px 16px 10px;
+                scroll-snap-type: x mandatory;
+                scrollbar-width: none;
+                -webkit-overflow-scrolling: touch;
+            }
+            #comboPackageCards::-webkit-scrollbar { display: none; }
+            #comboPackageCards > * {
+                flex: 0 0 72%;
+                min-width: 0;
+                scroll-snap-align: start;
+            }
+            #customBoxSection, #limitedProductSection { padding: 16px; }
+            #customBoxSection { row-gap: 18px; }
+            .lilou-package-card:hover, .lilou-entry-card:hover {
+                transform: none;
+                box-shadow: none;
+            }
+        }
+
+
+        /* UX v8：精簡商品列與統一價格位置 */
+        .lilou-item-line {
+            display: flex;
+            align-items: baseline;
+            gap: 14px;
+        }
+        .lilou-item-price {
+            flex: 0 0 auto;
+            white-space: nowrap;
+            font-size: 14px;
+            line-height: 1.4;
+            font-weight: 800;
+            color: #5B7290;
+            font-variant-numeric: tabular-nums;
+        }
+        @media (max-width: 640px) {
+            #comboPackageCards > * { flex-basis: 78%; }
+            .limited-addon-row {
+                grid-template-columns: 1fr;
+                align-items: stretch;
+                gap: 10px;
+                padding: 13px 0;
+            }
+            .limited-addon-controls { justify-content: space-between; }
+            .lilou-item-price { font-size: 13px; }
+        }
+
+        /* UX v4：限定商品同頁加購與浮動購物車 */
+        .limited-addon-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 0;
+            border-bottom: 1px solid #f1f0ef;
+        }
+        .limited-addon-row:last-child { border-bottom: 0; }
+        .limited-addon-controls { display: flex; align-items: center; gap: 8px; }
+        .limited-addon-stepper { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid #e7e5e4; border-radius: 12px; background: #fafaf9; }
+        .limited-addon-stepper button { width: 34px; height: 34px; border-radius: 9px; font-weight: 900; color: #57534e; }
+        .limited-addon-stepper button:disabled { opacity: .28; cursor: not-allowed; }
+        .limited-addon-stepper input { width: 38px; height: 34px; text-align: center; border: 0; background: transparent; font-weight: 900; color: #292524; }
+        #floatingCartButton {
+            position: fixed;
+            right: 16px;
+            bottom: calc(16px + env(safe-area-inset-bottom));
+            z-index: 45;
+            min-width: 112px;
+            height: 50px;
+            padding: 0 16px;
+            border-radius: 999px;
+            background: #3E2D20;
+            color: #fff;
+            box-shadow: 0 14px 32px rgba(28,23,21,.24);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: .06em;
+        }
+        #floatingCartButton.is-visible { display: inline-flex; }
+        #floatingCartCount {
+            min-width: 24px;
+            height: 24px;
+            padding: 0 6px;
+            border-radius: 999px;
+            background: #fff;
+            color: #3E2D20;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        @media (max-width: 640px) {
+            .limited-addon-row { grid-template-columns: 1fr; gap: 10px; }
+            .limited-addon-controls { justify-content: space-between; }
+            #limitedProductSection { padding-bottom: 12px; }
+        }
+
+        /* UX v7：口味區僅作資訊瀏覽，不呈現可點擊外觀 */
+        .flavor-preview-grid {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 6px 0;
+            padding: 13px 14px;
+            border-radius: 14px;
+            background: #fafaf9;
+            color: #57534e;
+            line-height: 1.75;
+        }
+        .flavor-preview-chip {
+            display: inline;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: default;
+            user-select: text;
+        }
+        .flavor-preview-chip:not(:last-child)::after {
+            content: "、";
+            color: #a8a29e;
+            font-weight: 500;
+        }
+        .flavor-preview-chip.is-seasonal {
+            color: #3E4F66;
+        }
+        .flavor-preview-note {
+            margin-left: 3px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #5B7290;
+        }
+        .flavor-preview-chip.is-soldout {
+            color: #a8a29e;
+            text-decoration: line-through;
+        }
+        .flavor-preview-chip.is-soldout .flavor-preview-note {
+            color: #a8a29e;
+            text-decoration: none;
+        }
+        .flavor-selection-collapsed {
+            display: none;
+        }
+        .flavor-selection-expanded {
+            animation: lilouReveal .24s ease-out;
+        }
+        @keyframes lilouReveal {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 640px) {
+            .flavor-preview-grid {
+                padding: 12px;
+                font-size: 13px;
+            }
+        }
+
+        @supports (-webkit-touch-callout: none) {
+            body::after {
+                content: "";
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                height: env(safe-area-inset-bottom);
+                background: #1C1715;
+                z-index: 0;
+                pointer-events: none;
+            }
+        }
+
+    
+
+        /* UX v10：包裝完整顯示、口味摘要展開、限定商品一次加入 */
+        #comboPackageCards {
+            display: grid !important;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            overflow: visible !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        #comboPackageCards > * { width: 100%; min-width: 0; }
+        .lilou-package-card { min-height: 54px !important; padding: 13px 14px !important; }
+        .flavor-composer-summary {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 14px;
+            border: 1px solid #e7e5e4;
+            border-radius: 14px;
+            background: #fff;
+            text-align: left;
+        }
+        .flavor-composer-summary:disabled { background: #fafaf9; cursor: not-allowed; }
+        .flavor-composer-summary:not(:disabled):hover { border-color: #5B7290; }
+        #flavorComposerPanel { display: block; }
+        #flavorComposerPanel.is-open { display: block; }
+        .limited-bulk-footer {
+            padding-top: 14px;
+            border-top: 1px solid #f1f0ef;
+        }
+        @media (min-width: 640px) {
+            #comboPackageCards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+        @media (max-width: 640px) {
+            #comboPackageCards { display: grid !important; }
+            #comboPackageCards > * { flex: none !important; }
+        }
+
+
+        /* UX v22：大型商品分類卡片 */
+        .product-tabs-card {
+            overflow: hidden;
+        }
+        .product-tab-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .product-tab-button {
+            min-height: 116px;
+            border: 1px solid #e7e5e4;
+            border-radius: 16px;
+            padding: 16px;
+            background: #fff;
+            color: #78716c;
+            text-align: left;
+            transition: background .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+        }
+        .product-tab-button:hover {
+            border-color: #b8c2cf;
+            transform: translateY(-1px);
+        }
+        .product-tab-button.is-active {
+            border-color: #5B7290;
+            background: #f5f7fa;
+            color: #292524;
+            box-shadow: 0 5px 16px rgba(91,114,144,.13);
+        }
+        .product-tab-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .product-tab-title {
+            color: #292524;
+            font-size: 17px;
+            font-weight: 900;
+            letter-spacing: .03em;
+        }
+        .product-tab-summary {
+            display: -webkit-box;
+            overflow: hidden;
+            margin-top: 9px;
+            color: #78716c;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.6;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+        .product-tab-action {
+            display: block;
+            margin-top: 8px;
+            color: #5B7290;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: .05em;
+        }
+        .product-tab-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            margin-left: 5px;
+            padding: 0 6px;
+            border-radius: 999px;
+            background: #e7e5e4;
+            color: #78716c;
+            font-size: 11px;
+            line-height: 1;
+            font-weight: 900;
+        }
+        .product-tab-button.is-active .product-tab-count {
+            background: #5B7290;
+            color: #fff;
+        }
+        .product-tab-panel[hidden] { display: none !important; }
+        .product-tab-panel { padding-top: 22px; }
+        @media (max-width: 640px) {
+            .product-tab-list { grid-template-columns: 1fr; }
+            .product-tab-button { min-height: 106px; padding: 14px; }
+            .product-tab-title { font-size: 16px; }
+            .product-tab-panel { padding-top: 18px; }
+        }
+
+        /* UX v23：首頁主打形象區 */
+        .featured-product-intro {
+            overflow: hidden;
+        }
+        .featured-product-copy {
+            padding: 30px 24px 26px;
+            text-align: center;
+        }
+        .featured-product-title {
+            color: #292524;
+            font-size: clamp(22px, 4vw, 34px);
+            font-weight: 900;
+            letter-spacing: .08em;
+            line-height: 1.25;
+        }
+        .featured-product-description {
+            max-width: 560px;
+            margin: 12px auto 0;
+            color: #78716c;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: .04em;
+            line-height: 1.8;
+        }
+        .featured-product-image-wrap {
+            height: 320px;
+            background: #f5f5f4;
+        }
+        .featured-product-image {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+        @media (max-width: 640px) {
+            .featured-product-copy { padding: 21px 18px 18px; }
+            .featured-product-title { font-size: 21px; }
+            .featured-product-description {
+                margin-top: 7px;
+                font-size: 13px;
+                line-height: 1.65;
+            }
+            .featured-product-image-wrap { height: 170px; }
+        }
+
+
+        /* UX v16：限定商品與可麗露採一致的品名／價格庫存／數量排版 */
+        .limited-product-row {
+            display: block;
+            padding: 13px 0;
+        }
+        .limited-product-name {
+            display: block;
+            color: #292524;
+            font-size: 14px;
+            line-height: 1.45;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+        .limited-product-meta-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 7px;
+        }
+        .limited-product-meta {
+            min-width: 0;
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .limited-product-stock {
+            color: #a8a29e;
+            font-size: 11px;
+            line-height: 1.4;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .limited-product-stock.is-soldout {
+            color: #ef4444;
+            font-weight: 700;
+        }
+        @media (min-width: 768px) {
+            .limited-product-name { font-size: 16px; }
+            .limited-product-stock { font-size: 12px; }
+        }
+
+    </style>
+</head>
+<body class="bg-[#F4F6F9] text-[#222222] min-h-screen flex flex-col font-sans antialiased selection:bg-[#5B7290]/20">
+
+    <!-- LINE 內建瀏覽器提醒 -->
+    <div id="lineBrowserNotice" class="fixed inset-0 z-[9999] hidden items-center justify-center px-5 bg-stone-950/55 backdrop-blur-sm">
+        <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-stone-100 overflow-hidden">
+            <div class="bg-[#5B7290] px-6 py-5 text-white">
+                <div class="text-xs font-black tracking-[0.25em] opacity-80 mb-1">LILOU NOTICE</div>
+                <h2 class="text-xl font-black tracking-wide">請使用手機瀏覽器開啟</h2>
+            </div>
+
+            <div class="px-6 py-6 space-y-4">
+                <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0 text-lg">
+                        ⚠️
+                    </div>
+                    <div class="space-y-2">
+                        <p class="text-sm font-bold text-stone-700 leading-relaxed">
+                            您目前使用的是 LINE 內建瀏覽器，可能會造成下單、付款或查詢訂單無法正常運作。
+                        </p>
+                        <div class="bg-stone-50 border border-stone-100 rounded-2xl p-4 text-sm text-stone-600 leading-relaxed space-y-2">
+                            <p class="font-black text-stone-800">建議操作方式：</p>
+                            <p>1. 點擊「⋯」或分享圖示</p>
+                            <p>2. 選擇「在 <span id="recommendedBrowserName">Safari</span> 中開啟」</p>
+                            <p>3. 再重新進行下單或查詢</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" onclick="closeLineBrowserNotice()" class="w-full h-12 rounded-xl bg-[#5B7290] text-white font-black tracking-widest hover:bg-[#3E4F66] transition-colors">
+                    我知道了
+                </button>
+
+                <p class="text-[11px] text-center text-stone-400 font-bold leading-relaxed">
+                    若仍要繼續使用 LINE 瀏覽器，部分功能可能無法正常執行。
+                </p>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbyA3ovLtC-hDYGL-_9CMNKk9A--TcrU-W-mN6Hc0GaZ8eDrvAsew3ZdtYBLSyimuiU/exec";
+        
+        let shippingFee = 129; 
+        let cart = []; 
+        let localProducts = []; 
+        let localPackaging = [];
+        let localCoupons = []; 
+        let currentBoxLimit = null;
+        const limitedAddonQty = {};
+        let flavorComposerOpen = false;
+
+        let localPickupDates = []; 
+        let localDeliveryDates = []; 
+        let appliedCoupon = null; 
+
+        let submissionTimeout = null;
+        let submissionInterval = null;
+        let countdownSeconds = 20;
+
+        let pendingOrderSnapshot = null;
+        let sharePlainText = "";
+
+        // 節慶禮盒設定：平時維持 enabled: false；推出禮盒時改為 true 並更新文字與圖片路徑。
+        const SEASONAL_GIFT = {
+            enabled: false,
+            eyebrow: "中秋限定禮盒",
+            title: "把團圓的心意裝進一盒甜點",
+            description: "限量製作，預購至 9 月 20 日，售完為止。",
+            image: "images/seasonal-gift-box.jpg",
+            buttonText: "立即預購"
+        };
+
+        function applySeasonalGiftConfig() {
+            const section = document.getElementById('seasonalGiftSection');
+            if (!section) return;
+            if (!SEASONAL_GIFT.enabled) {
+                section.classList.add('hidden');
+                return;
+            }
+            section.classList.remove('hidden');
+            document.getElementById('seasonalGiftEyebrow').textContent = SEASONAL_GIFT.eyebrow;
+            document.getElementById('seasonalGiftTitle').textContent = SEASONAL_GIFT.title;
+            document.getElementById('seasonalGiftDescription').textContent = SEASONAL_GIFT.description;
+            document.getElementById('seasonalGiftButton').textContent = SEASONAL_GIFT.buttonText;
+            const image = document.getElementById('seasonalGiftImage');
+            image.src = SEASONAL_GIFT.image;
+            image.onerror = () => section.classList.add('hidden');
+        }
+
+        const LILOU_DRAFT_KEY = "lilou_unfinished_order_draft_v1";
+        const LILOU_DRAFT_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+        let lilouDraftSaveTimer = null;
+        let lilouDraftRestored = false;
+
+        function trackLilouEvent(eventName, params = {}) {
+            try {
+                if (typeof gtag === "function") {
+                    gtag('event', eventName, params);
+                }
+            } catch (e) {
+                console.warn("GA event skipped:", eventName, e);
+            }
+        }
+
+
+        function lilouEscapeHtml(value) {
+            return (value ?? "").toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function lilouIsTruthy(value) {
+            const v = (value ?? "").toString().trim().toLowerCase();
+            return v === "true" || v === "1" || v === "yes" || v === "y" || v === "顯示" || v === "上架";
+        }
+
+        function normalizeShippingRuleForFrontend(value) {
+            const raw = (value ?? "").toString().trim();
+            const v = raw.toLowerCase().replace(/[\s_\-]/g, "");
+            if (
+                v === "pickup" ||
+                v === "store" ||
+                v === "storepickup" ||
+                v === "pickuponly" ||
+                raw.includes("僅自取") ||
+                raw.includes("限自取") ||
+                raw.includes("僅門市自取") ||
+                raw.includes("門市自取限定") ||
+                raw.includes("只限自取")
+            ) {
+                return "pickup";
+            }
+            if (
+                v === "delivery" ||
+                v === "deliveryonly" ||
+                v === "711" ||
+                v === "7eleven" ||
+                raw.includes("僅宅配") ||
+                raw.includes("限宅配") ||
+                raw.includes("宅配限定") ||
+                raw.includes("店到店限定") ||
+                raw.includes("僅店到店")
+            ) {
+                return "delivery";
+            }
+            return "all";
+        }
+
+        function normalizeProductForFrontend(product = {}) {
+            const normalized = { ...product };
+            normalized.name = (normalized.name || "").toString().trim();
+            normalized.price = Number(normalized.price) || 0;
+            normalized.stock = Number(normalized.stock) || 0;
+            normalized.type = (normalized.type || "combo").toString().trim().toLowerCase();
+            normalized.shipping_rule = normalizeShippingRuleForFrontend(normalized.shipping_rule || normalized.shipping || normalized.delivery || "all");
+            normalized.display = normalized.display === undefined || normalized.display === "" ? true : lilouIsTruthy(normalized.display);
+            normalized.sort = Number(normalized.sort) || 9999;
+            normalized.ingredients = (normalized.ingredients || "").toString().trim();
+            normalized.allergens = (normalized.allergens || "").toString().trim();
+            normalized.storage = (normalized.storage || "").toString().trim();
+            normalized.weight = (normalized.weight || "").toString().trim();
+            normalized.nutrition = (normalized.nutrition || "").toString().trim();
+            normalized.origin_manufacturer = (normalized.origin_manufacturer || normalized.originManufacturer || normalized.origin || normalized.manufacturer || "").toString().trim();
+            return normalized;
+        }
+
+        function normalizePackagingForFrontend(packaging = {}) {
+            const normalized = { ...packaging };
+            normalized.name = (normalized.name || "").toString().trim();
+            normalized.extra_price = Number(normalized.extra_price) || 0;
+            normalized.box_size = Number(normalized.box_size) || 0;
+            normalized.packaging_type = (normalized.packaging_type || normalized.type || "combo").toString().trim().toLowerCase();
+            normalized.display = normalized.display === undefined || normalized.display === "" ? true : lilouIsTruthy(normalized.display);
+            normalized.sort = Number(normalized.sort) || 9999;
+            return normalized;
+        }
+
+
+        function lilouIsDeliveryMethod(method) {
+            return method === "delivery" || method === "delivery_cod";
+        }
+
+        function lilouIsPrepaidDeliveryMethod(method) {
+            return method === "delivery";
+        }
+
+        function lilouShippingMethodBackendValue(method) {
+            if (method === "store") return "Store Pickup";
+            if (method === "delivery_cod") return "7-11 COD Pickup";
+            return "7-11 Pickup";
+        }
+
+        function lilouShippingMethodDisplayLabel(method) {
+            if (method === "store") return "門市自取付款";
+            if (method === "delivery_cod") return "7-11取貨付款";
+            return "7-11取貨（信用卡付款）";
+        }
+
+        function lilouOrderMethodIsStore(method) {
+            return (method || "").toString().toLowerCase().includes("store");
+        }
+
+        function lilouOrderMethodIsCod(method) {
+            const raw = (method || "").toString().toLowerCase();
+            return raw.includes("取貨付款") || raw.includes("cod");
+        }
+
+        function lilouOrderMethodIsPrepaidDelivery(method) {
+            const raw = (method || "").toString().toLowerCase();
+            return !lilouOrderMethodIsStore(method) && !lilouOrderMethodIsCod(method) && (raw.includes("7-11") || raw.includes("711") || raw.includes("pickup"));
+        }
+
+        function lilouOrderMethodLabelFromBackend(method) {
+            if (lilouOrderMethodIsStore(method)) return "門市自取付款";
+            if (lilouOrderMethodIsCod(method)) return "7-11取貨付款";
+            return "7-11取貨（信用卡付款）";
+        }
+
+        function lilouGetOrderShippingMethod(order = {}) {
+            const candidates = [
+                order.shipping_method,
+                order.Shipping_Method,
+                order.shippingMethod,
+                order.method,
+                order.Method,
+                order.shipping,
+                order.deliveryMethod
+            ].map(v => (v ?? "").toString().trim()).filter(Boolean);
+
+            const codValue = candidates.find(v => lilouOrderMethodIsCod(v));
+            if (codValue) return codValue;
+
+            const storeValue = candidates.find(v => lilouOrderMethodIsStore(v));
+            if (storeValue) return storeValue;
+
+            const deliveryValue = candidates.find(v => /7-11|711|pickup/i.test(v));
+            if (deliveryValue) return deliveryValue;
+
+            return candidates[0] || "";
+        }
+    </script>
+
+    <nav class="bg-[#5B7290] text-white p-4 md:p-5 shadow-sm sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
+        <div class="max-w-3xl mx-auto flex justify-between items-center">
+            <a href="#" class="flex items-center shrink-0" aria-label="Lilou 首頁">
+                <img
+                    src="images/lilou-logo.svg"
+                    alt="Lilou"
+                    class="h-9 md:h-11 w-auto object-contain block">
+            </a>
+            <div class="flex items-center gap-6 font-bold tracking-widest text-xs md:text-sm">
+                <button type="button" id="navShopBtn" onclick="switchMode('shop')" class="cursor-pointer transition-all duration-200 border-b-2 border-white pb-0.5 text-white">
+                    我要購物
+                </button>
+                <button type="button" id="navQueryBtn" onclick="switchMode('query')" class="cursor-pointer transition-all duration-200 pb-0.5 text-white/70">
+                    查詢訂單
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-3xl mx-auto p-4 md:p-6 md:py-12 flex-1 w-full">
+        <main id="formContainer" class="space-y-6 md:space-y-8">
+            <div id="shopContentWrapper" class="space-y-4 md:space-y-8">
+                <!-- 節慶禮盒：平時隱藏；有推出禮盒時再由下方設定開啟 -->
+                <section id="seasonalGiftSection" class="hidden lilou-hero-card rounded-3xl border border-white/60 shadow-sm">
+                    <div class="lilou-hero-image-wrap" aria-hidden="true">
+                        <img id="seasonalGiftImage" src="images/seasonal-gift-box.jpg" alt="" class="lilou-hero-image">
+                    </div>
+                    <div class="relative z-10 p-5 md:p-10 max-w-md space-y-3 md:space-y-4">
+                        <div class="inline-flex items-center rounded-full bg-white/75 backdrop-blur px-3 py-1 text-[11px] md:text-xs font-black tracking-[0.16em] text-[#5B7290]">SEASONAL GIFT</div>
+                        <div class="space-y-2">
+                            <p id="seasonalGiftEyebrow" class="text-xs md:text-sm font-black tracking-[0.18em] text-[#5B7290]">節慶限定禮盒</p>
+                            <h2 id="seasonalGiftTitle" class="text-2xl md:text-5xl font-black tracking-tight text-[#222222] leading-tight">限定禮盒預購</h2>
+                            <p id="seasonalGiftDescription" class="text-xs md:text-base text-stone-600 font-medium leading-relaxed max-w-sm">限量製作，售完為止。</p>
+                        </div>
+                        <button id="seasonalGiftButton" type="button" onclick="scrollToLimitedProducts()" class="h-10 md:h-12 px-4 md:px-5 rounded-xl bg-[#3E2D20] text-white text-sm font-black tracking-widest hover:bg-[#2B1F16] transition-colors">立即預購</button>
+                    </div>
+                </section>
+
+                <section class="featured-product-intro" aria-labelledby="featuredProductTitle">
+                    <div class="featured-product-copy">
+                        <h1 id="featuredProductTitle" class="featured-product-title">迷你可麗露專賣</h1>
+                        <p class="featured-product-description">客製化挑選您的精緻組合，每週限量甜點供應。</p>
+                    </div>
+                    <div class="featured-product-image-wrap">
+                        <img src="images/featured-product.webp" alt="Lilou 粒露迷你可麗露主打商品" class="featured-product-image" width="1600" height="720" fetchpriority="high">
+                    </div>
+                </section>
+
+                <section id="productTabsCard" class="product-tabs-card bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 scroll-mt-24">
+                    <div class="product-tab-list" role="tablist" aria-label="商品分類">
+                        <button type="button" id="limitedProductTab" class="product-tab-button is-active" role="tab" aria-selected="true" aria-controls="limitedProductSection" onclick="switchProductTab('limited')">
+                            <span class="product-tab-heading"><span class="product-tab-title">限定商品</span><span id="limitedProductTabCount" class="product-tab-count hidden">0 款</span></span>
+                            <span id="limitedProductTabSummary" class="product-tab-summary">期間限定甜點，商品載入中⋯</span>
+                            <span class="product-tab-action">查看限定商品 ›</span>
+                        </button>
+                        <button type="button" id="miniCaneleTab" class="product-tab-button" role="tab" aria-selected="false" aria-controls="customBoxSection" onclick="switchProductTab('canele')">
+                            <span class="product-tab-heading"><span class="product-tab-title">迷你可麗露</span><span id="miniCaneleTabCount" class="product-tab-count hidden">0 款</span></span>
+                            <span id="miniCaneleTabSummary" class="product-tab-summary">自由選擇包裝與口味，商品載入中⋯</span>
+                            <span class="product-tab-action">查看口味與包裝 ›</span>
+                        </button>
+                    </div>
+
+                <div id="customBoxSection" class="product-tab-panel space-y-5" role="tabpanel" aria-labelledby="miniCaneleTab" hidden>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <h4 class="text-sm md:text-base font-black text-stone-800">1. 選擇包裝</h4>
+                            </div>
+                            <span id="selectedPackageSummary" class="text-xs font-bold text-stone-400">尚未選擇</span>
+                        </div>
+                        <select id="boxSelect" class="hidden" onchange="handleBoxChange()">
+                            <option value="" disabled selected>庫存查詢中...</option>
+                        </select>
+                        <div id="comboPackageCards" class="lilou-mobile-track grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="animate-pulse h-28 rounded-2xl bg-stone-100"></div>
+                            <div class="animate-pulse h-28 rounded-2xl bg-stone-100"></div>
+                            <div class="animate-pulse h-28 rounded-2xl bg-stone-100"></div>
+                        </div>
+                    </div>
+
+                    <div id="flavorSection" class="space-y-4 pt-5 border-t border-stone-100">
+                        <div>
+                            <h4 class="text-sm md:text-base font-black text-stone-800">2. 選擇口味</h4>
+                        </div>
+
+                        <div id="flavorComposerPanel" class="rounded-2xl border border-stone-200 bg-stone-50/40 p-3 md:p-4 space-y-3">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-sm font-black text-stone-800">選擇口味與數量</span>
+                                <span id="currentBoxCountDisplay" class="text-xs md:text-sm font-black text-stone-700 bg-white border border-stone-200 px-2.5 py-1.5 rounded-lg">請先選擇包裝</span>
+                            </div>
+                            <div id="flavorMenu" class="space-y-1 divide-y divide-stone-100">
+                                <div class="animate-pulse flex items-center justify-between py-3.5"><div class="h-4 bg-stone-200 rounded-md w-1/3"></div><div class="h-8 bg-stone-200 rounded-lg w-28"></div></div>
+                            </div>
+                            <button type="button" onclick="openNutritionSheet()" class="w-full h-11 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 active:bg-stone-100 transition-colors px-3.5 flex items-center justify-between gap-3 text-left">
+                                <span class="inline-flex items-center gap-2 min-w-0"><span class="w-5 h-5 rounded-full bg-[#5B7290]/10 text-[#5B7290] flex items-center justify-center text-xs font-black shrink-0">i</span><span class="text-xs md:text-sm font-black text-stone-700 tracking-wide truncate">查看成分與營養標示</span></span>
+                                <span class="text-stone-300 font-black text-lg leading-none shrink-0">›</span>
+                            </button>
+                        </div>
+
+                        <button type="button" onclick="packBoxToCart()" class="w-full bg-stone-300 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed transition-all duration-200" id="packBtn" disabled>請先選擇包裝與口味</button>
+                    </div>
+                </div>
+
+                <section id="limitedProductSection" class="product-tab-panel space-y-4" role="tabpanel" aria-labelledby="limitedProductTab">
+                    <div class="rounded-2xl border border-stone-200 bg-stone-50/40 p-3 md:p-4">
+                        <div id="limitedPackageCards" class="divide-y divide-stone-100">
+                            <div class="animate-pulse h-16 rounded-xl bg-stone-100"></div>
+                            <div class="animate-pulse h-16 rounded-xl bg-stone-100 mt-1"></div>
+                        </div>
+                    </div>
+                </section>
+                </section>
+
+                <form id="orderForm" class="hidden bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-6 md:space-y-8" onsubmit="handleOrderSubmit(event)" onkeypress="return preventEnterSubmit(event)">
+                    <div id="cartSectionAnchor" class="space-y-4 scroll-mt-20">
+                        <div class="border-b border-stone-100 pb-3">
+                            <h3 class="text-sm md:text-base font-black text-[#5B7290] tracking-widest uppercase">購物車</h3>
+                        </div>
+                        <div id="cartListContainer" class="space-y-2.5 transition-all duration-300">
+                            <p class="text-stone-400 text-center py-6 text-xs md:text-base">購物車目前空空的喔！</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 md:space-y-6 pt-2">
+                        <div class="border-b border-stone-100 pb-3">
+                            <h3 class="text-sm md:text-base font-black text-[#5B7290] tracking-wider uppercase">填寫訂購資訊</h3>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                            <div>
+                                <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">訂購人姓名 *</label>
+                                <input type="text" id="custName" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="請輸入姓名" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">聯絡電話 *</label>
+                                <input type="tel" id="custPhone" maxlength="10" pattern="09[0-9]{8}" inputmode="numeric" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="請輸入10碼手機號碼" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">Email *</label>
+                                <input type="email" id="custEmail" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="請輸入 Email，接收訂單通知" required>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                            <div>
+                                <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">配送方式 *</label>
+                                <select id="shipMethod" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] cursor-pointer h-12 md:h-14 bg-stone-50/50" onchange="handleShippingMethodChange()" required>
+                                    <option value="store">門市自取付款</option>
+                                    <option value="delivery_cod">7-11取貨付款（運費+$129）</option>
+                                    <!-- <option value="delivery">7-11取貨（信用卡付款，運費+$129）</option> -->
+                                </select>
+                            </div>
+                            <div>
+                                <label id="dateLabel" class="block text-xs md:text-sm font-bold text-[#5B7290] mb-1.5">門市自取日期 *</label>
+                                <select id="shipDate" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] bg-white font-bold text-stone-800 cursor-pointer h-12 md:h-14" required>
+                                    <option value="" disabled selected>正在載入可用日期...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="addressGroup" class="transition-all duration-300 space-y-1.5">
+                            <div class="flex justify-between items-center">
+                                <label id="addressLabel" class="block text-xs md:text-sm font-bold text-stone-600">自取門市地址</label>
+                                <a id="mapLink" href="https://emap.pcsc.com.tw/" target="_blank" style="display: none;" class="text-xs font-bold text-emerald-600 hover:text-emerald-800 underline inline-flex items-center gap-0.5">
+                                    開啟 7-11 門市地圖查詢
+                                </a>
+                            </div>
+                            <input type="text" id="custAddress" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none h-12 md:h-14 bg-stone-100 font-bold text-stone-700 select-all" value="高雄市前鎮區景德路72巷12號" readonly>
+                        </div>
+
+
+                        <div id="deliveryPaymentNotice" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs md:text-sm text-amber-900 font-bold leading-relaxed">
+                            <div class="font-black mb-1">7-11取貨信用卡付款提醒</div>
+                            <div>若您選擇 7-11取貨（信用卡付款），付款連結將寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的付款按鈕完成付款。</div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">折扣碼</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="couponInput" class="flex-1 px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="請輸入折扣碼">
+                                <button type="button" onclick="applyCouponCode(true)" class="bg-[#5B7290] text-white font-bold px-4 md:px-6 rounded-xl hover:bg-[#3E4F66] transition-all text-sm md:text-base shrink-0 cursor-pointer h-12 md:h-14">
+                                    套用
+                                </button>
+                            </div>
+                            <p id="couponMessage" class="text-xs md:text-sm font-bold mt-1.5 hidden"></p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">備註說明</label>
+                            <textarea id="orderNote" rows="2" class="w-full p-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] bg-stone-50/50" placeholder="若有特殊需求請在此註記"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="bg-stone-50 p-4 md:p-6 rounded-xl space-y-1.5 text-right text-stone-500 text-xs md:text-sm tracking-wide border border-stone-100">
+                        <div>商品總計 Subtotal: <span id="subtotalDisplay" class="font-bold text-stone-700 md:text-base">$0</span></div>
+                        <div id="shipFeeDisplay" class="hidden">7-11 冷凍運費 Shipping: <span class="font-bold text-stone-700 md:text-base">+$129</span></div>
+                        <div id="couponDiscountDisplay" class="hidden text-red-500 font-bold">折扣折抵 Discount: <span class="md:text-base">-$0</span></div>
+                        
+                        <div class="text-[#222222] font-black text-xl md:text-2xl pt-2.5 border-t border-stone-200 mt-2">
+                            總金額 Total：<span id="totalDisplay" class="text-xl md:text-2xl font-black text-[#5B7290]">$0</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-[#3E2D20] text-white font-extrabold tracking-widest h-14 md:h-16 rounded-xl hover:bg-[#2B1F16] shadow-sm cursor-pointer text-base md:text-lg uppercase transition-colors duration-150">
+                        送出預購訂單 Submit Order
+                    </button>
+                </form>
+            </div>
+
+            <div id="queryContentWrapper" class="hidden space-y-6 md:space-y-8">
+                <div class="text-center py-2 space-y-2">
+                    <h2 class="text-2xl md:text-4xl font-black text-[#222222] tracking-wider">查詢訂單</h2>
+                    <p class="text-stone-500 text-xs md:text-base tracking-wide max-w-sm md:max-w-xl mx-auto leading-relaxed">
+                        請輸入下單時填寫的手機號碼，即可查詢訂單狀態。
+                    </p>
+                </div>
+
+                <section class="bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-5">
+                    <div class="flex items-center gap-2 border-b border-stone-100 pb-3 mb-1">
+                        <span class="bg-[#5B7290] text-white text-xs md:text-sm font-black px-2 py-0.5 rounded">ORDER</span>
+                        <h3 class="text-sm md:text-base font-black text-[#5B7290] tracking-widest uppercase">訂單進度查詢</h3>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">手機號碼 *</label>
+                        <div class="space-y-2">
+                            <input type="tel" id="queryPhone" maxlength="10" pattern="09[0-9]{8}" inputmode="numeric" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="請輸入10碼手機號碼">
+                            <button type="button" onclick="queryCustomerOrders()" class="w-full bg-[#5B7290] text-white font-bold px-4 md:px-6 rounded-xl hover:bg-[#3E4F66] transition-all text-sm md:text-base shrink-0 cursor-pointer h-12 md:h-14">
+                                查詢
+                            </button>
+                        </div>
+                        <p class="text-[11px] md:text-xs text-stone-400 font-medium leading-relaxed">
+                            僅會顯示與此手機號碼相符的訂單資料。
+                        </p>
+                    </div>
+                </section>
+
+                <section id="queryResultArea" class="space-y-4"></section>
+            </div>
+        </main>
+
+        <section id="receiptContainer" class="hidden bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-stone-100 space-y-6">
+            <div class="text-center border-b border-stone-100 pb-4">
+                <h2 class="text-xl md:text-2xl font-black text-stone-800 tracking-wider">訂購成功！<br>Lilou 預購確認單</h2>
+            </div>
+            <div id="receiptContent"></div>
+            <div class="space-y-3 pt-4 border-t border-stone-100">
+                <button type="button" onclick="shareReceipt()" class="w-full bg-[#5B7290] text-white font-black h-12 md:h-14 rounded-xl hover:bg-[#3E4F66] transition-colors shadow-xs cursor-pointer text-sm md:text-base uppercase tracking-wider">
+                    分享或儲存預購明細
+                </button>
+                <button type="button" onclick="window.location.reload()" class="w-full border border-stone-200 text-stone-600 font-bold h-12 md:h-14 rounded-xl hover:bg-stone-50 transition-colors cursor-pointer text-sm tracking-wider">
+                    返回商店首頁
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <button id="floatingCartButton" type="button" onclick="document.getElementById('cartSectionAnchor')?.scrollIntoView({behavior:'smooth', block:'start'})" aria-label="查看購物車">
+        <span>購物車</span><span id="floatingCartCount">0</span>
+    </button>
+
+    <footer class="bg-stone-900 text-stone-400 py-8 px-4 mt-12 border-t border-stone-800 font-sans">
+        <div class="max-w-3xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
+            <div class="space-y-1.5">
+                <div class="text-white font-black text-base md:text-lg tracking-widest">粒露 Lilou｜迷你可麗露專賣</div>
+                <div class="text-xs md:text-sm text-stone-400 font-medium tracking-wide">高雄市前鎮區景德路72巷12號<br>營業時間 14:00－18:00，週一、二公休</div>
+                <div class="text-[11px] text-stone-500 pt-1">© 2026 Lilou. All rights reserved.</div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <a href="https://lin.ee/ane79Cw" target="_blank" class="w-10 h-10 rounded-xl bg-stone-800 hover:bg-[#06C755] flex items-center justify-center transition-all duration-200 text-stone-300 hover:text-white shadow-xs shrink-0" title="官方 LINE">
+                    <svg class="social-icon-svg fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                        <path d="M19.365 9.863c.349 0 .633.285.633.633 0 .349-.284.633-.633.633h-1.65v1.052h1.65c.349 0 .633.285.633.633 0 .349-.284.633-.633.633h-2.283a.633.633 0 0 1-.633-.633V8.182c0-.349.284-.633.633-.633h2.283c.349 0 .633.284.633.633 0 .349-.284.633-.633.633h-1.65v1.048h1.65Zm-3.522 2.951a.633.633 0 0 1-1.141.379l-2.102-2.851v2.472a.633.633 0 0 1-1.266 0V8.182a.633.633 0 0 1 1.141-.379l2.102 2.851V8.182a.633.633 0 0 1 1.266 0v4.632Zm-5.389 0a.633.633 0 0 1-1.266 0V8.182a.633.633 0 0 1 1.266 0v4.632Zm-2.057.633H6.114a.633.633 0 0 1-.633-.633V8.182a.633.633 0 0 1 1.266 0v3.999h1.65c.349 0 .633.285.633.633 0 .349-.284.633-.633.633ZM12 2C6.486 2 2 5.697 2 10.241c0 4.074 3.636 7.486 8.548 8.132.333.072.786.221.901.506.103.258.067.662.033.923l-.146.878c-.045.258-.206 1.01.866.551 1.073-.459 5.789-3.409 7.9-5.838C21.56 13.793 22 12.147 22 10.241 22 5.697 17.514 2 12 2Z"/>
+                    </svg>
+                </a>
+                <a href="https://www.instagram.com/lilou.official_/" target="_blank" class="w-10 h-10 rounded-xl bg-stone-800 hover:bg-[#E1306C] flex items-center justify-center transition-all duration-200 text-stone-300 hover:text-white shadow-xs shrink-0" title="官方 Instagram">
+                    <svg class="social-icon-svg stroke-current fill-none stroke-2" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <div id="nutritionSheetOverlay" class="fixed inset-0 z-[9998] hidden bg-stone-950/50 backdrop-blur-sm" onclick="closeNutritionSheet(event)">
+        <div class="absolute inset-x-0 bottom-0 max-h-[86dvh] bg-white rounded-t-[2rem] shadow-2xl border-t border-stone-100 flex flex-col md:left-1/2 md:-translate-x-1/2 md:max-w-xl md:rounded-3xl md:bottom-8 md:max-h-[82vh]" onclick="event.stopPropagation()">
+            <div class="px-5 pt-4 pb-3 border-b border-stone-100 shrink-0">
+                <div class="w-12 h-1.5 bg-stone-200 rounded-full mx-auto mb-4 md:hidden"></div>
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg md:text-xl font-black text-stone-900 tracking-wide">成分與營養標示</h2>
+                        <p class="text-xs md:text-sm text-stone-400 font-bold mt-1 leading-relaxed">資訊依店內最新食品標示整理，若有過敏疑慮請先與店家確認。</p>
+                    </div>
+                    <button type="button" onclick="closeNutritionSheet()" class="w-9 h-9 rounded-full bg-stone-100 text-stone-500 font-black hover:bg-stone-200 shrink-0">✕</button>
+                </div>
+            </div>
+            <div id="nutritionSheetContent" class="overflow-y-auto px-5 py-4 space-y-2"></div>
+        </div>
+    </div>
+
+    <div id="countdownOverlay" class="fixed inset-0 bg-stone-950/70 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl max-w-sm w-full text-center space-y-5 mx-4 border border-stone-100">
+            <div class="space-y-1.5">
+                <h3 id="overlayMainTitle" class="text-lg md:text-xl font-black text-stone-800">訂單準備送出中...</h3>
+                <p id="overlaySubTitle" class="text-xs text-stone-400 font-bold uppercase tracking-wider">倒數結束前可隨時確認或調整</p>
+            </div>
+            
+            <div class="text-6xl font-black text-[#5B7290] animate-bounce py-1" id="countdownTimer">20</div>
+            
+            <div class="bg-stone-50 border border-stone-200 p-4 rounded-xl text-left space-y-3 text-sm md:text-base text-stone-700 leading-relaxed font-sans">
+                <div>
+                    <span class="font-extrabold text-stone-400 block text-xs uppercase mb-0.5">配送方式：</span>
+                    <span id="overlayMethod" class="text-stone-900 font-black text-sm md:text-base"></span>
+                </div>
+                <div>
+                    <span id="overlayDateLabel" class="font-extrabold text-stone-400 block text-xs uppercase mb-0.5">取貨日期：</span>
+                    <span id="overlayDate" class="text-stone-900 font-black text-sm md:text-base"></span>
+                </div>
+                <div class="border-t border-stone-200 pt-2.5 mt-2 flex justify-between items-center">
+                    <span class="font-extrabold text-stone-800 text-sm md:text-base">應付總額：</span>
+                    <span id="overlayTotal" class="font-black text-base md:text-lg text-[#5B7290]"></span>
+                </div>
+            </div>
+            
+            <div id="loadingAnimationBlock" style="display: none;" class="py-2 space-y-2">
+                <div class="spinner"></div>
+                <p class="text-xs text-[#5B7290] font-black tracking-wider animate-pulse">訂單同步中...</p>
+            </div>
+
+
+            <div id="overlayPaymentNotice" class="hidden bg-amber-50 border border-amber-200 p-4 rounded-xl text-left text-xs md:text-sm text-amber-900 font-bold leading-relaxed">
+                若您選擇 7-11取貨（信用卡付款），付款連結將寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的付款按鈕完成付款。
+
+            </div>
+
+            <p id="overlayBottomPrompt" class="text-[11px] text-stone-400 leading-relaxed font-medium">正確認商品庫存。</p>
+            
+            <div id="overlayActionButtons" class="flex gap-2.5 pt-1">
+                <button type="button" onclick="cancelOrderSubmission()" class="flex-1 border border-stone-200 text-stone-500 font-bold h-12 rounded-xl hover:bg-stone-50 transition-colors text-xs md:text-sm uppercase shadow-2xs cursor-pointer">
+                    取消調整
+                </button>
+                <button type="button" onclick="instantOrderSubmission()" class="flex-1 bg-[#5B7290] text-white font-extrabold h-12 rounded-xl hover:bg-[#3E4F66] transition-colors text-xs md:text-sm uppercase shadow-xs cursor-pointer">
+                    直接送出
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchMode(targetMode) {
+            const formContainer = document.getElementById('formContainer');
+            const shopWrapper = document.getElementById('shopContentWrapper');
+            const queryWrapper = document.getElementById('queryContentWrapper');
+            const receiptContainer = document.getElementById('receiptContainer');
+            const shopBtn = document.getElementById('navShopBtn');
+            const queryBtn = document.getElementById('navQueryBtn');
+
+            formContainer.classList.remove('hidden');
+            receiptContainer.classList.add('hidden');
+
+            if (targetMode === 'shop') {
+                shopWrapper.classList.remove('hidden');
+                queryWrapper.classList.add('hidden');
+                shopBtn.className = "cursor-pointer transition-all duration-200 border-b-2 border-white pb-0.5 text-white";
+                queryBtn.className = "cursor-pointer transition-all duration-200 pb-0.5 text-white/70";
+            } else if (targetMode === 'query') {
+                shopWrapper.classList.add('hidden');
+                queryWrapper.classList.remove('hidden');
+                shopBtn.className = "cursor-pointer transition-all duration-200 pb-0.5 text-white/70";
+                queryBtn.className = "cursor-pointer transition-all duration-200 border-b-2 border-white pb-0.5 text-white";
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        window.switchMode = switchMode;
+
+        function preventEnterSubmit(e) {
+            const keyCode = e.keyCode || e.which;
+            if (keyCode === 13 && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                return false;
+            }
+            return true;
+        }
+
+
+        function getCartShippingFlags() {
+            let hasPickupOnly = false;
+            let hasDeliveryOnly = false;
+            cart.forEach(box => {
+                (box.flavors || []).forEach(f => {
+                    const rule = normalizeShippingRuleForFrontend(f.shipping_rule || f.shippingRule || "all");
+                    if (rule === "pickup") hasPickupOnly = true;
+                    if (rule === "delivery") hasDeliveryOnly = true;
+                });
+            });
+            return { hasPickupOnly, hasDeliveryOnly, hasConflict: hasPickupOnly && hasDeliveryOnly };
+        }
+
+        function hasPickupOnlyProduct() {
+            return getCartShippingFlags().hasPickupOnly;
+        }
+
+        function hasDeliveryOnlyProduct() {
+            return getCartShippingFlags().hasDeliveryOnly;
+        }
+
+        function updateShippingSelectAvailability() {
+            const shipSelect = document.getElementById('shipMethod');
+            if (!shipSelect) return;
+            const storeOption = shipSelect.querySelector('option[value="store"]');
+            const deliveryOption = shipSelect.querySelector('option[value="delivery"]');
+            const deliveryCodOption = shipSelect.querySelector('option[value="delivery_cod"]');
+            const flags = getCartShippingFlags();
+            if (storeOption) storeOption.disabled = flags.hasDeliveryOnly && !flags.hasPickupOnly;
+            if (deliveryOption) deliveryOption.disabled = flags.hasPickupOnly && !flags.hasDeliveryOnly;
+            if (deliveryCodOption) deliveryCodOption.disabled = flags.hasPickupOnly && !flags.hasDeliveryOnly;
+        }
+
+        function enforcePickupOnlyShipping(showAlert = true) {
+            const shipSelect = document.getElementById('shipMethod');
+            if (!shipSelect) return false;
+            const flags = getCartShippingFlags();
+
+            if (flags.hasConflict) {
+                if (showAlert) alert("購物車同時包含僅門市自取與僅宅配商品，請分開下單。");
+                return true;
+            }
+
+            if (lilouIsDeliveryMethod(shipSelect.value) && flags.hasPickupOnly) {
+                if (showAlert) alert("您的購物車包含僅門市自取商品，配送方式已自動切換為門市自取付款。");
+                shipSelect.value = 'store';
+                return true;
+            }
+
+            if (shipSelect.value === 'store' && flags.hasDeliveryOnly) {
+                if (showAlert) alert("您的購物車包含僅宅配商品，配送方式已自動切換為 7-11取貨（信用卡付款）。");
+                shipSelect.value = 'delivery';
+                return true;
+            }
+
+            return false;
+        }
+
+        function handleShippingMethodChange() {
+            let method = document.getElementById('shipMethod').value;
+
+            enforcePickupOnlyShipping(true);
+            method = document.getElementById('shipMethod').value;
+            const addrInput = document.getElementById('custAddress');
+            const shipFeeDisplay = document.getElementById('shipFeeDisplay');
+            const dateLabel = document.getElementById('dateLabel');
+            const mapLink = document.getElementById('mapLink');
+            const addressLabel = document.getElementById('addressLabel');
+            const deliveryNotice = document.getElementById('deliveryPaymentNotice');
+            
+            if(lilouIsDeliveryMethod(method)) {
+                addressLabel.innerText = "7-11 取貨門市名稱 *";
+                mapLink.style.display = 'inline-flex'; 
+                addrInput.required = true;
+                addrInput.readOnly = false;
+                if(addrInput.value === "高雄市前鎮區景德路72巷12號" || addrInput.value === "") {
+                    addrInput.value = "";
+                }
+                addrInput.placeholder = "範例：Lilou門市";
+                addrInput.className = "w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50 text-stone-800 font-normal";
+                shipFeeDisplay.querySelector('span').innerText = `+$${shippingFee}`;
+                shipFeeDisplay.classList.remove('hidden');
+                dateLabel.innerText = "希望到貨日期 *";
+                if (deliveryNotice) deliveryNotice.classList.toggle("hidden", !lilouIsPrepaidDeliveryMethod(method));
+            } else {
+                addressLabel.innerText = "自取門市地址";
+                mapLink.style.display = 'none'; 
+                addrInput.required = false;
+                addrInput.readOnly = true;
+                addrInput.value = "高雄市前鎮區景德路72巷12號";
+                addrInput.className = "w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none h-12 md:h-14 bg-stone-100 font-bold text-stone-700 select-all";
+                shipFeeDisplay.classList.add('hidden');
+                dateLabel.innerText = "門市自取日期 *";
+                if (deliveryNotice) deliveryNotice.classList.add("hidden");
+            }
+            renderAvailableDates(method);
+            calculateTotal();
+            scheduleLilouDraftSave();
+        }
+
+        function getWeekdayStr(dateStr) {
+            try {
+                let clean = dateStr.toString().replace(/\s+/g, '').replace(/-/g, '/');
+                if (clean.split('/').length === 2) {
+                    clean = new Date().getFullYear() + '/' + clean;
+                }
+                const parts = clean.split('/');
+                if (parts.length === 3) {
+                    const year = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10) - 1;
+                    const day = parseInt(parts[2], 10);
+                    const parsedDate = new Date(year, month, day);
+                    if (!isNaN(parsedDate.getTime())) {
+                        const weekday = ["日", "一", "二", "三", "四", "五", "六"][parsedDate.getDay()];
+                        return ` (週${weekday})`;
+                    }
+                }
+            } catch (e) {}
+            return "";
+        }
+
+        function lilouDateThresholdString(daysAfterToday) {
+            const base = new Date();
+            base.setHours(0, 0, 0, 0);
+            base.setDate(base.getDate() + daysAfterToday);
+            return `${base.getFullYear()}/${String(base.getMonth() + 1).padStart(2, '0')}/${String(base.getDate()).padStart(2, '0')}`;
+        }
+
+        function lilouNormalizeDateForCompare(dateStr) {
+            if (!dateStr) return "";
+            const clean = dateStr.toString().replace(/["'\r\n]/g, '').replace(/\s+/g, '').trim().replace(/-/g, '/');
+            const parts = clean.split('/');
+            if (parts.length !== 3) return "";
+            const year = Number(parts[0]);
+            const month = Number(parts[1]);
+            const day = Number(parts[2]);
+            if (!year || !month || !day) return "";
+            return `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+        }
+
+        window.renderAvailableDates = function(method) {
+            const dateSelect = document.getElementById('shipDate');
+            const isDelivery = lilouIsDeliveryMethod(method);
+            const textPrompt = isDelivery ? '希望到貨日期' : '自取日期';
+            const targetDates = isDelivery ? localDeliveryDates : localPickupDates;
+            const minDate = lilouDateThresholdString(isDelivery ? 7 : 3);
+            
+            let optionsHtml = "";
+            let hasValidDate = false;
+
+            if(targetDates && targetDates.length > 0 && targetDates[0] !== "目前無可選擇日期" && targetDates[0] !== "") {
+                targetDates.forEach(dateStr => {
+                    const cleanDate = lilouNormalizeDateForCompare(dateStr);
+                    if(cleanDate !== "" && cleanDate >= minDate) {
+                        let wStr = getWeekdayStr(cleanDate);
+                        optionsHtml += `<option value="${cleanDate}">${cleanDate}${wStr}</option>`;
+                        hasValidDate = true;
+                    }
+                });
+            }
+
+            if (!hasValidDate) {
+                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 --</option>`;
+            } else {
+                optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
+            }
+            dateSelect.innerHTML = optionsHtml;
+        }
+
+        function getLilouDraftPayload() {
+            const shipMethodEl = document.getElementById('shipMethod');
+            const shipMethodVal = shipMethodEl ? shipMethodEl.value : 'store';
+            return {
+                savedAt: Date.now(),
+                cart: cart || [],
+                form: {
+                    custName: document.getElementById('custName')?.value || "",
+                    custPhone: document.getElementById('custPhone')?.value || "",
+                    custEmail: document.getElementById('custEmail')?.value || "",
+                    shipMethod: shipMethodVal,
+                    shipDate: document.getElementById('shipDate')?.value || "",
+                    custAddress: lilouIsDeliveryMethod(shipMethodVal) ? (document.getElementById('custAddress')?.value || "") : "",
+                    couponInput: document.getElementById('couponInput')?.value || "",
+                    orderNote: document.getElementById('orderNote')?.value || ""
+                }
+            };
+        }
+
+        function hasLilouDraftContent(draft) {
+            if (!draft) return false;
+
+            const hasCart = Array.isArray(draft.cart) && draft.cart.some(box => {
+                const flavors = Array.isArray(box?.flavors) ? box.flavors : [];
+                return (box?.boxName || "").toString().trim() !== "" && flavors.length > 0;
+            });
+            if (hasCart) return true;
+
+            const form = draft.form || {};
+            const textFields = [
+                form.custName,
+                form.custPhone,
+                form.custEmail,
+                form.shipDate,
+                form.couponInput,
+                form.orderNote
+            ];
+            const hasTypedText = textFields.some(value => (value || "").toString().trim() !== "");
+            const hasChangedShipping = (form.shipMethod || "store") !== "store";
+            const hasDeliveryAddress = hasChangedShipping && (form.custAddress || "").toString().trim() !== "";
+
+            return hasTypedText || hasChangedShipping || hasDeliveryAddress;
+        }
+
+        function saveLilouDraftNow() {
+            try {
+                const draft = getLilouDraftPayload();
+                if (!hasLilouDraftContent(draft)) {
+                    localStorage.removeItem(LILOU_DRAFT_KEY);
+                    return;
+                }
+                localStorage.setItem(LILOU_DRAFT_KEY, JSON.stringify(draft));
+            } catch (err) {
+                console.warn("未完成訂單暫存失敗", err);
+            }
+        }
+
+        function scheduleLilouDraftSave() {
+            if (lilouDraftSaveTimer) clearTimeout(lilouDraftSaveTimer);
+            lilouDraftSaveTimer = setTimeout(saveLilouDraftNow, 250);
+        }
+
+        function clearLilouDraft() {
+            try { localStorage.removeItem(LILOU_DRAFT_KEY); } catch (err) {}
+        }
+
+        function restoreLilouDraftIfNeeded() {
+            if (lilouDraftRestored) return false;
+            lilouDraftRestored = true;
+
+            let draft = null;
+            try {
+                const raw = localStorage.getItem(LILOU_DRAFT_KEY);
+                if (!raw) return false;
+                draft = JSON.parse(raw);
+                if (!draft?.savedAt || (Date.now() - Number(draft.savedAt)) > LILOU_DRAFT_MAX_AGE) {
+                    clearLilouDraft();
+                    return false;
+                }
+            } catch (err) {
+                clearLilouDraft();
+                return false;
+            }
+
+            if (!hasLilouDraftContent(draft)) {
+                clearLilouDraft();
+                return false;
+            }
+
+            const form = draft.form || {};
+            if (Array.isArray(draft.cart)) {
+                cart = draft.cart.map(box => ({
+                    ...box,
+                    boxExtra: Number(box.boxExtra) || 0,
+                    repeatQty: Number(box.repeatQty) || 1,
+                    flavorsCost: Number(box.flavorsCost) || 0,
+                    totalQty: Number(box.totalQty) || 0,
+                    singleBoxQty: Number(box.singleBoxQty) || 0,
+                    boxTotalCost: Number(box.boxTotalCost) || 0,
+                    singleBoxCost: Number(box.singleBoxCost) || 0,
+                    flavors: Array.isArray(box.flavors) ? box.flavors : []
+                })).filter(box => box.boxName && box.flavors.length);
+            }
+
+            const setValue = (id, value) => {
+                const el = document.getElementById(id);
+                if (el && value !== undefined && value !== null) el.value = value;
+            };
+
+            setValue('custName', form.custName);
+            setValue('custPhone', form.custPhone);
+            setValue('custEmail', form.custEmail);
+            setValue('shipMethod', form.shipMethod || 'store');
+            setValue('couponInput', form.couponInput);
+            setValue('orderNote', form.orderNote);
+
+            handleShippingMethodChange();
+
+            const dateEl = document.getElementById('shipDate');
+            if (dateEl && form.shipDate && Array.from(dateEl.options).some(option => option.value === form.shipDate)) {
+                dateEl.value = form.shipDate;
+            }
+
+            if (lilouIsDeliveryMethod(form.shipMethod || 'store')) {
+                setValue('custAddress', form.custAddress);
+            }
+
+            if ((form.couponInput || '').trim()) applyCouponCode(false);
+            showToastNotification('已為您恢復上次未完成的購物車');
+            return true;
+        }
+
+        function bindLilouDraftAutoSave() {
+            ['custName', 'custPhone', 'custEmail', 'shipMethod', 'shipDate', 'custAddress', 'couponInput', 'orderNote'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const eventName = el.tagName === 'SELECT' ? 'change' : 'input';
+                el.addEventListener(eventName, scheduleLilouDraftSave);
+            });
+        }
+
+        function buildNutritionBlock(label, value) {
+            const text = (value || "").toString().trim();
+            if (!text) return "";
+            return `<div class="space-y-1">
+                <div class="text-[11px] font-black text-stone-400 tracking-widest">${lilouEscapeHtml(label)}</div>
+                <div class="text-sm text-stone-700 font-bold leading-relaxed whitespace-pre-wrap">${lilouEscapeHtml(text)}</div>
+            </div>`;
+        }
+
+        function renderNutritionList() {
+            const container = document.getElementById('nutritionSheetContent');
+            if (!container) return;
+            const products = localProducts.filter(p => p.display).sort((a, b) => (a.sort - b.sort) || a.name.localeCompare(b.name, 'zh-Hant'));
+            if (!products.length) {
+                container.innerHTML = `<div class="text-center py-8 text-stone-400 font-bold text-sm">目前尚無商品資訊。</div>`;
+                return;
+            }
+            container.innerHTML = products.map((p, idx) => {
+                const details = [
+                    buildNutritionBlock('成分', p.ingredients),
+                    buildNutritionBlock('過敏原', p.allergens),
+                    buildNutritionBlock('保存方式', p.storage),
+                    buildNutritionBlock('重量', p.weight),
+                    buildNutritionBlock('原產地與製造商', p.origin_manufacturer),
+                    buildNutritionBlock('營養標示', p.nutrition || '營養標示整理中，請以店家現場標示為準。')
+                ].join('');
+                return `<div class="border border-stone-200 rounded-2xl overflow-hidden bg-white">
+                    <button type="button" onclick="toggleNutritionItem(${idx})" class="nutrition-toggle w-full px-4 py-3 flex items-center justify-between gap-3 text-left" aria-expanded="false">
+                        <div class="min-w-0">
+                            <div class="font-black text-stone-900 text-sm md:text-base truncate">${lilouEscapeHtml(p.name)}</div>
+                            ${p.weight ? `<div class="text-xs text-stone-400 font-bold mt-0.5">${lilouEscapeHtml(p.weight)}</div>` : ''}
+                        </div>
+                        <span class="nutrition-chevron text-stone-300 font-black text-lg shrink-0 transition-transform">⌄</span>
+                    </button>
+                    <div class="nutrition-panel hidden px-4 pb-4 pt-1 border-t border-stone-100 bg-stone-50/50 space-y-3">${details}</div>
+                </div>`;
+            }).join('');
+        }
+
+        window.toggleNutritionItem = function(index) {
+            const overlay = document.getElementById('nutritionSheetOverlay');
+            const item = overlay?.querySelectorAll('.nutrition-toggle')[index];
+            const panel = overlay?.querySelectorAll('.nutrition-panel')[index];
+            const chevron = overlay?.querySelectorAll('.nutrition-chevron')[index];
+            if (!item || !panel) return;
+            const isOpen = !panel.classList.contains('hidden');
+            panel.classList.toggle('hidden', isOpen);
+            item.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+            if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+
+        window.openNutritionSheet = function() {
+            renderNutritionList();
+            const overlay = document.getElementById('nutritionSheetOverlay');
+            if (!overlay) return;
+            overlay.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        window.closeNutritionSheet = function(event) {
+            if (event && event.target && event.target.id !== 'nutritionSheetOverlay') return;
+            const overlay = document.getElementById('nutritionSheetOverlay');
+            if (!overlay) return;
+            overlay.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        async function fetchOptions() {
+            const CACHE_KEY = "lilou_shop_fast_cache";
+            const TIME_KEY = "lilou_shop_cache_time";
+            const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 小時，避免離線或久未更新時顯示太舊資料
+            const now = Date.now();
+
+            let hasRenderedCache = false;
+
+            // 1) 先讀取瀏覽器快取，讓回訪或重新整理時可以立即顯示商品
+            try {
+                const cachedText = localStorage.getItem(CACHE_KEY);
+                const cachedTime = Number(localStorage.getItem(TIME_KEY) || 0);
+                const isFreshEnough = cachedTime && (now - cachedTime) < CACHE_MAX_AGE;
+
+                if (cachedText && isFreshEnough) {
+                    const cachedData = JSON.parse(cachedText);
+                    renderUIWithData(cachedData);
+                    hasRenderedCache = true;
+                }
+            } catch (err) {
+                console.warn("讀取快取失敗，改用線上資料。", err);
+            }
+
+            // 2) 背景同步 Google Sheet 最新資料；成功後更新畫面與快取
+            try {
+                const cacheBuster = `&_=${now}`;
+                const res = await fetch(`${API_URL}?action=getFormOptions${cacheBuster}`);
+                const data = await res.json();
+
+                localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+                localStorage.setItem(TIME_KEY, Date.now().toString());
+
+                renderUIWithData(data);
+            } catch (err) {
+                console.error("同步失敗", err);
+
+                if (!hasRenderedCache) {
+                    const boxSelect = document.getElementById('boxSelect');
+                    const packBtn = document.getElementById('packBtn');
+                    if (boxSelect) {
+                        boxSelect.innerHTML = `<option value="" disabled selected>資料暫時無法載入，請稍後再試</option>`;
+                    }
+                    if (packBtn) {
+                        packBtn.disabled = true;
+                        packBtn.innerText = "資料暫時無法載入";
+                    }
+                }
+            }
+        }
+
+        function renderUIWithData(data) {
+            localProducts = (data.products || [])
+                .map(normalizeProductForFrontend)
+                .filter(p => p.display && p.name)
+                .sort((a, b) => (a.sort - b.sort) || a.name.localeCompare(b.name, 'zh-Hant'));
+            localPackaging = (data.packaging || [])
+                .map(normalizePackagingForFrontend)
+                .filter(p => p.name);
+            localCoupons = data.coupons || []; 
+            
+            if(data.settings) {
+                localPickupDates = [];
+                localDeliveryDates = [];
+                
+                Object.keys(data.settings).forEach(key => {
+                    const cleanKey = key.toString().replace(/\s+/g, '').trim().toLowerCase();
+                    const rawStr = data.settings[key].toString().replace(/^["\s]+|["\s]+$/g, '').trim();
+                    if (rawStr === "" || rawStr === "目前無可選擇日期") return;
+
+                    if (cleanKey === "pickup_available_dates") {
+                        localPickupDates = rawStr.split(',').map(d => d.trim()).filter(Boolean);
+                    }
+
+                    if (cleanKey === "delivery_available_dates") {
+                        localDeliveryDates = rawStr.split(',').map(d => d.trim()).filter(Boolean);
+                    }
+                });
+            }
+
+            const boxSelect = document.getElementById('boxSelect'); 
+            const savedVal = boxSelect.value;
+            boxSelect.innerHTML = `<option value="" disabled selected>-- 請選擇包裝樣式 --</option>` + localPackaging.map(p => `<option value="${lilouEscapeHtml(p.name)}" data-extra="${p.extra_price}" data-box-size="${p.box_size}" data-packaging-type="${lilouEscapeHtml(p.packaging_type)}">${lilouEscapeHtml(p.name)}${p.extra_price > 0 ? ` (+$${p.extra_price})` : ""}</option>`).join('');
+            if(savedVal) boxSelect.value = savedVal;
+            renderPackageCards();
+            
+            const packBtn = document.getElementById('packBtn');
+            packBtn.className = "w-full bg-stone-300 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed transition-all duration-200";
+            packBtn.innerText = "請先選擇包裝與口味";
+            packBtn.disabled = true;
+            
+            const restoredDraft = restoreLilouDraftIfNeeded();
+            if (!restoredDraft) handleShippingMethodChange(); 
+            renderFlavorMenu(); 
+            renderCart();
+        }
+
+        function lilouPackageCapacityLabel(item) {
+            const size = Number(item.box_size) || 0;
+            if (size > 0) return `${size} 入`;
+            return item.packaging_type === 'single' ? '限定品項' : '自由搭配';
+        }
+
+        function renderPackageCards() {
+            const comboWrap = document.getElementById('comboPackageCards');
+            const limitedWrap = document.getElementById('limitedPackageCards');
+            if (!comboWrap || !limitedWrap) return;
+
+            const comboItems = localPackaging.filter(p => p.packaging_type !== 'single');
+            const limitedProducts = localProducts.filter(p => p.type === 'single');
+            const caneleProducts = localProducts.filter(p => p.type !== 'single');
+            const limitedTabCount = document.getElementById('limitedProductTabCount');
+            if (limitedTabCount) {
+                limitedTabCount.textContent = `${limitedProducts.length} 款`;
+                limitedTabCount.classList.toggle('hidden', limitedProducts.length === 0);
+            }
+            const caneleTabCount = document.getElementById('miniCaneleTabCount');
+            if (caneleTabCount) {
+                caneleTabCount.textContent = `${caneleProducts.length} 款`;
+                caneleTabCount.classList.toggle('hidden', caneleProducts.length === 0);
+            }
+            const categorySummary = products => {
+                const available = products.filter(p => Number(p.stock || 0) > 0);
+                const source = available.length ? available : products;
+                const names = source.slice(0, 3).map(p => p.name);
+                if (!names.length) return '目前尚無供應商品';
+                return `${names.join('・')}${source.length > 3 ? '等' : ''}`;
+            };
+            const limitedSummary = document.getElementById('limitedProductTabSummary');
+            if (limitedSummary) limitedSummary.textContent = categorySummary(limitedProducts);
+            const caneleSummary = document.getElementById('miniCaneleTabSummary');
+            if (caneleSummary) caneleSummary.textContent = categorySummary(caneleProducts);
+
+            comboWrap.innerHTML = comboItems.length ? comboItems.map((p) => `
+                <button type="button" data-package-name="${lilouEscapeHtml(p.name)}" onclick="selectPackageCard('${encodeURIComponent(p.name)}')" class="lilou-package-card text-left border border-stone-200 rounded-2xl bg-white px-4 py-4 min-h-[72px]" ${p.display === false ? 'disabled' : ''}>
+                    <div class="flex items-center gap-3">
+                        <span class="min-w-0 flex-1 font-black text-stone-900 text-sm md:text-base leading-snug">${lilouEscapeHtml(p.name)}</span>
+                        ${p.extra_price > 0 ? `<span class="lilou-item-price">+NT$${Number(p.extra_price).toLocaleString('zh-TW')}</span>` : ''}
+                        <span class="lilou-package-check w-5 h-5 rounded-full border border-stone-300 text-transparent flex items-center justify-center text-[10px] shrink-0">✓</span>
+                    </div>
+                </button>`).join('') : `<div class="sm:col-span-3 rounded-2xl border border-dashed border-stone-200 py-8 text-center text-sm font-bold text-stone-400">目前沒有可選擇的可麗露包裝。</div>`;
+
+            limitedWrap.innerHTML = limitedProducts.length ? limitedProducts.map((p) => {
+                const idx = localProducts.indexOf(p);
+                const qty = Number(limitedAddonQty[idx] || 0);
+                const used = getCartProductUsedQty(p.name);
+                const available = Math.max(0, Number(p.stock || 0) - used);
+                const stockText = available > 0 ? `剩 ${available}` : '已售完';
+                const shippingBadge = p.shipping_rule === 'pickup'
+                    ? `<span class="text-[10px] md:text-xs text-amber-600 font-black ml-1">僅自取</span>`
+                    : p.shipping_rule === 'delivery'
+                        ? `<span class="text-[10px] md:text-xs text-sky-600 font-black ml-1">僅宅配</span>`
+                        : '';
+                return `<div class="flex items-center justify-between py-3 gap-2">
+                    <div class="flex-1 min-w-0">
+                        <span class="font-bold text-stone-900 text-sm md:text-base break-words block">${lilouEscapeHtml(p.name)}</span>
+                        <span class="text-[#5B7290] font-black text-sm md:text-base">$${Number(p.price || 0).toLocaleString('zh-TW')}</span>
+                        <span class="text-[10px] md:text-xs ${available <= 0 ? 'text-red-500 font-bold' : 'text-stone-400'} ml-0.5">${stockText}</span>${shippingBadge}
+                    </div>
+                    <div class="no-zoom-area shrink-0 flex items-center bg-stone-100 rounded-xl p-1 border border-stone-200 gap-1 ${available <= 0 ? 'opacity-30 select-none' : ''}">
+                        <button type="button" onclick="changeLimitedAddonQty(${idx}, -1)" ${qty <= 0 || available <= 0 ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">—</button>
+                        <input type="number" value="${qty}" min="0" max="${available}" inputmode="numeric" ${available <= 0 ? 'disabled' : ''} oninput="setLimitedAddonQty(${idx}, this.value)" aria-label="${lilouEscapeHtml(p.name)}數量" style="width: 44px; height: 32px;" class="text-center text-base md:text-base font-black bg-transparent border-0 focus:outline-none text-stone-800">
+                        <button type="button" onclick="changeLimitedAddonQty(${idx}, 1)" ${qty >= available || available <= 0 ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">＋</button>
+                    </div>
+                </div>`;
+            }).join('') + (() => {
+                const totalSelected = limitedProducts.reduce((sum, product) => sum + Number(limitedAddonQty[localProducts.indexOf(product)] || 0), 0);
+                return `<div class="limited-bulk-footer space-y-3 pt-3">
+                    <button type="button" onclick="openNutritionSheet()" class="w-full h-11 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 active:bg-stone-100 transition-colors px-3.5 flex items-center justify-between gap-3 text-left">
+                        <span class="inline-flex items-center gap-2 min-w-0"><span class="w-5 h-5 rounded-full bg-[#5B7290]/10 text-[#5B7290] flex items-center justify-center text-xs font-black shrink-0">i</span><span class="text-xs md:text-sm font-black text-stone-700 tracking-wide truncate">查看成分與營養標示</span></span>
+                        <span class="text-stone-300 font-black text-lg leading-none shrink-0">›</span>
+                    </button>
+                    <button type="button" onclick="addSelectedLimitedAddonsToCart()" ${totalSelected <= 0 ? 'disabled' : ''} class="w-full h-12 rounded-xl bg-[#5B7290] text-white text-sm font-black tracking-widest disabled:bg-stone-200 disabled:text-stone-400 disabled:cursor-not-allowed">${totalSelected > 0 ? `加入限定商品至購物車（共 ${totalSelected} 件）` : '請選擇限定商品'}</button>
+                </div>`;
+            })() : `<div class="rounded-2xl border border-dashed border-stone-200 py-7 text-center text-sm font-bold text-stone-400">目前沒有限定商品。</div>`;
+
+            syncPackageCardState();
+        }
+
+        window.selectPackageCard = function(encodedName) {
+            const name = decodeURIComponent(encodedName);
+            const boxSelect = document.getElementById('boxSelect');
+            boxSelect.value = name;
+            handleBoxChange();
+        }
+
+        window.setLimitedAddonQty = function(productIdx, value) {
+            const product = localProducts[productIdx];
+            if (!product) return;
+            const available = Math.max(0, Number(product.stock || 0) - getCartProductUsedQty(product.name));
+            let qty = parseInt(value, 10) || 0;
+            qty = Math.max(0, Math.min(qty, available));
+            limitedAddonQty[productIdx] = qty;
+            renderPackageCards();
+        }
+
+        window.changeLimitedAddonQty = function(productIdx, change) {
+            window.setLimitedAddonQty(productIdx, Number(limitedAddonQty[productIdx] || 0) + change);
+        }
+
+        window.addSelectedLimitedAddonsToCart = function() {
+            const selected = localProducts
+                .map((product, idx) => ({ product, idx, qty: Number(limitedAddonQty[idx] || 0) }))
+                .filter(({ product, qty }) => product.type === 'single' && qty > 0);
+            if (!selected.length) return;
+
+            const flags = getCartShippingFlags();
+            for (const { product, qty } of selected) {
+                const available = Math.max(0, Number(product.stock || 0) - getCartProductUsedQty(product.name));
+                if (qty > available) {
+                    alert(`庫存不足！「${product.name}」目前最多可再購買 ${available} 個。`);
+                    renderPackageCards();
+                    return;
+                }
+                const rule = normalizeShippingRuleForFrontend(product.shipping_rule || 'all');
+                if ((flags.hasPickupOnly && rule === 'delivery') || (flags.hasDeliveryOnly && rule === 'pickup')) {
+                    alert('購物車同時包含僅門市自取與僅宅配商品，請分開下單。');
+                    return;
+                }
+            }
+
+            const singlePackaging = localPackaging.find(p => p.packaging_type === 'single');
+            selected.forEach(({ product, idx, qty }) => {
+                const existing = cart.find(box => isSingleCartItem(box) && box.flavors?.[0]?.name === product.name);
+                if (existing) {
+                    existing.flavors[0].quantity = Number(existing.flavors[0].quantity || 0) + qty;
+                    existing.totalQty = existing.flavors[0].quantity;
+                    existing.singleBoxQty = existing.totalQty;
+                    existing.flavorsCost = Number(product.price || 0) * existing.totalQty;
+                    existing.boxTotalCost = existing.flavorsCost + Number(existing.boxExtra || 0);
+                    existing.singleBoxCost = existing.boxTotalCost;
+                } else {
+                    cart.push({
+                        itemType: 'single',
+                        boxName: singlePackaging?.name || '限定商品',
+                        boxExtra: Number(singlePackaging?.extra_price || 0),
+                        repeatQty: 1,
+                        flavors: [{ name: product.name, price: product.price, quantity: qty, shipping_rule: normalizeShippingRuleForFrontend(product.shipping_rule || 'all') }],
+                        flavorsCost: Number(product.price || 0) * qty,
+                        totalQty: qty,
+                        singleBoxQty: qty,
+                        boxTotalCost: Number(product.price || 0) * qty + Number(singlePackaging?.extra_price || 0),
+                        singleBoxCost: Number(product.price || 0) * qty + Number(singlePackaging?.extra_price || 0)
+                    });
+                }
+                limitedAddonQty[idx] = 0;
+            });
+            renderFlavorMenu();
+            renderCart();
+            renderPackageCards();
+            scheduleLilouDraftSave();
+            const total = selected.reduce((sum, item) => sum + item.qty, 0);
+            showToastNotification(`已加入 ${total} 件限定商品`);
+        }
+
+        window.addLimitedAddonToCart = function(productIdx) {
+            const product = localProducts[productIdx];
+            const qty = Number(limitedAddonQty[productIdx] || 0);
+            if (!product || qty <= 0) return;
+            const available = Math.max(0, Number(product.stock || 0) - getCartProductUsedQty(product.name));
+            if (qty > available) {
+                alert(`庫存不足！「${product.name}」目前最多可再購買 ${available} 個。`);
+                renderPackageCards();
+                return;
+            }
+            const flags = getCartShippingFlags();
+            const rule = normalizeShippingRuleForFrontend(product.shipping_rule || 'all');
+            if ((flags.hasPickupOnly && rule === 'delivery') || (flags.hasDeliveryOnly && rule === 'pickup')) {
+                alert('購物車同時包含僅門市自取與僅宅配商品，請分開下單。');
+                return;
+            }
+            const singlePackaging = localPackaging.find(p => p.packaging_type === 'single');
+            const boxName = singlePackaging?.name || '限定商品';
+            cart.push({
+                itemType: 'single',
+                boxName,
+                boxExtra: Number(singlePackaging?.extra_price || 0),
+                repeatQty: 1,
+                flavors: [{ name: product.name, price: product.price, quantity: qty, shipping_rule: rule }],
+                flavorsCost: Number(product.price || 0) * qty,
+                totalQty: qty,
+                singleBoxQty: qty,
+                boxTotalCost: Number(product.price || 0) * qty + Number(singlePackaging?.extra_price || 0),
+                singleBoxCost: Number(product.price || 0) * qty + Number(singlePackaging?.extra_price || 0)
+            });
+            limitedAddonQty[productIdx] = 0;
+            renderFlavorMenu();
+            renderCart();
+            renderPackageCards();
+            scheduleLilouDraftSave();
+            showToastNotification(`已加入購物車：${product.name} × ${qty}`);
+        }
+
+        window.switchProductTab = function(tabName, options = {}) {
+            const showLimited = tabName === 'limited';
+            const canelePanel = document.getElementById('customBoxSection');
+            const limitedPanel = document.getElementById('limitedProductSection');
+            const caneleTab = document.getElementById('miniCaneleTab');
+            const limitedTab = document.getElementById('limitedProductTab');
+
+            if (canelePanel) canelePanel.hidden = showLimited;
+            if (limitedPanel) limitedPanel.hidden = !showLimited;
+
+            if (caneleTab) {
+                caneleTab.classList.toggle('is-active', !showLimited);
+                caneleTab.setAttribute('aria-selected', String(!showLimited));
+            }
+            if (limitedTab) {
+                limitedTab.classList.toggle('is-active', showLimited);
+                limitedTab.setAttribute('aria-selected', String(showLimited));
+            }
+
+            if (options.scroll) {
+                document.getElementById('productTabsCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function syncPackageCardState() {
+            const selected = document.getElementById('boxSelect')?.value || '';
+            document.querySelectorAll('[data-package-name]').forEach(card => {
+                card.classList.toggle('is-selected', card.getAttribute('data-package-name') === selected);
+            });
+            const summary = document.getElementById('selectedPackageSummary');
+            if (summary) summary.textContent = selected || '尚未選擇';
+        }
+
+        window.scrollToCustomBox = function() {
+            switchProductTab('canele', { scroll: true });
+        }
+
+        window.scrollToLimitedProducts = function() {
+            switchProductTab('limited', { scroll: true });
+        }
+
+        function renderFlavorMenu() {
+            const fMenu = document.getElementById('flavorMenu'); 
+            const boxSelect = document.getElementById('boxSelect');
+            const isBoxNotSelected = (boxSelect.value === ""); 
+            const selectedOption = boxSelect.selectedOptions && boxSelect.selectedOptions[0];
+            const selectedPackagingType = selectedOption ? (selectedOption.getAttribute('data-packaging-type') || 'combo') : '';
+            const targetType = selectedPackagingType === 'single' ? 'single' : 'combo';
+            const visibleProducts = localProducts
+                .map((p, originalIdx) => ({ p, originalIdx }))
+                .filter(({ p }) => isBoxNotSelected || p.type === targetType);
+
+            if (!visibleProducts.length) {
+                fMenu.innerHTML = `<div class="py-5 text-center text-xs md:text-sm text-stone-400 font-bold">目前沒有可顯示的商品。</div>`;
+                calculateCurrentBoxTotal(null);
+                return;
+            }
+            
+            fMenu.innerHTML = visibleProducts.map(({ p, originalIdx }) => {
+                let occupiedInCart = 0; 
+                cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === p.name); if (matchFlavor) occupiedInCart += (Number(matchFlavor.quantity) || 0) * (Number(savedBox.repeatQty) || 1); });
+                const virtualStock = p.stock - occupiedInCart; 
+                const shouldDisable = virtualStock <= 0 || isBoxNotSelected; 
+                let statusText = virtualStock <= 0 ? '已售完' : '剩 ' + virtualStock;
+                const shippingBadge = p.shipping_rule === 'pickup'
+                    ? `<span class="text-[10px] md:text-xs text-amber-600 font-black ml-1">僅自取</span>`
+                    : p.shipping_rule === 'delivery'
+                        ? `<span class="text-[10px] md:text-xs text-sky-600 font-black ml-1">僅宅配</span>`
+                        : '';
+                
+                return `
+                <div class="flex items-center justify-between py-3 gap-2">
+                    <div class="flex-1 min-w-0">
+                        <span class="font-bold text-stone-900 text-sm md:text-base break-words block">${lilouEscapeHtml(p.name)}</span>
+                        <span class="text-[#5B7290] font-black text-sm md:text-base">$${p.price}</span>
+                        <span class="text-[10px] md:text-xs ${virtualStock <= 0 ? 'text-red-500 font-bold' : 'text-stone-400'} ml-0.5">${statusText}</span>${shippingBadge}
+                    </div>
+                    <div class="no-zoom-area shrink-0 flex items-center bg-stone-100 rounded-xl p-1 border border-stone-200 gap-1 ${(isBoxNotSelected || shouldDisable) ? 'opacity-30 select-none' : ''}">
+                        <button type="button" onpointerdown="startLilouStepperPress(event, 'stepFlavorQty', [${originalIdx}, -1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">—</button>
+                        <input type="number" id="flavorQty_${originalIdx}" data-idx="${originalIdx}" min="0" max="${virtualStock >= 0 ? virtualStock : 0}" value="0" ${shouldDisable ? 'disabled' : ''} oninput="handleFlavorInput(this, ${originalIdx})" onblur="handleFlavorBlur(this)" style="width: 44px; height: 32px;" class="flavor-input text-center text-base md:text-base font-black bg-transparent border-0 focus:outline-none text-stone-800">
+                        <button type="button" id="plusBtn_${originalIdx}" onpointerdown="startLilouStepperPress(event, 'stepFlavorQty', [${originalIdx}, 1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">＋</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+                window.stepFlavorQty = function(idx, change) { 
+            const input = document.getElementById(`flavorQty_${idx}`); 
+            if (!input) return; 
+            let currentVal = parseInt(input.value) || 0; 
+            let newVal = currentVal + change; 
+            const maxStock = parseInt(input.max) || 0; 
+            if (newVal < 0) newVal = 0; 
+            if (newVal > maxStock) newVal = maxStock; 
+            input.value = newVal; 
+            calculateCurrentBoxTotal(input, idx, currentVal); 
+        }
+
+        window.handleFlavorInput = function(inputObj, idx) {
+            let newVal = inputObj.value;
+            if (newVal === "") return;
+            
+            let parsedVal = parseInt(newVal) || 0;
+            if (parsedVal < 0) parsedVal = 0;
+            
+            const maxAllowed = parseInt(inputObj.max) || 0;
+            let currentTotalWithoutSelf = 0;
+            document.querySelectorAll('.flavor-input').forEach(inp => {
+                if(inp !== inputObj) currentTotalWithoutSelf += (parseInt(inp.value) || 0);
+            });
+
+            if (currentBoxLimit && (currentTotalWithoutSelf + parsedVal) > currentBoxLimit) {
+                const maxSelfAllowedByBox = currentBoxLimit - currentTotalWithoutSelf;
+                alert(`數量超標！此組合限制容量為 ${currentBoxLimit} 個。`);
+                parsedVal = maxSelfAllowedByBox < 0 ? 0 : maxSelfAllowedByBox;
+            }
+
+            if (parsedVal > maxAllowed) {
+                alert(`數量超過目前剩餘可用庫存上限！`);
+                parsedVal = maxAllowed;
+            }
+
+            inputObj.value = parsedVal;
+            calculateCurrentBoxTotal(null);
+        }
+
+        window.handleFlavorBlur = function(inputObj) {
+            if (inputObj.value === "") inputObj.value = "0";
+            calculateCurrentBoxTotal(null);
+        }
+        
+        function getCurrentFlavorSummary() {
+            const selected = [];
+            document.querySelectorAll('.flavor-input').forEach(input => {
+                const qty = Number(input.value || 0);
+                if (qty <= 0) return;
+                const product = localProducts[Number(input.dataset.idx)];
+                if (product) selected.push(`${product.name} ×${qty}`);
+            });
+            return selected;
+        }
+
+        function updateFlavorComposerUI() {
+            const boxSelect = document.getElementById('boxSelect');
+            const hasPackage = !!boxSelect?.value;
+            const panel = document.getElementById('flavorComposerPanel');
+            const packBtn = document.getElementById('packBtn');
+            const selected = getCurrentFlavorSummary();
+            const total = selected.reduce((sum, item) => sum + Number((item.match(/×(\d+)$/) || [0,0])[1]), 0);
+            const complete = hasPackage && (currentBoxLimit ? total === currentBoxLimit : total > 0);
+
+            if (panel) panel.classList.add('is-open');
+            if (packBtn) {
+                packBtn.disabled = !complete;
+                packBtn.innerText = complete ? '加入購物車' : (hasPackage ? '請完成口味選擇' : '請先選擇包裝');
+                packBtn.className = complete
+                    ? "w-full bg-[#5B7290] text-white font-extrabold tracking-widest h-12 rounded-xl hover:bg-[#3E4F66] transition-colors text-sm md:text-base uppercase shadow-xs cursor-pointer"
+                    : "w-full bg-stone-300 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed transition-all duration-200";
+            }
+        }
+
+        window.handleBoxChange = function() { 
+            const boxSelect = document.getElementById('boxSelect'); 
+            const selectedOption = boxSelect.selectedOptions && boxSelect.selectedOptions[0];
+            if (boxSelect.value !== "" && selectedOption) {
+                const explicitBoxSize = Number(selectedOption.getAttribute('data-box-size')) || 0;
+                currentBoxLimit = explicitBoxSize > 0 ? explicitBoxSize : null;
+            } else {
+                currentBoxLimit = null;
+            }
+            
+            const selectedPackagingType = selectedOption ? (selectedOption.getAttribute('data-packaging-type') || 'combo') : 'combo';
+            const targetType = selectedPackagingType === 'single' ? 'single' : 'combo';
+            let hasViolation = false; 
+            document.querySelectorAll('.flavor-input').forEach(input => {
+                const idx = parseInt(input.getAttribute('data-idx'));
+                const product = localProducts[idx];
+                if (product && parseInt(input.value) > 0 && product.type !== targetType) hasViolation = true;
+            });
+            
+            if (hasViolation) { 
+                alert("已為您切換商品類型，系統會重設目前輸入的甜點欄位。"); 
+                document.querySelectorAll('.flavor-input').forEach(input => input.value = "0"); 
+            } 
+            
+            document.querySelectorAll('.flavor-input').forEach(input => { if(boxSelect.value === "") input.value = "0"; }); 
+            renderFlavorMenu(); 
+            syncPackageCardState();
+            calculateTotal(); 
+            calculateCurrentBoxTotal(null);
+            updateFlavorComposerUI();
+            if (boxSelect.value) {
+                setTimeout(() => document.getElementById('flavorComposerPanel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 30);
+            }
+        }
+        
+                function calculateCurrentBoxTotal(currentInputObj, changedIdx = null, previousVal = 0) { 
+            const inputs = document.querySelectorAll('.flavor-input'); 
+            let currentTotal = 0; 
+            inputs.forEach(input => { currentTotal += (parseInt(input.value) || 0); }); 
+            
+            if (currentBoxLimit && currentTotal > currentBoxLimit) { 
+                if (currentInputObj && changedIdx !== null) { 
+                    alert(`數量超標！此組合限制容量為 ${currentBoxLimit} 個。`); 
+                    currentInputObj.value = previousVal; 
+                    currentTotal = 0; 
+                    inputs.forEach(input => { currentTotal += (parseInt(input.value) || 0); }); 
+                } 
+            } 
+            
+            const display = document.getElementById('currentBoxCountDisplay'); 
+            if (currentBoxLimit) { 
+                display.innerText = `已選: ${currentTotal} / ${currentBoxLimit} 個`; 
+                inputs.forEach(input => { 
+                    const idx = parseInt(input.getAttribute('data-idx')); 
+                    const product = localProducts[idx]; 
+                    if (!product) return; 
+                    let occupiedInCart = 0; 
+                    cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === product.name); if (matchFlavor) occupiedInCart += (Number(matchFlavor.quantity) || 0) * (Number(savedBox.repeatQty) || 1); }); 
+                    const virtualStock = product.stock - occupiedInCart; 
+                    const selfValue = parseInt(input.value) || 0; 
+                    let allowedMax = selfValue + (currentBoxLimit - currentTotal); 
+                    if (allowedMax > virtualStock) allowedMax = virtualStock; 
+                    input.max = allowedMax >= 0 ? allowedMax : 0; 
+                }); 
+            } else { 
+                const boxSelect = document.getElementById('boxSelect'); 
+                display.innerText = boxSelect.value === "" ? "請先挑選包裝類型" : `已選: ${currentTotal} 個`; 
+            } 
+            updateFlavorComposerUI();
+            return currentTotal; 
+        }
+        
+
+        window.changeRepeatBoxQty = function(change) {
+            const input = document.getElementById('repeatBoxQty');
+            if (!input) return;
+            let value = parseInt(input.value) || 1;
+            value += change;
+            if (value < 1) value = 1;
+            if (value > 99) value = 99;
+            input.value = value;
+        }
+
+
+        let lilouStepperTimer = null;
+        let lilouStepperDelayTimer = null;
+
+        window.stopLilouStepperPress = function() {
+            if (lilouStepperDelayTimer) {
+                clearTimeout(lilouStepperDelayTimer);
+                lilouStepperDelayTimer = null;
+            }
+            if (lilouStepperTimer) {
+                clearInterval(lilouStepperTimer);
+                lilouStepperTimer = null;
+            }
+        }
+
+        window.startLilouStepperPress = function(event, functionName, args = []) {
+            const target = event?.currentTarget;
+            if (target && target.disabled) return;
+            if (event) event.preventDefault();
+
+            window.stopLilouStepperPress();
+
+            const runStep = () => {
+                const fn = window[functionName];
+                if (typeof fn === 'function') fn(...args);
+            };
+
+            runStep();
+
+            lilouStepperDelayTimer = setTimeout(() => {
+                lilouStepperTimer = setInterval(runStep, 95);
+            }, 360);
+        }
+
+        window.handleRepeatBoxInput = function(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value === '') {
+                input.value = '';
+                return;
+            }
+            let parsed = parseInt(value) || 1;
+            if (parsed < 1) parsed = 1;
+            if (parsed > 99) parsed = 99;
+            input.value = parsed;
+        }
+
+        window.handleRepeatBoxBlur = function(input) {
+            let parsed = parseInt(input.value) || 1;
+            if (parsed < 1) parsed = 1;
+            if (parsed > 99) parsed = 99;
+            input.value = parsed;
+        }
+
+        window.packBoxToCart = function() { 
+            const boxSelect = document.getElementById('boxSelect'); 
+            if(boxSelect.value === "") { alert("請先挑選要使用的包裝類型！"); return; } 
+            const boxName = boxSelect.value; 
+            const boxExtra = parseInt(boxSelect.selectedOptions[0].getAttribute('data-extra')) || 0; 
+            const repeatQty = 1;
+            const inputs = document.querySelectorAll('.flavor-input'); 
+            let boxFlavors = []; 
+            let totalFlavorsCountInBox = 0; 
+            let boxFlavorsCost = 0; 
+            let hasError = false; 
+            for (let input of inputs) { 
+                const qty = parseInt(input.value) || 0; 
+                if (qty > 0) { 
+                    const idx = parseInt(input.getAttribute('data-idx')); 
+                    const product = localProducts[idx]; 
+                    let occupiedInCart = 0; 
+                    cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === product.name); if (matchFlavor) occupiedInCart += (Number(matchFlavor.quantity) || 0) * (Number(savedBox.repeatQty) || 1); }); 
+                    const virtualStock = product.stock - occupiedInCart; 
+                    if ((qty * repeatQty) > virtualStock) { alert(`庫存不足！「${product.name}」重複 ${repeatQty} 組後需要 ${qty * repeatQty} 個，目前最多只能再填入 ${virtualStock >= 0 ? virtualStock : 0} 個。`); hasError = true; break; } 
+                    boxFlavors.push({ name: product.name, price: product.price, quantity: qty, shipping_rule: normalizeShippingRuleForFrontend(product.shipping_rule || "all") }); 
+                    totalFlavorsCountInBox += qty; 
+                    boxFlavorsCost += (product.price * qty); 
+                } 
+            } 
+            if (hasError) return; 
+            if(totalFlavorsCountInBox === 0) { alert("此組合內還沒有放入任何甜點喔！"); return; } 
+            const existingFlags = getCartShippingFlags();
+            const newHasPickupOnly = boxFlavors.some(f => normalizeShippingRuleForFrontend(f.shipping_rule || "all") === "pickup");
+            const newHasDeliveryOnly = boxFlavors.some(f => normalizeShippingRuleForFrontend(f.shipping_rule || "all") === "delivery");
+            if ((existingFlags.hasPickupOnly && newHasDeliveryOnly) || (existingFlags.hasDeliveryOnly && newHasPickupOnly) || (newHasPickupOnly && newHasDeliveryOnly)) {
+                alert("此組合會同時包含僅門市自取與僅宅配商品，請分開下單。");
+                return;
+            }
+
+            if (currentBoxLimit && totalFlavorsCountInBox !== currentBoxLimit) { alert(`數量不符！「${boxName}」必須剛好裝滿 ${currentBoxLimit} 個品項。`); return; } 
+            
+            const packBtn = document.getElementById('packBtn');
+            packBtn.disabled = true;
+            packBtn.innerText = "✨ 正在將美味組合打包中...";
+            packBtn.className = "w-full bg-[#3E4F66] text-white font-extrabold tracking-widest h-12 rounded-xl transition-all text-sm md:text-base uppercase shadow-inner animate-pulse scale-98";
+
+            setTimeout(() => {
+                cart.push({ 
+                    boxName: boxName, 
+                    boxExtra: boxExtra, 
+                    repeatQty: repeatQty,
+                    flavors: boxFlavors, 
+                    flavorsCost: boxFlavorsCost, 
+                    totalQty: totalFlavorsCountInBox * repeatQty, 
+                    singleBoxQty: totalFlavorsCountInBox,
+                    boxTotalCost: (boxFlavorsCost + boxExtra) * repeatQty,
+                    singleBoxCost: boxFlavorsCost + boxExtra
+                }); 
+                boxSelect.value = ""; 
+                currentBoxLimit = null; 
+                syncPackageCardState();
+                renderFlavorMenu(); 
+                renderCart(); 
+                scheduleLilouDraftSave();
+                showToastNotification(`已加入購物車：【${boxName}】`);
+                updateFlavorComposerUI();
+            }, 600);
+        }
+
+        function showToastNotification(message) {
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-6 left-1/2 -translate-x-1/2 bg-stone-900/95 text-white font-bold px-5 py-3.5 rounded-2xl shadow-xl z-50 text-xs md:text-sm tracking-wide flex items-center gap-2 border border-stone-800 transition-all duration-300 transform translate-y-10 opacity-0";
+            toast.innerHTML = `<span>${message}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 50);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        window.removeFromCart = function(cartIdx) { cart.splice(cartIdx, 1); renderFlavorMenu(); renderCart(); scheduleLilouDraftSave(); }
+
+        function getCartProductUsedQty(productName, excludeCartIdx = -1) {
+            return cart.reduce((sum, box, idx) => {
+                if (idx === excludeCartIdx) return sum;
+                const repeatQty = Number(box.repeatQty) || 1;
+                const match = (box.flavors || []).find(f => f.name === productName);
+                return sum + (match ? (Number(match.quantity) || 0) * repeatQty : 0);
+            }, 0);
+        }
+
+        function getCartBoxRepeatMax(cartIdx) {
+            const box = cart[cartIdx];
+            if (!box) return 1;
+            let maxRepeat = 99;
+            (box.flavors || []).forEach(f => {
+                const product = localProducts.find(p => p.name === f.name);
+                if (!product) return;
+                const perBoxQty = Number(f.quantity) || 0;
+                if (!perBoxQty) return;
+                const usedByOthers = getCartProductUsedQty(f.name, cartIdx);
+                const availableForThisBox = Math.max(0, (Number(product.stock) || 0) - usedByOthers);
+                maxRepeat = Math.min(maxRepeat, Math.floor(availableForThisBox / perBoxQty));
+            });
+            return Math.max(1, maxRepeat);
+        }
+
+        function setCartBoxRepeatQty(cartIdx, nextQty, showAlert = true) {
+            const box = cart[cartIdx];
+            if (!box) return;
+            const maxRepeat = getCartBoxRepeatMax(cartIdx);
+            let value = parseInt(nextQty, 10) || 1;
+            if (value < 1) value = 1;
+            if (value > maxRepeat) {
+                value = maxRepeat;
+                if (showAlert) showToastNotification(`此組合目前最多可購買 ${maxRepeat} 組`);
+            }
+            box.repeatQty = value;
+            box.totalQty = (Number(box.singleBoxQty) || (box.flavors || []).reduce((sum, f) => sum + (Number(f.quantity) || 0), 0)) * value;
+            box.boxTotalCost = (Number(box.singleBoxCost) || ((Number(box.flavorsCost) || 0) + (Number(box.boxExtra) || 0))) * value;
+            renderFlavorMenu();
+            renderCart();
+            scheduleLilouDraftSave();
+        }
+
+        window.changeCartBoxRepeatQty = function(cartIdx, change) {
+            const box = cart[cartIdx];
+            if (!box) return;
+            setCartBoxRepeatQty(cartIdx, (Number(box.repeatQty) || 1) + change, true);
+        }
+
+        window.handleCartRepeatInput = function(input, cartIdx) {
+            let value = (input.value || '').toString().replace(/\D/g, '');
+            if (value === '') { input.value = ''; return; }
+            const maxRepeat = getCartBoxRepeatMax(cartIdx);
+            let parsed = parseInt(value, 10) || 1;
+            if (parsed < 1) parsed = 1;
+            if (parsed > maxRepeat) parsed = maxRepeat;
+            input.value = parsed;
+            setCartBoxRepeatQty(cartIdx, parsed, false);
+        }
+
+        window.handleCartRepeatBlur = function(input, cartIdx) {
+            setCartBoxRepeatQty(cartIdx, parseInt(input.value, 10) || 1, false);
+        }
+
+        function updateFloatingCartButton() {
+            const button = document.getElementById('floatingCartButton');
+            const count = document.getElementById('floatingCartCount');
+            if (!button || !count) return;
+            const totalGroups = cart.reduce((sum, item) => sum + (Number(item.repeatQty) || 1), 0);
+            count.textContent = totalGroups;
+            button.classList.toggle('is-visible', totalGroups > 0 && !document.getElementById('shopContentWrapper')?.classList.contains('hidden'));
+        }
+
+        function isSingleCartItem(box) {
+            if (!box) return false;
+            if (box.itemType === 'single') return true;
+            const flavors = Array.isArray(box.flavors) ? box.flavors : [];
+            if (flavors.length !== 1) return false;
+            const product = localProducts.find(p => p.name === flavors[0].name);
+            return product?.type === 'single';
+        }
+
+        function renderCart() { 
+            const container = document.getElementById('cartListContainer'); 
+            const orderForm = document.getElementById('orderForm');
+            if (orderForm) orderForm.classList.toggle('hidden', cart.length === 0);
+            if(cart.length === 0) {
+                updateFloatingCartButton();
+                container.innerHTML = `<p class="text-stone-400 text-center py-6 text-xs md:text-base">購物車目前空空的喔！</p>`; 
+                updateShippingSelectAvailability();
+                calculateTotal(); 
+                return; 
+            } 
+            enforcePickupOnlyShipping(false);
+            updateShippingSelectAvailability();
+            updateFloatingCartButton();
+
+            container.innerHTML = cart.map((box, i) => {
+                const singleItem = isSingleCartItem(box);
+                const flavors = Array.isArray(box.flavors) ? box.flavors : [];
+
+                if (singleItem) {
+                    const item = flavors[0] || {};
+                    const qty = Number(item.quantity) || Number(box.totalQty) || 1;
+                    const itemTotal = (Number(item.price) || 0) * qty + (Number(box.boxExtra) || 0);
+                    box.repeatQty = 1;
+                    box.singleBoxQty = qty;
+                    box.totalQty = qty;
+                    box.singleBoxCost = itemTotal;
+                    box.boxTotalCost = itemTotal;
+
+                    return `
+                    <div class="border border-stone-200 rounded-xl p-3 md:p-4 bg-stone-50/50">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="min-w-0 flex-1">
+                                <div class="font-extrabold text-sm md:text-base text-stone-900 tracking-wide truncate">${lilouEscapeHtml(item.name || box.boxName)}</div>
+                                <div class="text-xs md:text-sm text-stone-500 font-bold mt-1">× ${qty}</div>
+                            </div>
+                            <div class="flex items-center gap-3 shrink-0">
+                                <div class="font-black text-sm md:text-base text-stone-950">$${itemTotal}</div>
+                                <button type="button" onclick="removeFromCart(${i})" aria-label="刪除 ${lilouEscapeHtml(item.name || box.boxName)}" class="bg-stone-100 text-stone-400 p-1.5 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center font-bold text-xs md:text-sm cursor-pointer">✕</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+
+                const repeatQty = Number(box.repeatQty) || 1;
+                const maxRepeat = getCartBoxRepeatMax(i);
+                const flavorDetailHtml = flavors.map(f => `${lilouEscapeHtml(f.name)} × ${Number(f.quantity) || 0}`).join('、');
+                const singleCost = Number(box.singleBoxCost) || ((Number(box.flavorsCost) || 0) + (Number(box.boxExtra) || 0));
+                const boxTotalCost = singleCost * repeatQty;
+                box.boxTotalCost = boxTotalCost;
+                box.totalQty = (Number(box.singleBoxQty) || flavors.reduce((sum, f) => sum + (Number(f.quantity) || 0), 0)) * repeatQty;
+                const limitHint = maxRepeat <= repeatQty ? `<div class="text-[11px] text-amber-600 font-bold mt-1">已達目前可購買上限</div>` : "";
+
+                return `
+                <div class="border border-stone-200 rounded-xl p-3 md:p-4 bg-stone-50/50 space-y-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex-1 min-w-0 space-y-0.5">
+                            <div class="font-extrabold text-sm md:text-base text-stone-900 tracking-wide">${lilouEscapeHtml(box.boxName)}</div>
+                            <div class="text-xs md:text-sm text-[#5B7290] font-bold leading-relaxed break-words">${flavorDetailHtml}</div>
+                        </div>
+                        <button type="button" onclick="removeFromCart(${i})" aria-label="刪除 ${lilouEscapeHtml(box.boxName)}" class="bg-stone-100 text-stone-400 p-1.5 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center font-bold text-xs md:text-sm cursor-pointer shrink-0">✕</button>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-3 border-t border-stone-200 pt-3">
+                        <div class="space-y-1">
+                            <div class="no-zoom-area flex items-center bg-white rounded-xl p-1 border border-stone-200 gap-1 w-fit">
+                                <button type="button" onpointerdown="startLilouStepperPress(event, 'changeCartBoxRepeatQty', [${i}, -1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${repeatQty <= 1 ? 'disabled' : ''} style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm">—</button>
+                                <input type="number" min="1" max="${maxRepeat}" value="${repeatQty}" inputmode="numeric" oninput="handleCartRepeatInput(this, ${i})" onblur="handleCartRepeatBlur(this, ${i})" style="width: 52px; height: 34px;" class="text-center text-base font-black bg-transparent border-0 focus:outline-none text-stone-800">
+                                <button type="button" onpointerdown="startLilouStepperPress(event, 'changeCartBoxRepeatQty', [${i}, 1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${repeatQty >= maxRepeat ? 'disabled' : ''} style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm">＋</button>
+                            </div>
+                            ${limitHint}
+                        </div>
+                        <div class="text-right">
+                            <div class="font-black text-sm md:text-base text-stone-950">$${boxTotalCost}</div>
+                            ${repeatQty > 1 ? `<div class="text-[11px] text-stone-400 font-bold mt-0.5">$${singleCost} / 組</div>` : ""}
+                        </div>
+                    </div>
+                </div>`;
+            }).join(''); 
+            calculateTotal(); 
+        }
+
+        function calculateTotal() { 
+            let subtotal = 0; 
+            cart.forEach(box => subtotal += box.boxTotalCost); 
+            document.getElementById('subtotalDisplay').innerText = `$${subtotal}`; 
+            const shipMethod = document.getElementById('shipMethod').value; 
+            let finalTotal = subtotal; 
+            if(lilouIsDeliveryMethod(shipMethod)) finalTotal += shippingFee; 
+            if (appliedCoupon) { 
+                const minSpendRequirement = Number(appliedCoupon.min_spend) || 0; 
+                if (subtotal < minSpendRequirement) { 
+                    appliedCoupon = null; 
+                    const msgElement = document.getElementById('couponMessage'); 
+                    msgElement.innerText = `✕ 金額未達門檻 ${minSpendRequirement} 元，已取消折抵。`; 
+                    msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-orange-500"; 
+                } 
+            } 
+            let discountAmount = 0; 
+            const couponDisplay = document.getElementById('couponDiscountDisplay'); 
+            if (appliedCoupon && subtotal > 0) { 
+                if (appliedCoupon.type === 'minus') discountAmount = Number(appliedCoupon.value) || 0; 
+                else if (appliedCoupon.type === 'discount') discountAmount = Math.round(subtotal * (1 - Number(appliedCoupon.value))); 
+                if (discountAmount > finalTotal) discountAmount = finalTotal; 
+                finalTotal -= discountAmount; 
+                couponDisplay.querySelector('span').innerText = `-$${discountAmount}`; 
+                couponDisplay.classList.remove('hidden'); 
+            } else { couponDisplay.classList.add('hidden'); } 
+            document.getElementById('totalDisplay').innerText = `$${finalTotal}`; 
+            return finalTotal; 
+        }
+        
+
+        function getOrderAmountSummary() {
+            const subtotal = cart.reduce((sum, box) => sum + (Number(box.boxTotalCost) || 0), 0);
+            const shipMethodVal = document.getElementById('shipMethod').value;
+            const shippingFeeValue = lilouIsDeliveryMethod(shipMethodVal) ? shippingFee : 0;
+            let discountAmount = 0;
+            if (appliedCoupon && subtotal > 0) {
+                if (appliedCoupon.type === 'minus') discountAmount = Number(appliedCoupon.value) || 0;
+                else if (appliedCoupon.type === 'discount') discountAmount = Math.round(subtotal * (1 - Number(appliedCoupon.value)));
+                if (discountAmount > subtotal + shippingFeeValue) discountAmount = subtotal + shippingFeeValue;
+            }
+            return {
+                subtotal,
+                discountAmount,
+                shippingFee: shippingFeeValue,
+                total: subtotal + shippingFeeValue - discountAmount
+            };
+        }
+
+        function buildItemsDetailSnapshot() {
+            return cart.map((box, index) => {
+                const repeatQty = box.repeatQty || 1;
+                const repeatLabel = repeatQty > 1 ? ` ×${repeatQty}組` : "";
+                return {
+                    groupNo: index + 1,
+                    group: `第${index + 1}組｜${box.boxName}${repeatLabel}`,
+                    packageName: box.boxName,
+                    repeatQty: repeatQty,
+                    items: (box.flavors || []).map(f => {
+                        const qty = (Number(f.quantity) || 0) * repeatQty;
+                        const price = Number(f.price) || 0;
+                        return {
+                            name: f.name || "",
+                            price: price,
+                            qty: qty,
+                            subtotal: price * qty,
+                            shipping_rule: f.shipping_rule || "all"
+                        };
+                    })
+                };
+            });
+        }
+
+        function parseCouponDate(dateStr) {
+            if (!dateStr) return null;
+            const clean = dateStr.toString().trim().replace(/-/g, '/');
+            const parts = clean.split('/');
+            if (parts.length !== 3) return null;
+
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            const parsed = new Date(year, month, day);
+
+            if (isNaN(parsed.getTime())) return null;
+            parsed.setHours(0, 0, 0, 0);
+            return parsed;
+        }
+
+        function getCouponDateStatus(coupon) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const startDate = parseCouponDate(coupon.start_date);
+            const endDate = parseCouponDate(coupon.end_date);
+
+            if (startDate && today < startDate) {
+                return { valid: false, message: "✕ 折扣碼尚未開始。" };
+            }
+
+            if (endDate && today > endDate) {
+                return { valid: false, message: "✕ 折扣碼已過期。" };
+            }
+
+            return { valid: true, message: "" };
+        }
+
+        window.applyCouponCode = function(isUserClick = false) { 
+            const inputVal = document.getElementById('couponInput').value.trim().toLowerCase(); 
+            const msgElement = document.getElementById('couponMessage'); 
+
+            if (inputVal === "") { 
+                appliedCoupon = null; 
+                msgElement.classList.add('hidden'); 
+                calculateTotal(); 
+                return; 
+            } 
+
+            let subtotal = 0; 
+            cart.forEach(box => subtotal += box.boxTotalCost); 
+
+            const match = localCoupons.find(c => (c.code || "").toString().trim().toLowerCase() === inputVal); 
+            msgElement.classList.remove('hidden'); 
+
+            if (match) { 
+                const dateStatus = getCouponDateStatus(match);
+
+                if (!dateStatus.valid) {
+                    appliedCoupon = null;
+                    msgElement.innerText = dateStatus.message;
+                    msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-red-500";
+                    calculateTotal();
+                    return;
+                }
+
+                const minSpendRequirement = Number(match.min_spend) || 0; 
+
+                if (subtotal < minSpendRequirement) { 
+                    appliedCoupon = null; 
+                    msgElement.innerText = `✕ 最低消費需滿 ${minSpendRequirement} 元。`; 
+                    msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-orange-500"; 
+                } else { 
+                    appliedCoupon = match; 
+                    msgElement.innerText = `✓ 成功套用！(${match.type === 'minus' ? '現折 ' + match.value + ' 元' : '享 ' + (match.value * 10) + ' 折'})`; 
+                    msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-emerald-600"; 
+                } 
+            } else { 
+                appliedCoupon = null; 
+                msgElement.innerText = "✕ 折扣碼無效。"; 
+                msgElement.className = "text-xs md:text-sm font-bold mt-1.5 text-red-500"; 
+            } 
+
+            calculateTotal(); 
+            scheduleLilouDraftSave();
+        }
+
+        window.handleOrderSubmit = function(e) {
+            e.preventDefault();
+            if(cart.length === 0) { alert("購物車目前空空的喔！"); return; }
+            const custName = document.getElementById('custName').value.trim();
+            const custPhone = document.getElementById('custPhone').value.trim();
+            if (!/^09\d{8}$/.test(custPhone)) {
+                alert("請輸入正確的手機號碼（10碼，例如：0912345678）");
+                document.getElementById('custPhone').focus();
+                return;
+            }
+            const custEmail = document.getElementById('custEmail').value.trim();
+            const shipMethodVal = document.getElementById('shipMethod').value;
+
+            const shippingFlags = getCartShippingFlags();
+            if (shippingFlags.hasConflict) {
+                alert("購物車同時包含僅門市自取與僅宅配商品，請分開下單。");
+                return;
+            }
+            if (lilouIsDeliveryMethod(shipMethodVal) && shippingFlags.hasPickupOnly) {
+                alert("您的購物車包含僅門市自取商品，請改為門市自取付款。");
+                document.getElementById('shipMethod').value = 'store';
+                handleShippingMethodChange();
+                return;
+            }
+            if (shipMethodVal === 'store' && shippingFlags.hasDeliveryOnly) {
+                alert("您的購物車包含僅宅配商品，請改為 7-11取貨（信用卡付款）。");
+                document.getElementById('shipMethod').value = 'delivery';
+                handleShippingMethodChange();
+                return;
+            }
+            const rawShipDate = document.getElementById('shipDate').value;
+            if (!custEmail) { alert("請輸入 Email，方便接收訂單通知。"); return; }
+            if (!rawShipDate) { alert("請選擇預購取貨日期！"); return; }
+            
+            const shipDateWithWeekday = rawShipDate + getWeekdayStr(rawShipDate);
+            const custAddress = document.getElementById('custAddress').value.trim();
+            const finalTotal = calculateTotal();
+            const orderId = "TEMP-" + new Date().getTime();
+            const methodText = lilouIsDeliveryMethod(shipMethodVal) ? `${lilouShippingMethodDisplayLabel(shipMethodVal)} (${custAddress})` : `門市自取付款 (高雄市前鎮區景德路72巷12號)`;
+            
+            document.getElementById('overlayDateLabel').innerText = lilouIsDeliveryMethod(shipMethodVal) ? "希望到貨日期：" : "門市自取日期：";
+            document.getElementById('overlayMainTitle').innerText = "請再次確認取貨資訊";
+            document.getElementById('overlaySubTitle').innerText = "倒數結束前可隨時確認或調整";
+            document.getElementById('overlayBottomPrompt').innerText = "訂單準備送出中";
+            document.getElementById('countdownTimer').style.display = 'block';
+            document.getElementById('loadingAnimationBlock').style.display = 'none';
+            document.getElementById('overlayActionButtons').style.display = 'flex';
+            document.getElementById('overlayMethod').innerText = methodText;
+            document.getElementById('overlayDate').innerText = shipDateWithWeekday;
+            document.getElementById('overlayTotal').innerText = `$${finalTotal} 元`;
+            const overlayPaymentNotice = document.getElementById('overlayPaymentNotice');
+            if (overlayPaymentNotice) {
+                if (lilouIsPrepaidDeliveryMethod(shipMethodVal)) overlayPaymentNotice.classList.remove('hidden');
+                else overlayPaymentNotice.classList.add('hidden');
+            }
+
+            trackLilouEvent('begin_checkout', {
+                value: finalTotal,
+                currency: 'TWD',
+                shipping_method: lilouShippingMethodBackendValue(shipMethodVal)
+            });
+
+            pendingOrderSnapshot = { orderId, custName, custPhone, custEmail, shipDate: shipDateWithWeekday, shipMethodVal, custAddress, finalTotal };
+            countdownSeconds = 20; 
+            document.getElementById('countdownTimer').innerText = countdownSeconds;
+            document.getElementById('countdownOverlay').classList.remove('hidden');
+
+            submissionInterval = setInterval(() => {
+                countdownSeconds--;
+                if (countdownSeconds > 0) document.getElementById('countdownTimer').innerText = countdownSeconds;
+                else clearInterval(submissionInterval);
+            }, 1000);
+
+            submissionTimeout = setTimeout(async () => {
+                clearInterval(submissionInterval);
+                switchToLoadingState();
+                await executeBackendPost(orderId, custName, custPhone, custEmail, shipDateWithWeekday, shipMethodVal, custAddress, finalTotal);
+            }, 20000); 
+        }
+
+        window.switchToLoadingState = function() {
+            document.getElementById('overlayMainTitle').innerText = "預購單成立中";
+            document.getElementById('overlaySubTitle').innerText = "正在送出您的訂單";
+            document.getElementById('overlayBottomPrompt').innerText = "請勿關閉視窗或刷新網頁。";
+            document.getElementById('countdownTimer').style.display = 'none';
+            document.getElementById('overlayActionButtons').style.display = 'none';
+            document.getElementById('loadingAnimationBlock').style.display = 'block';
+        }
+
+        window.instantOrderSubmission = function() {
+            if (!pendingOrderSnapshot) return;
+            if (submissionTimeout) clearTimeout(submissionTimeout);
+            if (submissionInterval) clearInterval(submissionInterval);
+            switchToLoadingState();
+            const s = pendingOrderSnapshot;
+            const shippingFlags = getCartShippingFlags();
+            if (shippingFlags.hasConflict) {
+                alert("購物車同時包含僅門市自取與僅宅配商品，請分開下單。");
+                pendingOrderSnapshot = null;
+                return;
+            }
+            if (lilouIsDeliveryMethod(s.shipMethodVal) && shippingFlags.hasPickupOnly) {
+                alert("您的購物車包含僅門市自取商品，請改為門市自取付款。");
+                document.getElementById('shipMethod').value = 'store';
+                handleShippingMethodChange();
+                pendingOrderSnapshot = null;
+                return;
+            }
+            if (s.shipMethodVal === 'store' && shippingFlags.hasDeliveryOnly) {
+                alert("您的購物車包含僅宅配商品，請改為 7-11取貨（信用卡付款）。");
+                document.getElementById('shipMethod').value = 'delivery';
+                handleShippingMethodChange();
+                pendingOrderSnapshot = null;
+                return;
+            }
+            executeBackendPost(s.orderId, s.custName, s.custPhone, s.custEmail, s.shipDate, s.shipMethodVal, s.custAddress, s.finalTotal);
+            pendingOrderSnapshot = null;
+        }
+
+        async function executeBackendPost(orderId, custName, custPhone, custEmail, shipDate, shipMethodVal, custAddress, finalTotal) {
+            const orderProductSummary = cart.map((box, i) => { 
+                const repeatQty = box.repeatQty || 1;
+                const repeatLabel = repeatQty > 1 ? ` ×${repeatQty}組` : "";
+                const flavorsStr = box.flavors.map(f => {
+                    const displayQty = f.quantity * repeatQty;
+                    return repeatQty > 1 ? `${f.name}(${displayQty}個：${f.quantity}個×${repeatQty}組)` : `${f.name}(${f.quantity}個)`;
+                }).join('、'); 
+                return `【第${i+1}組: ${box.boxName}${repeatLabel}】${flavorsStr}`; 
+            }).join(' ｜ ');
+            const orderPackSummary = cart.map((box, i) => {
+                const repeatQty = box.repeatQty || 1;
+                return `[組${i+1}]${box.boxName}${repeatQty > 1 ? `×${repeatQty}組` : ""}`;
+            }).join('、');
+            const totalQtyAll = cart.reduce((sum, box) => sum + box.totalQty, 0);
+            const finalDatabaseAddress = shipMethodVal === 'store' ? "高雄市前鎮區景德路72巷12號" : custAddress;
+            const amountSummary = getOrderAmountSummary();
+            const itemsDetailSnapshot = buildItemsDetailSnapshot();
+
+            const orderData = {
+                action: "submitOrder", name: custName, phone: custPhone, email: custEmail, date: shipDate,
+                shipping_method: lilouShippingMethodBackendValue(shipMethodVal),
+                address: finalDatabaseAddress, product_name: orderProductSummary, quantity: totalQtyAll,
+                packaging_name: orderPackSummary, total_price: finalTotal,
+                subtotal_amount: amountSummary.subtotal,
+                discount_amount: amountSummary.discountAmount,
+                shipping_fee: amountSummary.shippingFee,
+                items_detail: JSON.stringify(itemsDetailSnapshot),
+                shipping_rules: JSON.stringify(cart.flatMap(box => (box.flavors || []).map(f => f.shipping_rule || "all"))),
+                note: document.getElementById('orderNote').value, coupon_code: appliedCoupon ? appliedCoupon.code : ""
+            };
+
+            try {
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(orderData) });
+                const result = await res.json();
+                document.getElementById('countdownOverlay').classList.add('hidden');
+                
+                if(result.status === "success") {
+                    const officialOrderId = result.orderId || orderId;
+                    const officialOrderDate = result.orderDate || "";
+
+                    trackLilouEvent('purchase', {
+                        transaction_id: officialOrderId,
+                        value: finalTotal,
+                        currency: 'TWD',
+                        shipping_method: lilouShippingMethodBackendValue(shipMethodVal)
+                    });
+                    document.getElementById('formContainer').classList.add('hidden');
+                    let cartDetailsHtml = cart.map((box, idx) => {
+                        const repeatQty = box.repeatQty || 1;
+                        const repeatLabel = repeatQty > 1 ? ` ×${repeatQty}組` : "";
+                        const flavorText = box.flavors.map(f => {
+                            const displayQty = f.quantity * repeatQty;
+                            return repeatQty > 1 ? `${f.name} x ${displayQty}個（${f.quantity}個 × ${repeatQty}組）` : `${f.name} x ${f.quantity}個`;
+                        }).join('、');
+                        return `<div>組合 ${idx + 1} [${box.boxName}${repeatLabel}]：${flavorText}</div>`;
+                    }).join('');
+                    
+                    document.getElementById('receiptContent').innerHTML = `
+                        <div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">重要提醒：請務必留存或截圖此訂購明細！方便您取貨時確認內容。</div>
+                        ${lilouIsPrepaidDeliveryMethod(shipMethodVal) ? `<div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">提醒您：7-11取貨（信用卡付款）的付款連結將另行寄送至您的 Email，請留意收件並於期限內完成付款。若未收到付款通知信件，也可以至網站左上角「查詢訂單」，輸入訂購時填寫的手機號碼後，點選付款按鈕完成付款。</div>` : ``}
+                        <div class="space-y-3 text-stone-700 text-sm font-mono">
+                            <div><strong>訂單編號：</strong>${officialOrderId}</div>
+                            ${officialOrderDate ? `<div><strong>下單日期：</strong>${officialOrderDate}</div>` : ``}
+                            <div><strong>顧客姓名：</strong>${custName}</div>
+                            <div><strong>聯絡電話：</strong>${custPhone}</div>
+                            <div><strong>Email：</strong>${custEmail}</div>
+                            <div><strong>取貨門市：</strong>${finalDatabaseAddress}</div>
+                            <div><strong>配送方式：</strong>${lilouShippingMethodDisplayLabel(shipMethodVal)}</div>
+                            <div><strong>預定日期：</strong>${shipDate}</div>
+                        </div>
+                        <div class="border-t border-dashed border-stone-200 my-4 pt-4 text-sm font-mono text-stone-600 space-y-1"><div class="font-bold text-stone-800 mb-1">購物明細：</div>${cartDetailsHtml}</div>
+                        <div class="text-right text-lg font-black text-[#5B7290] pt-2 border-t border-stone-100 mb-4">總金額：$${finalTotal} 元</div>
+                        <div class="text-sm font-medium text-stone-600 leading-relaxed bg-stone-50 border border-stone-200 p-4 rounded-xl">如需要修改訂單內容，請私訊官方 LINE 或 Instagram，我們將由人工為您調整。謝謝😀</div>
+                    `;
+                    document.getElementById('receiptContainer').classList.remove('hidden');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                    sharePlainText = `✨ Lilou 預購成功確認單 ✨\n\n訂單編號：${officialOrderId}\n顧客姓名：${custName}\n聯絡電話：${custPhone}\nEmail：${custEmail}\n配送方式：${lilouShippingMethodDisplayLabel(shipMethodVal)}\n預定日期：${shipDate}\n總金額：$${finalTotal} 元\n\n如有調整需求，請私訊官方官方，謝謝您的支持！`;
+                    cart = []; appliedCoupon = null; 
+                    clearLilouDraft();
+                } else if (result.status === "error") { alert(result.message); }
+            } catch(err) { 
+                document.getElementById('countdownOverlay').classList.add('hidden');
+                alert("送出訂單時發生錯誤，請稍後再試。"); 
+            }
+        }
+
+        window.cancelOrderSubmission = function() { if (submissionTimeout) clearTimeout(submissionTimeout); if (submissionInterval) clearInterval(submissionInterval); pendingOrderSnapshot = null; document.getElementById('countdownOverlay').classList.add('hidden'); alert("已成功取消本次傳送！資料皆完整保留。"); }
+        window.shareReceipt = function() { 
+            if (navigator.share) { navigator.share({ title: 'Lilou 預購收據確認單', text: sharePlainText }).catch(() => {}); } 
+            else { navigator.clipboard.writeText(sharePlainText).then(() => alert("📋 明細已複製到您的剪貼簿！")).catch(() => window.print()); } 
+        }
+        
+
+        function escapeHtml(value) {
+            return (value || "").toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function getOrderStatusClass(status) {
+            if (status === "已取消") return "bg-red-50 text-red-700 border-red-200";
+            if (status === "待付款") return "bg-orange-50 text-orange-700 border-orange-200";
+            if (status === "可取貨") return "bg-green-50 text-green-700 border-green-200";
+            if (status === "待出貨") return "bg-blue-50 text-blue-700 border-blue-200";
+            if (status === "已出貨") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+            if (status === "已完成") return "bg-stone-900 text-white border-stone-900";
+            return "bg-stone-50 text-stone-700 border-stone-200";
+        }
+
+        function getOrderStatusMessage(order, isStorePickup, isPrepaidDelivery) {
+            const status = (order.status || "訂單確認中").toString().trim();
+
+            if (status === "已完成") {
+                return "您的訂單已完成，感謝您選擇 Lilou。";
+            }
+
+            if (status === "已取消") {
+                return "此訂單已取消，將不再進行處理。如有疑問，請聯繫 Lilou 官方 LINE 或 Instagram。";
+            }
+
+            if (isStorePickup) {
+                if (status === "可取貨") {
+                    return "您的商品已可取貨。請依您選定的取貨日期，於營業時間 14:00－18:00 至 Lilou 門市取貨並完成付款。";
+                }
+                return "您的訂單已收到，正在確認中。";
+            }
+
+            if (status === "待付款" && isPrepaidDelivery) {
+                return "您的訂單已成立。請點擊下方「前往信用卡付款」按鈕進行付款，如有疑慮請私訊 Lilou 官方 LINE 或 Instagram。";
+            }
+
+            if (status === "待出貨") {
+                return "訂單已進入製作／出貨安排流程，請留意後續出貨通知。";
+            }
+
+            if (status === "已出貨") {
+                return "您的訂單已出貨，請留意 7-11 到貨通知；完成取貨後，訂單狀態會更新為「已完成」。";
+            }
+
+            return "您的訂單已收到，正在確認中。";
+        }
+
+        async function queryCustomerOrders() {
+            const phoneInput = document.getElementById('queryPhone');
+            const resultArea = document.getElementById('queryResultArea');
+            const phone = phoneInput.value.trim();
+
+            if (!phone) {
+                alert("請輸入手機號碼");
+                phoneInput.focus();
+                return;
+            }
+
+            if (!/^09\d{8}$/.test(phone)) {
+                alert("請輸入正確的手機號碼（10碼，例如：0912345678）");
+                phoneInput.focus();
+                return;
+            }
+
+            resultArea.innerHTML = `
+                <div class="bg-white p-6 rounded-2xl border border-stone-100 text-center space-y-3">
+                    <div class="spinner"></div>
+                    <p class="text-sm font-bold text-[#5B7290] tracking-wider">正在查詢訂單...</p>
+                </div>
+            `;
+
+            try {
+                const res = await fetch(`${API_URL}?action=queryOrders&phone=${encodeURIComponent(phone)}&_=${Date.now()}`);
+                const result = await res.json();
+
+                if (result.status !== "success") {
+                    resultArea.innerHTML = `
+                        <div class="bg-red-50 border border-red-200 text-red-700 p-5 rounded-2xl text-sm font-bold">
+                            ${escapeHtml(result.message || "查詢失敗，請稍後再試。")}
+                        </div>
+                    `;
+                    return;
+                }
+
+                trackLilouEvent('query_order', {
+                    result_count: (result.data || []).length
+                });
+
+                renderOrderResults(result.data || []);
+
+            } catch (err) {
+                resultArea.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 text-red-700 p-5 rounded-2xl text-sm font-bold">
+                        查詢時發生錯誤，請稍後再試。
+                    </div>
+                `;
+            }
+        }
+
+
+        function formatOrderDetails(details) {
+            const raw = (details || "").toString().trim();
+            if (!raw) return "";
+
+            return raw
+                .split(" ｜ ")
+                .map(group => group.trim())
+                .filter(Boolean)
+                .map(group => {
+                    const match = group.match(/^【([^】]+)】(.+)$/);
+                    if (!match) {
+                        return `<div class="break-words">${escapeHtml(group)}</div>`;
+                    }
+
+                    const groupTitle = match[1];
+                    const items = match[2]
+                        .split("、")
+                        .map(item => item.trim())
+                        .filter(Boolean);
+
+                    return `
+                        <div class="bg-white border border-stone-100 rounded-xl p-3 space-y-2">
+                            <div class="font-black text-[#5B7290] text-xs md:text-sm">${escapeHtml(groupTitle)}</div>
+                            <div class="space-y-1">
+                                ${items.map(item => `<div class="text-xs md:text-sm font-bold text-stone-700 leading-relaxed">・${escapeHtml(item)}</div>`).join("")}
+                            </div>
+                        </div>
+                    `;
+                })
+                .join("");
+        }
+
+
+        function formatTwd(value) {
+            const n = Number((value || "").toString().replace(/[^0-9.-]/g, ""));
+            return "NT$" + Math.round(isNaN(n) ? 0 : n).toLocaleString("zh-TW");
+        }
+
+        function formatDiscountTwd(value) {
+            const n = Number((value || "").toString().replace(/[^0-9.-]/g, ""));
+            const abs = Math.abs(Math.round(isNaN(n) ? 0 : n));
+            return abs > 0 ? "-NT$" + abs.toLocaleString("zh-TW") : "NT$0";
+        }
+
+        function parseItemsDetailJson(value) {
+            const raw = (value || "").toString().trim();
+            if (!raw) return [];
+            try {
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (err) {
+                return [];
+            }
+        }
+
+        function formatItemsDetailWithPrices(itemsDetail) {
+            const groups = parseItemsDetailJson(itemsDetail);
+            if (!groups.length) return "";
+
+            return groups.map((group, idx) => {
+                const title = group.group || group.packageName || `第${idx + 1}組`;
+                const items = Array.isArray(group.items) ? group.items : [];
+                const itemRows = items.map(item => {
+                    const name = item.name || "未命名商品";
+                    const price = Number(item.price || 0);
+                    const qty = Number(item.qty || item.quantity || 0);
+                    const subtotal = Number(item.subtotal || (price * qty));
+                    return `
+                        <div class="grid grid-cols-[1fr_auto] gap-3 py-2 border-b border-stone-100 last:border-b-0">
+                            <div class="min-w-0">
+                                <div class="font-black text-stone-800 break-words">${escapeHtml(name)}</div>
+                                <div class="text-xs md:text-sm text-stone-500 font-bold mt-0.5">${formatTwd(price)} × ${qty}</div>
+                            </div>
+                            <div class="font-black text-stone-900 mono whitespace-nowrap">${formatTwd(subtotal)}</div>
+                        </div>`;
+                }).join("");
+
+                return `
+                    <div class="bg-white border border-stone-100 rounded-xl p-3 space-y-2">
+                        <div class="font-black text-[#5B7290] text-xs md:text-sm tracking-wide">${escapeHtml(title)}</div>
+                        <div class="space-y-0.5">${itemRows || `<div class="text-stone-400 font-bold text-sm">無商品明細</div>`}</div>
+                    </div>`;
+            }).join("");
+        }
+
+        function renderCustomerOrderDetailBlock(order) {
+            const pricedDetails = formatItemsDetailWithPrices(order.itemsDetail);
+            const detailHtml = pricedDetails || formatOrderDetails(order.details) || `<div class="text-stone-400 font-bold text-sm">無商品明細</div>`;
+            const subtotal = order.subtotalAmount || order.subtotal || "";
+            const discount = order.discountAmount || order.discount || "0";
+            const shipping = order.shippingFee || order.shipping || "0";
+            const total = order.total || "0";
+
+            const hasAmountDetail = subtotal !== "" || discount !== "" || shipping !== "";
+            const amountHtml = hasAmountDetail ? `
+                <div class="bg-stone-50 border border-stone-100 rounded-xl p-3 space-y-2">
+                    <div class="text-[11px] font-black text-stone-400 tracking-widest">金額明細</div>
+                    <div class="space-y-1.5 text-sm font-bold">
+                        <div class="flex justify-between gap-3"><span class="text-stone-500">商品小計</span><span class="mono text-stone-800">${formatTwd(subtotal)}</span></div>
+                        <div class="flex justify-between gap-3"><span class="text-stone-500">折扣</span><span class="mono text-red-500">${formatDiscountTwd(discount)}</span></div>
+                        <div class="flex justify-between gap-3"><span class="text-stone-500">運費</span><span class="mono text-stone-800">${formatTwd(shipping)}</span></div>
+                        <div class="flex justify-between gap-3 border-t border-stone-200 pt-2 mt-2 text-base">
+                            <span class="text-stone-900 font-black">應付總額</span>
+                            <span class="mono text-[#5B7290] font-black">${formatTwd(total)}</span>
+                        </div>
+                    </div>
+                </div>` : `
+                <div class="flex justify-between gap-3 bg-stone-50 border border-stone-100 rounded-xl p-3">
+                    <span class="font-black text-stone-700">應付總額</span>
+                    <span class="font-black text-[#5B7290] mono">${formatTwd(total)}</span>
+                </div>`;
+
+            return `
+                <div class="space-y-3">
+                    <div class="space-y-2">
+                        <strong>商品明細：</strong>
+                        <div class="space-y-2">${detailHtml}</div>
+                    </div>
+                    ${amountHtml}
+                </div>`;
+        }
+
+        function renderOrderResults(orders) {
+            const resultArea = document.getElementById('queryResultArea');
+
+            if (!orders.length) {
+                resultArea.innerHTML = `
+                    <div class="bg-white p-6 rounded-2xl border border-stone-100 text-center space-y-2">
+                        <div class="text-lg font-black text-stone-700">查無訂單資料</div>
+                        <p class="text-xs md:text-sm text-stone-400 font-medium">
+                            請確認手機號碼是否與下單時填寫一致。
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            const sortedOrders = orders.slice().sort((a, b) => {
+                const aKey = (a.orderDate || a.timestamp || a.date || a.id || "").toString();
+                const bKey = (b.orderDate || b.timestamp || b.date || b.id || "").toString();
+                return bKey.localeCompare(aKey);
+            });
+
+            resultArea.innerHTML = sortedOrders.map((order, index) => {
+                const isLatestOrder = index === 0;
+                const method = lilouGetOrderShippingMethod(order);
+                const isStorePickup = lilouOrderMethodIsStore(method);
+                const isCodPickup = lilouOrderMethodIsCod(method);
+                const isPrepaidDelivery = lilouOrderMethodIsPrepaidDelivery(method);
+                const status = order.status || "訂單確認中";
+                const statusClass = getOrderStatusClass(status);
+                const statusMessage = getOrderStatusMessage(order, isStorePickup, isPrepaidDelivery);
+                const orderTotal = formatTwd(order.total || 0);
+                const orderDateLabel = order.orderDate || order.date || "-";
+
+                let actionHtml = "";
+
+                if (isPrepaidDelivery && status === "待付款" && order.paymentLink) {
+                    actionHtml += `
+                        <div class="bg-orange-50 border border-orange-200 p-4 rounded-xl space-y-3">
+                            <div class="text-sm font-black text-orange-800 leading-relaxed">
+                                ⚠️ 請於 付款頁面顯示之付款期限內完成付款，逾期系統將自動取消訂單。
+                            </div>
+                            <a href="${escapeHtml(order.paymentLink)}" target="_blank" rel="noopener"
+                               class="block w-full text-center bg-[#3E2D20] text-white font-black rounded-xl h-12 leading-[3rem] hover:bg-[#2B1F16] transition-colors">
+                                前往信用卡付款
+                            </a>
+                        </div>
+                    `;
+                } else if (isPrepaidDelivery && status === "待付款") {
+                    actionHtml += `
+                        <div class="bg-orange-50 border border-orange-200 p-4 rounded-xl text-sm font-black text-orange-800 leading-relaxed">
+                            ⚠️ 付款連結尚未建立，請稍後再查詢或私訊 Lilou。
+                        </div>
+                    `;
+                }
+
+                if (!isStorePickup && status === "已出貨") {
+                    const trackingHtml = order.trackingNo ? `
+                        <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                            <div class="text-xs font-black text-emerald-700 tracking-widest mb-1">貨運編號</div>
+                            <div class="text-base md:text-lg font-black text-emerald-900 break-all">${escapeHtml(order.trackingNo)}</div>
+                        </div>
+                    ` : "";
+
+                    const statusNoteHtml = order.statusNote ? `
+                        <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl">
+                            <div class="text-xs font-black text-amber-700 tracking-widest mb-1">出貨備註</div>
+                            <div class="text-sm font-bold text-amber-900 leading-relaxed whitespace-pre-line">${escapeHtml(order.statusNote)}</div>
+                        </div>
+                    ` : "";
+
+                    actionHtml += trackingHtml + statusNoteHtml;
+                }
+
+                const pickupInfo = isStorePickup ? `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div class="bg-stone-50 p-3 rounded-xl border border-stone-100">
+                            <div class="text-[11px] font-black text-stone-400 tracking-widest mb-1">取貨日期</div>
+                            <div class="font-bold text-stone-800">${escapeHtml(order.date)}</div>
+                        </div>
+                        <div class="bg-stone-50 p-3 rounded-xl border border-stone-100">
+                            <div class="text-[11px] font-black text-stone-400 tracking-widest mb-1">取貨地點</div>
+                            <div class="font-bold text-stone-800">${escapeHtml(order.address || "高雄市前鎮區景德路72巷12號")}</div>
+                            <div class="text-xs text-stone-500 mt-1">營業時間 14:00－18:00</div>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div class="bg-stone-50 p-3 rounded-xl border border-stone-100">
+                            <div class="text-[11px] font-black text-stone-400 tracking-widest mb-1">希望到貨日期</div>
+                            <div class="font-bold text-stone-800">${escapeHtml(order.date)}</div>
+                        </div>
+                        <div class="bg-stone-50 p-3 rounded-xl border border-stone-100">
+                            <div class="text-[11px] font-black text-stone-400 tracking-widest mb-1">取貨門市</div>
+                            <div class="font-bold text-stone-800">${escapeHtml(order.address)}</div>
+                        </div>
+                    </div>
+                `;
+
+                const fullArticle = `
+                    <article class="bg-white p-5 md:p-6 rounded-2xl border border-stone-100 shadow-xs space-y-4">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border-b border-stone-100 pb-3">
+                            <div>
+                                <div class="text-[11px] font-black text-stone-400 tracking-widest">訂單編號</div>
+                                <div class="text-base md:text-lg font-black text-stone-900">${escapeHtml(order.id)}</div>
+                                ${order.orderDate ? `
+                                <div class="mt-2">
+                                    <div class="text-[11px] font-black text-stone-400 tracking-widest">下單日期</div>
+                                    <div class="text-sm font-bold text-stone-700">${escapeHtml(order.orderDate)}</div>
+                                </div>
+                                ` : ""}
+                            </div>
+                            <span class="inline-flex w-fit px-3 py-1 rounded-full border text-xs md:text-sm font-black ${statusClass}">
+                                ${escapeHtml(status)}
+                            </span>
+                        </div>
+
+                        <div class="bg-[#F4F6F9] border border-stone-100 px-4 py-3 rounded-xl">
+                            <div class="text-[11px] font-black text-stone-400 tracking-widest mb-1">
+                                目前進度說明
+                            </div>
+                            <div class="text-stone-700 font-bold leading-relaxed">${escapeHtml(statusMessage).trim()}</div>
+                        </div>
+
+                        ${pickupInfo}
+
+                        <div class="space-y-2 text-sm text-stone-700">
+                            <div><strong>配送方式：</strong>${lilouOrderMethodLabelFromBackend(method)}</div>
+                            ${renderCustomerOrderDetailBlock(order)}
+                            ${order.lastUpdate ? `<div><strong>最後更新：</strong>${escapeHtml(order.lastUpdate)}</div>` : ""}
+                            ${order.statusNote && status !== "已出貨" ? `<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-2"><strong>狀態備註：</strong>${escapeHtml(order.statusNote)}</div>` : ""}
+                            ${order.note ? `<div><strong>訂單備註：</strong>${escapeHtml(order.note)}</div>` : ""}
+                        </div>
+
+                        ${actionHtml ? `<div class="space-y-3 pt-2">${actionHtml}</div>` : ""}
+                    </article>
+                `;
+
+                if (isLatestOrder) return fullArticle;
+
+                return `
+                    <details class="group bg-white rounded-2xl border border-stone-100 shadow-xs overflow-hidden">
+                        <summary class="list-none cursor-pointer p-4 md:p-5 flex items-center justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="font-black text-stone-900">${escapeHtml(order.id)}</span>
+                                    <span class="inline-flex w-fit px-2 py-0.5 rounded-full border text-[11px] font-black ${statusClass}">
+                                        ${escapeHtml(status)}
+                                    </span>
+                                </div>
+                                <div class="mt-1 text-xs md:text-sm font-bold text-stone-500 leading-relaxed">
+                                    ${escapeHtml(isStorePickup ? "取貨" : "到貨")}：${escapeHtml(order.date || "-")}
+                                    <span class="text-stone-300 mx-1">｜</span>
+                                    ${escapeHtml(orderTotal)}
+                                </div>
+                            </div>
+                            <div class="shrink-0 text-xs font-black text-[#5B7290] group-open:hidden">展開</div>
+                            <div class="shrink-0 text-xs font-black text-stone-400 hidden group-open:block">收合</div>
+                        </summary>
+                        <div class="border-t border-stone-100 p-0">
+                            ${fullArticle}
+                        </div>
+                    </details>
+                `;
+            }).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', function queryPhoneEnterBind() {
+            const queryPhone = document.getElementById('queryPhone');
+            if (queryPhone) {
+                queryPhone.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        queryCustomerOrders();
+                    }
+                });
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function phoneDigitOnlyBind() {
+            ['custPhone', 'queryPhone'].forEach(function(id) {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.addEventListener('input', function() {
+                        this.value = this.value.replace(/\D/g, '').slice(0, 10);
+                    });
+                }
+            });
+        });
+
+        
+        function isLineInAppBrowser() {
+            const ua = navigator.userAgent || "";
+            return /Line|LINE/i.test(ua);
+        }
+
+        function getRecommendedBrowserName() {
+            const ua = navigator.userAgent || "";
+            if (/iPhone|iPad|iPod/i.test(ua)) return "Safari";
+            return "Chrome";
+        }
+
+        window.closeLineBrowserNotice = function() {
+            const notice = document.getElementById("lineBrowserNotice");
+            if (notice) {
+                notice.classList.add("hidden");
+                notice.classList.remove("flex");
+            }
+            try {
+                sessionStorage.setItem("lilou_line_browser_notice_closed", "1");
+            } catch (e) {}
+        }
+
+        document.addEventListener("DOMContentLoaded", function showLineBrowserNotice() {
+            if (!isLineInAppBrowser()) return;
+
+            let alreadyClosed = false;
+            try {
+                alreadyClosed = sessionStorage.getItem("lilou_line_browser_notice_closed") === "1";
+            } catch (e) {}
+
+            if (alreadyClosed) return;
+
+            const browserName = document.getElementById("recommendedBrowserName");
+            if (browserName) browserName.textContent = getRecommendedBrowserName();
+
+            const notice = document.getElementById("lineBrowserNotice");
+            if (notice) {
+                notice.classList.remove("hidden");
+                notice.classList.add("flex");
+            }
+        });
+
+
+        document.addEventListener('DOMContentLoaded', bindLilouDraftAutoSave);
+
+        fetchOptions();
+    </script>
+<script>applySeasonalGiftConfig();</script>
+</body>
+</html>
