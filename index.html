@@ -874,7 +874,7 @@
                 <section id="productTabsCard" class="product-tabs-card scroll-mt-24">
                     <div class="product-tab-list" role="tablist" aria-label="商品分類">
                         <button type="button" id="limitedProductTab" class="product-tab-button is-active" role="tab" aria-selected="true" aria-controls="limitedProductSection" onclick="switchProductTab('limited')">
-                            <span class="product-tab-heading"><span class="product-tab-title">限定商品</span><span id="limitedProductTabCount" class="product-tab-count hidden">0 款</span></span>
+                            <span class="product-tab-heading"><span id="limitedTabTitle" class="product-tab-title">限定商品</span><span id="limitedProductTabCount" class="product-tab-count hidden">0 款</span></span>
                             <span id="limitedProductTabSummary" class="product-tab-summary">期間限定甜點，商品載入中⋯</span>
                             <span class="product-tab-action">查看限定商品 ›</span>
                         </button>
@@ -1690,6 +1690,14 @@
             const limitedWrap = document.getElementById('limitedPackageCards');
             if (!comboWrap || !limitedWrap) return;
 
+            const singlePackaging = localPackaging.find(p => p.packaging_type === 'single');
+            if (singlePackaging && singlePackaging.name) {
+                const tabTitleEl = document.getElementById('limitedTabTitle');
+                if (tabTitleEl) {
+                    tabTitleEl.textContent = singlePackaging.name;
+                }
+            }
+
             const comboItems = localPackaging.filter(p => p.packaging_type !== 'single');
             const limitedProducts = localProducts.filter(p => p.type === 'single');
             const caneleProducts = localProducts.filter(p => p.type !== 'single');
@@ -2490,7 +2498,7 @@
             } else { couponDisplay.classList.add('hidden'); } 
             document.getElementById('totalDisplay').innerText = `$${finalTotal}`; 
             return finalTotal; 
-        }
+        } 
         
 
         function getOrderAmountSummary() {
