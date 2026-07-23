@@ -1689,7 +1689,7 @@
             const comboWrap = document.getElementById('comboPackageCards');
             const limitedWrap = document.getElementById('limitedPackageCards');
             if (!comboWrap || !limitedWrap) return;
-
+        
             const singlePackaging = localPackaging.find(p => p.packaging_type === 'single');
             if (singlePackaging && singlePackaging.name) {
                 const tabTitleEl = document.getElementById('limitedTabTitle');
@@ -1697,10 +1697,13 @@
                     tabTitleEl.textContent = singlePackaging.name;
                 }
             }
-
+        
             const comboItems = localPackaging.filter(p => p.packaging_type !== 'single');
+            // 限定商品僅顯示 type 為 single 的品項
             const limitedProducts = localProducts.filter(p => p.type === 'single');
-            const caneleProducts = localProducts.filter(p => p.type !== 'single');
+            // 迷你可麗露僅顯示非 single 且非 addon 的組合品項
+            const caneleProducts = localProducts.filter(p => p.type !== 'single' && p.type !== 'addon');
+        
             const limitedTabCount = document.getElementById('limitedProductTabCount');
             if (limitedTabCount) {
                 limitedTabCount.textContent = `${limitedProducts.length} 款`;
@@ -1722,7 +1725,7 @@
             if (limitedSummary) limitedSummary.textContent = categorySummary(limitedProducts);
             const caneleSummary = document.getElementById('miniCaneleTabSummary');
             if (caneleSummary) caneleSummary.textContent = categorySummary(caneleProducts);
-
+        
             comboWrap.innerHTML = comboItems.length ? comboItems.map((p) => `
                 <button type="button" data-package-name="${lilouEscapeHtml(p.name)}" onclick="selectPackageCard('${encodeURIComponent(p.name)}')" class="lilou-package-card text-left border border-stone-200 rounded-2xl bg-white px-4 py-4 min-h-[72px]" ${p.display === false ? 'disabled' : ''}>
                     <div class="flex items-center gap-3">
@@ -1731,7 +1734,7 @@
                         <span class="lilou-package-check w-5 h-5 rounded-full border border-stone-300 text-transparent flex items-center justify-center text-[10px] shrink-0">✓</span>
                     </div>
                 </button>`).join('') : `<div class="sm:col-span-3 rounded-2xl border border-dashed border-stone-200 py-8 text-center text-sm font-bold text-stone-400">目前沒有可選擇的可麗露包裝。</div>`;
-
+        
             limitedWrap.innerHTML = limitedProducts.length ? limitedProducts.map((p) => {
                 const idx = localProducts.indexOf(p);
                 const qty = Number(limitedAddonQty[idx] || 0);
@@ -1766,7 +1769,7 @@
                     <button type="button" onclick="addSelectedLimitedAddonsToCart()" ${totalSelected <= 0 ? 'disabled' : ''} class="w-full h-12 rounded-xl bg-[#5B7290] text-white text-sm font-black tracking-widest disabled:bg-stone-200 disabled:text-stone-400 disabled:cursor-not-allowed">${totalSelected > 0 ? `加入限定商品至購物車（共 ${totalSelected} 件）` : '請選擇限定商品'}</button>
                 </div>`;
             })() : `<div class="rounded-2xl border border-dashed border-stone-200 py-7 text-center text-sm font-bold text-stone-400">目前沒有限定商品。</div>`;
-
+        
             syncPackageCardState();
         }
 
@@ -1931,11 +1934,13 @@
             const isBoxNotSelected = (boxSelect.value === ""); 
             const selectedOption = boxSelect.selectedOptions && boxSelect.selectedOptions[0];
             const selectedPackagingType = selectedOption ? (selectedOption.getAttribute('data-packaging-type') || 'combo') : '';
+            
+            // 嚴格確保只撈取符合目標類型的商品，未選包裝時預設過濾為 combo
             const targetType = selectedPackagingType === 'single' ? 'single' : 'combo';
             const visibleProducts = localProducts
                 .map((p, originalIdx) => ({ p, originalIdx }))
-                .filter(({ p }) => isBoxNotSelected || p.type === targetType);
-
+                .filter(({ p }) => p.type === targetType);
+        
             if (!visibleProducts.length) {
                 fMenu.innerHTML = `<div class="py-5 text-center text-xs md:text-sm text-stone-400 font-bold">目前沒有可顯示的商品。</div>`;
                 calculateCurrentBoxTotal(null);
