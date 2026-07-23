@@ -1248,16 +1248,31 @@
             const storeOption = shipSelect.querySelector('option[value="store"]');
             const deliveryOption = shipSelect.querySelector('option[value="delivery"]');
             const deliveryCodOption = shipSelect.querySelector('option[value="delivery_cod"]');
+            
             const flags = getCartShippingFlags();
-            if (storeOption) storeOption.disabled = flags.hasDeliveryOnly && !flags.hasPickupOnly;
-            if (deliveryOption) deliveryOption.disabled = flags.hasPickupOnly && !flags.hasDeliveryOnly;
-            if (deliveryCodOption) deliveryCodOption.disabled = flags.hasPickupOnly && !flags.hasDeliveryOnly;
+            
+            const lockToStore = flags.hasPickupOnly && !flags.hasDeliveryOnly;
+            const lockToDelivery = flags.hasDeliveryOnly && !flags.hasPickupOnly;
+
+            if (storeOption) {
+                storeOption.disabled = lockToDelivery;
+                storeOption.hidden = lockToDelivery;
+            }
+            if (deliveryOption) {
+                deliveryOption.disabled = lockToStore;
+                deliveryOption.hidden = lockToStore;
+            }
+            if (deliveryCodOption) {
+                deliveryCodOption.disabled = lockToStore;
+                deliveryCodOption.hidden = lockToStore;
+            }
         }
 
         function enforcePickupOnlyShipping(showAlert = true) {
             const shipSelect = document.getElementById('shipMethod');
             if (!shipSelect) return false;
             const flags = getCartShippingFlags();
+            const originalValue = shipSelect.value;
 
             if (flags.hasConflict) {
                 if (showAlert) showToastNotification("⚠️ 購物車同時包含僅門市自取與僅宅配商品，請分開下單。");
@@ -1265,14 +1280,17 @@
             }
 
             if (lilouIsDeliveryMethod(shipSelect.value) && flags.hasPickupOnly) {
-                if (showAlert) showToastNotification("⚠️ 您的購物車包含僅門市自取商品，配送方式已自動切換為門市自取付款。");
+                if (showAlert) showToastNotification("⚠️ 您的購物車包含僅門市自取商品，已自動切換為門市自取付款。");
                 shipSelect.value = 'store';
-                return true;
+            } else if (shipSelect.value === 'store' && flags.hasDeliveryOnly) {
+                if (showAlert) showToastNotification("⚠️ 您的購物車包含僅宅配商品，已自動切換為 7-11 取貨。");
+                // 動態判斷要切換到哪一個宅配選項（以防原本的 delivery 被註解）
+                const hasCod = shipSelect.querySelector('option[value="delivery_cod"]');
+                shipSelect.value = hasCod ? 'delivery_cod' : 'delivery';
             }
 
-            if (shipSelect.value === 'store' && flags.hasDeliveryOnly) {
-                if (showAlert) showToastNotification("⚠️ 您的購物車包含僅宅配商品，配送方式已自動切換為 7-11 取貨。");
-                shipSelect.value = 'delivery';
+            if (shipSelect.value !== originalValue) {
+                setTimeout(() => handleShippingMethodChange(), 0);
                 return true;
             }
 
