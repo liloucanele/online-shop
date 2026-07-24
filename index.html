@@ -2517,7 +2517,7 @@
             calculateTotal(); 
         }
 
-        function calculateTotal() { 
+       function calculateTotal() { 
             let subtotal = 0; 
             cart.forEach(box => subtotal += box.boxTotalCost); 
             document.getElementById('subtotalDisplay').innerText = `$${subtotal}`; 
@@ -2544,8 +2544,14 @@
                 couponDisplay.classList.remove('hidden'); 
             } else { couponDisplay.classList.add('hidden'); } 
             document.getElementById('totalDisplay').innerText = `$${finalTotal}`; 
+            
+            const floatingBtnLabel = document.querySelector('#floatingCartButton span:first-child');
+            if (floatingBtnLabel) {
+                floatingBtnLabel.textContent = `$${finalTotal} · 購物車`;
+            }
+            
             return finalTotal; 
-        } 
+        }
         
 
         function getOrderAmountSummary() {
