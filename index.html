@@ -2402,13 +2402,22 @@
             const button = document.getElementById('floatingCartButton');
             const count = document.getElementById('floatingCartCount');
             if (!button || !count) return;
+            
             const totalGroups = cart.reduce((sum, item) => {
                 if (isSingleCartItem(item)) {
                     return sum + (Number(item.flavors?.[0]?.quantity) || Number(item.totalQty) || 1);
                 }
                 return sum + (Number(item.repeatQty) || 1);
             }, 0);
+        
+            let totalPrice = 0;
+            cart.forEach(box => totalPrice += box.boxTotalCost);
             count.textContent = totalGroups;
+            const labelSpan = button.querySelector('span:first-child');
+            if (labelSpan) {
+                labelSpan.textContent = `$${totalPrice} · 購物車`;
+            }
+        
             button.classList.toggle('is-visible', totalGroups > 0 && !document.getElementById('shopContentWrapper')?.classList.contains('hidden'));
         }
 
