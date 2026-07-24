@@ -234,7 +234,14 @@
 .admin-edit-search { min-width: 180px; }
 @media (min-width: 768px) {
   table[data-edit-table="products"] thead,
-  table[data-edit-table="packaging"] thead { position: sticky; top: 0; z-index: 5; background: #fff; box-shadow: 0 1px 0 rgba(231,229,228,.9); }
+    table[data-edit-table="packaging"] thead,
+    table[data-edit-table="coupons"] thead {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: #fff;
+      box-shadow: 0 1px 0 rgba(231,229,228,.9);
+    }
 }
 
 table[data-edit-table="products"] input[data-key="price"],
