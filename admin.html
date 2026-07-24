@@ -354,6 +354,26 @@ document.addEventListener('change', e => {
   if (page) markUnsaved(page.id.replace('tab-', ''));
 });
 
+/* =========================================================
+   補回：日期格式化 Helper 函式庫
+   ========================================================= */
+function formatDateHyphenFromInput(value) { return normalizeOrderDateForCompare(value) || ""; }
+function formatDateDisplaySlash(value) {
+  const normalized = formatDateHyphenFromInput(value);
+  return normalized ? normalized.replace(/-/g, "/") : "";
+}
+function formatDateDisplayWithWeekday(value) {
+  const normalized = formatDateHyphenFromInput(value);
+  if (!normalized) return "";
+  const date = new Date(normalized + "T00:00:00");
+  const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+  const weekday = isNaN(date.getTime()) ? "" : `(${weekdays[date.getDay()]})`;
+  return normalized.replace(/-/g, "/") + weekday;
+}
+function parseDateList(value) { return (value || "").toString().replace(/[\r\n、，]/g, ",").split(",").map(v => formatDateHyphenFromInput(v.trim())).filter(Boolean); }
+function uniqueSortedDateList(value) { return Array.from(new Set(parseDateList(value))).sort(); }
+/* ========================================================= */
+
 function escapeHtml(value) {
   return (value ?? "").toString()
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -1867,10 +1887,6 @@ function settingDisplayName(name) {
   return name || "未命名設定";
 }
 
-function formatDateHyphenFromInput(value) { return normalizeOrderDateForCompare(value) || ""; }
-function parseDateList(value) { return (value || "").toString().replace(/[\r\n、，]/g, ",").split(",").map(v => formatDateHyphenFromInput(v.trim())).filter(Boolean); }
-function uniqueSortedDateList(value) { return Array.from(new Set(parseDateList(value))).sort(); }
-
 function getRevenueSettingsRows() { return adminData?.revenueSettings || []; }
 function getRevenueSettingByMonth(month) {
   return getRevenueSettingsRows().find(row => (row.month || "").toString().trim() === month) || null;
@@ -2022,7 +2038,7 @@ function exportRevenueShareCsv() {
 
 
 /* =========================================================
-   UX 建議重構：日期設定 - 視覺化月曆與快捷批次操作
+   日期設定：視覺化月曆與快捷批次操作面板
    ========================================================= */
 
 function settingValueByLabel(label) {
@@ -2051,7 +2067,6 @@ function renderSettings() {
       </div>
     </div>`;
     
-  // 初始化渲染所有月曆 UI
   document.querySelectorAll('[data-setting-row]').forEach(box => {
     updateSettingCalendarAndTags(box);
   });
@@ -2061,7 +2076,6 @@ function settingDateBlockEnhanced(label, value) {
   const cleanDates = uniqueSortedDateList(value);
   const cleanValue = cleanDates.join(",");
 
-  // 智慧連動與複製按鈕
   let copyBtnHtml = '';
   if (label === '店到店出貨日期') {
       copyBtnHtml = `<button type="button" onclick="copyDatesFromSetting(this, '自取日期')" class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-stone-200 bg-white text-xs font-black text-stone-600 hover:bg-stone-50 transition-colors">
@@ -2091,12 +2105,10 @@ function settingDateBlockEnhanced(label, value) {
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-[340px_1fr] md:min-h-[380px]">
-      <!-- Left: Calendar Widget -->
       <div class="p-5 border-b md:border-b-0 md:border-r border-stone-100 bg-white">
          <div class="calendar-container w-full max-w-[280px] mx-auto"></div>
       </div>
 
-      <!-- Right: Grouped Tags -->
       <div class="p-5 bg-stone-50/40">
          <div class="flex items-center justify-between mb-4">
             <div class="text-sm font-black text-stone-500 tracking-widest">已選取日期明細</div>
@@ -2121,7 +2133,6 @@ function setSettingDates(box, dates) {
   if (count) count.textContent = clean.length;
 }
 
-// 核心渲染月曆與標籤的邏輯
 function updateSettingCalendarAndTags(box) {
   const valueInput = box.querySelector('.setting-date-value');
   const selectedDates = valueInput.value ? valueInput.value.split(',') : [];
@@ -2139,7 +2150,6 @@ function updateSettingCalendarAndTags(box) {
   const year = parseInt(y, 10);
   const month = parseInt(m, 10) - 1;
 
-  // Calendar Header
   let html = `
   <div class="flex items-center justify-between mb-3 bg-stone-50 rounded-xl p-1 border border-stone-100">
       <button type="button" onclick="changeCalendarMonth(this, -1)" class="w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-white hover:shadow-sm rounded-lg transition-all font-black text-lg">‹</button>
@@ -2147,7 +2157,6 @@ function updateSettingCalendarAndTags(box) {
       <button type="button" onclick="changeCalendarMonth(this, 1)" class="w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-white hover:shadow-sm rounded-lg transition-all font-black text-lg">›</button>
   </div>`;
 
-  // Calendar Grid
   html += `<div class="grid grid-cols-7 gap-1 text-center text-xs mb-4">`;
   ['日','一','二','三','四','五','六'].forEach(day => {
       html += `<div class="font-bold text-stone-400 py-1.5">${day}</div>`;
@@ -2168,7 +2177,6 @@ function updateSettingCalendarAndTags(box) {
   }
   html += `</div>`;
 
-  // Quick Actions
   html += `
   <div class="grid grid-cols-2 gap-2 pt-4 border-t border-stone-100">
       <button type="button" onclick="selectMonthWeekdays(this)" class="h-10 text-xs font-black bg-stone-50 border border-stone-200 text-stone-600 rounded-xl hover:bg-white transition-colors">選取平日</button>
@@ -2177,7 +2185,6 @@ function updateSettingCalendarAndTags(box) {
   </div>`;
   calContainer.innerHTML = html;
 
-  // Tags Grouping
   const groups = {};
   selectedDates.sort().forEach(date => {
       const my = date.substring(0, 7); 
@@ -2307,9 +2314,7 @@ function clearSettingDates(button) {
   }, "清空所有日期");
 }
 
-/* =========================================================
-   UX 建議重構結束
-   ========================================================= */
+/* ========================================================= */
 
 function getEditableTableMinWidth(tab) {
   if (tab === "products") return "min-w-[2680px]";
