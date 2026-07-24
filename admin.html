@@ -2782,7 +2782,7 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
         <p>商品類型：組合商品／單品｜配送規則：自取與宅配／僅自取／僅宅配｜上架狀態可直接點擊開關切換。</p>
       </div>` : "";
   const couponOperationNotice = tab === "coupons" ? `
-      <div class="rounded-2xl bg-stone-50 border border-stone-100 p-3 text-xs text-stone-500 font-bold leading-relaxed space-y-1">
+      <p class="text-xs text-stone-500 font-bold leading-relaxed">
         現折金額請直接輸入金額，例如 100；折扣比例請輸入小數，例如 0.9 代表 9 折。
       </p>` : "";
   const stats = isProductOrPackaging ? getEditableTableStats(rows) : null;
