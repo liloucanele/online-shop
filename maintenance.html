@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>LILOU｜系統維護中</title>
+<meta content="noindex,nofollow" name="robots"/>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+    :root {
+      --admin-text-base: 15px;
+    }
+    html { font-size: 15px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      font-size: var(--admin-text-base);
+      line-height: 1.55;
+      letter-spacing: .005em;
+    }
+    .animate-float {
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+      100% { transform: translateY(0px); }
+    }
+</style>
+</head>
+<body class="bg-[#F4F6F9] text-stone-800 min-h-screen flex flex-col items-center justify-center p-5 relative overflow-hidden">
+
+  <!-- 背景裝飾文字 (營造質感) -->
+  <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15vw] font-black text-[#5B7290]/5 pointer-events-none tracking-tighter select-none z-0">
+    LILOU
+  </div>
+
+  <main class="w-full max-w-md relative z-10">
+    <!-- 頂部 Logo -->
+    <div class="text-center mb-6">
+      <h1 class="text-2xl font-black tracking-[0.15em] text-[#5B7290]">LILOU</h1>
+    </div>
+
+    <!-- 維護卡片主體 -->
+    <section class="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 md:p-10 text-center relative overflow-hidden">
+      
+      <!-- 裝飾背景圈圈 -->
+      <div class="absolute -top-12 -right-12 w-32 h-32 bg-stone-50 rounded-full mix-blend-multiply opacity-50 pointer-events-none"></div>
+      <div class="absolute -bottom-8 -left-8 w-24 h-24 bg-[#5B7290]/5 rounded-full mix-blend-multiply opacity-50 pointer-events-none"></div>
+
+      <!-- Icon 區域 -->
+      <div class="w-20 h-20 mx-auto bg-stone-50 border border-stone-100 rounded-full flex items-center justify-center mb-6 animate-float shadow-sm">
+        <svg class="w-10 h-10 text-[#5B7290]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+        </svg>
+      </div>
+
+      <!-- 內容 -->
+      <h2 class="text-2xl font-black text-stone-900 tracking-wide mb-3">系統升級維護中</h2>
+      <p class="text-[15px] font-medium text-stone-500 leading-relaxed">
+        為了提供更優質的購物體驗，<br class="hidden md:block">我們正在進行網站系統維護與升級。<br>請稍後再回來看看！
+      </p>
+
+      <!-- 狀態標籤 -->
+      <div class="mt-8 inline-flex items-center justify-center gap-2.5 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-[13px] font-bold text-stone-500">
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+        造成不便，敬請見諒
+      </div>
+    </section>
+
+    <!-- 底部版權 -->
+    <div class="text-center mt-8 text-xs font-bold text-stone-400 tracking-widest">
+      &copy; 2026 LILOU. All rights reserved.
+    </div>
+  </main>
+
+</body>
+</html>
