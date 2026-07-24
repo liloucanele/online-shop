@@ -2150,11 +2150,11 @@ function settingDateBlockEnhanced(label, value) {
   let copyBtnHtml = '';
   if (label === '店到店出貨日期') {
       copyBtnHtml = `<button type="button" onclick="copyDatesFromSetting(this, '自取日期')" class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-stone-200 bg-white text-xs font-black text-stone-600 hover:bg-stone-50 transition-colors">
-        <span>📋</span> 從【自取日期】複製
+        從【自取日期】複製
       </button>`;
   } else if (label === '自取日期') {
       copyBtnHtml = `<button type="button" onclick="copyDatesFromSetting(this, '店到店出貨日期')" class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-stone-200 bg-white text-xs font-black text-stone-600 hover:bg-stone-50 transition-colors">
-        <span>📋</span> 從【店到店出貨日期】複製
+        從【店到店日期】複製
       </button>`;
   }
 
