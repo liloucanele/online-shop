@@ -267,13 +267,18 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
    ========================================================= */
 @media (max-width: 768px) {
   /* 確保所有輸入框與一般按鈕符合最小觸控範圍 (Apple/Google 規範 44px) */
-  input, select, button:not(.admin-switch) {
+  input, select, button:not(.admin-switch):not(.calendar-day-btn):not(.calendar-nav-btn):not(.tag-remove-btn) {
     min-height: 44px;
   }
 
   /* 確保開關保持原本比例不要被拉長 */
   .admin-switch {
     min-height: 28px !important;
+  }
+  
+  /* 排除月曆與標籤上的小按鈕，避免被強制拉長變形 */
+  .calendar-day-btn, .calendar-nav-btn, .tag-remove-btn {
+    min-height: unset !important;
   }
   
   /* 確保輸入字體至少 16px，防止 iOS Safari 自動放大畫面 */
@@ -327,7 +332,7 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.0.0</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.2.0</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -483,7 +488,6 @@ function showAdminToast(message, type = "info", duration = 2600) {
   const bgClass = isError ? "bg-red-600" : isSuccess ? "bg-emerald-600" : "bg-[#5B7290]";
   const icon = isLoading ? `<span class="admin-toast-spinner"></span>` : isError ? "❌" : isSuccess ? "✅" : "ℹ️";
 
-  // 將 JS 中產生的 Toast 改為更乾淨的 class 設定，由 CSS 負責大部分圓角等視覺
   toast.className = `admin-toast ${bgClass} text-white flex items-center gap-2.5 text-[15px] font-semibold tracking-wide`;
   toast.innerHTML = `<span class="shrink-0 flex items-center justify-center">${icon}</span><span class="leading-relaxed whitespace-nowrap">${escapeHtml(message)}</span>`;
   area.appendChild(toast);
@@ -1069,7 +1073,7 @@ function openOrdersByDashboardDate(dateValue) {
     if (statusFilter) statusFilter.value = "";
     if (methodFilter) methodFilter.value = "";
     if (sortFilter) sortFilter.value = "arrivalAsc";
-    if (startInput) startInput.value = "";
+    if (startInput) startInput.value = date;
     if (endInput) endInput.value = date;
     updateOrderRangeButtons("");
     filterOrders();
@@ -2219,9 +2223,9 @@ function updateSettingCalendarAndTags(box) {
 
   let html = `
   <div class="flex items-center justify-between mb-3 bg-stone-50 rounded-xl p-1 border border-stone-100">
-      <button type="button" onclick="changeCalendarMonth(this, -1)" class="w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-white hover:shadow-sm rounded-lg transition-all font-black text-lg">‹</button>
+      <button type="button" onclick="changeCalendarMonth(this, -1)" class="calendar-nav-btn w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-white hover:shadow-sm rounded-lg transition-all font-black text-lg">‹</button>
       <input type="month" value="${viewMonth}" onchange="changeCalendarMonthTo(this)" class="font-black text-stone-700 bg-transparent border-none outline-none text-center cursor-pointer">
-      <button type="button" onclick="changeCalendarMonth(this, 1)" class="w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-white hover:shadow-sm rounded-lg transition-all font-black text-lg">›</button>
+      <button type="button" onclick="changeCalendarMonth(this, 1)" class="calendar-nav-btn w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-white hover:shadow-sm rounded-lg transition-all font-black text-lg">›</button>
   </div>`;
 
   html += `<div class="grid grid-cols-7 gap-1 text-center text-xs mb-4">`;
@@ -2240,15 +2244,13 @@ function updateSettingCalendarAndTags(box) {
       const activeClass = isSelected 
         ? 'bg-[#5B7290] text-white font-black shadow-md border-[#5B7290]' 
         : 'bg-white text-stone-700 border-stone-100 hover:border-stone-300 hover:bg-stone-50 font-semibold';
-      html += `<button type="button" onclick="toggleCalendarDate(this, '${dateStr}')" class="aspect-square rounded-xl border flex items-center justify-center ${activeClass} transition-all text-sm">${d}</button>`;
+      html += `<button type="button" onclick="toggleCalendarDate(this, '${dateStr}')" class="calendar-day-btn aspect-square rounded-xl border flex items-center justify-center ${activeClass} transition-all text-sm">${d}</button>`;
   }
   html += `</div>`;
 
   html += `
-  <div class="grid grid-cols-2 gap-2 pt-4 border-t border-stone-100">
-      <button type="button" onclick="selectMonthWeekdays(this)" class="h-10 text-xs font-black bg-stone-50 border border-stone-200 text-stone-600 rounded-xl hover:bg-white transition-colors">選取平日</button>
-      <button type="button" onclick="selectMonthWeekends(this)" class="h-10 text-xs font-black bg-stone-50 border border-stone-200 text-stone-600 rounded-xl hover:bg-white transition-colors">選取週末</button>
-      <button type="button" onclick="clearMonthDates(this)" class="h-10 text-xs font-black text-red-500 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors col-span-2">清除本月設定</button>
+  <div class="pt-4 border-t border-stone-100">
+      <button type="button" onclick="clearMonthDates(this)" class="w-full h-11 text-sm font-black text-red-500 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors">清除本月設定</button>
   </div>`;
   calContainer.innerHTML = html;
 
@@ -2273,7 +2275,7 @@ function updateSettingCalendarAndTags(box) {
                       const dayStr = date.split('-')[2];
                       return `<span class="inline-flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm font-black text-stone-700 hover:bg-white transition-colors">
                           ${dayStr} <span class="text-stone-400 text-xs">(${w})</span>
-                          <button type="button" onclick="toggleCalendarDate(this, '${date}')" class="text-stone-400 hover:text-red-500 w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-50 ml-1 transition-colors" title="移除">×</button>
+                          <button type="button" onclick="toggleCalendarDate(this, '${date}')" class="tag-remove-btn text-stone-400 hover:text-red-500 w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-50 ml-1 transition-colors" title="移除">×</button>
                       </span>`;
                   }).join('')}
               </div>
@@ -2309,33 +2311,6 @@ function changeCalendarMonthTo(input) {
   const box = input.closest('[data-setting-row]');
   box.dataset.viewMonth = input.value;
   updateSettingCalendarAndTags(box);
-}
-
-function getMonthDatesByCondition(box, conditionFn) {
-  const [y, m] = box.dataset.viewMonth.split('-');
-  const year = parseInt(y, 10);
-  const month = parseInt(m, 10) - 1;
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const result = [];
-  for(let d=1; d<=daysInMonth; d++) {
-      const date = new Date(year, month, d);
-      if (conditionFn(date)) {
-          result.push(`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
-      }
-  }
-  return result;
-}
-
-function selectMonthWeekdays(btn) {
-  const box = btn.closest('[data-setting-row]');
-  const targetDates = getMonthDatesByCondition(box, d => d.getDay() >= 1 && d.getDay() <= 5);
-  mergeSettingDatesAndRender(box, targetDates);
-}
-
-function selectMonthWeekends(btn) {
-  const box = btn.closest('[data-setting-row]');
-  const targetDates = getMonthDatesByCondition(box, d => d.getDay() === 0 || d.getDay() === 6);
-  mergeSettingDatesAndRender(box, targetDates);
 }
 
 function clearMonthDates(btn) {
