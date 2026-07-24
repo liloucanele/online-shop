@@ -271,17 +271,14 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
    📱 手機版 UI/UX 優化補丁 (Mobile UX Enhancements)
    ========================================================= */
 @media (max-width: 768px) {
-  /* 確保所有輸入框與按鈕符合最小觸控範圍 (Apple/Google 規範 44px) */
   input, select, button, .admin-switch {
     min-height: 44px;
   }
   
-  /* 確保輸入字體至少 16px，防止 iOS Safari 自動放大畫面 */
   input, select, textarea {
     font-size: 16px !important;
   }
 
-  /* 資料表格：凍結第一欄 (名稱欄位)，向右滑動時不迷路 */
   table[data-edit-table] th:first-child,
   table[data-edit-table] td:first-child {
     position: sticky;
@@ -290,7 +287,6 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
     background-color: #ffffff;
   }
   
-  /* 替凍結的欄位加上右側陰影，增加立體感與滑動暗示 */
   table[data-edit-table] th:first-child::after,
   table[data-edit-table] td:first-child::after {
     content: '';
@@ -303,13 +299,11 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
     pointer-events: none;
   }
   
-  /* 確保第一欄內的 input 也是白色背景 */
   table[data-edit-table] td:first-child input {
     background-color: #ffffff;
     border-color: #d6d3d1;
   }
 
-  /* 懸浮底部儲存列 */
   .mobile-action-bar {
     position: fixed;
     bottom: 0;
@@ -331,17 +325,14 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
     align-items: center;
   }
 
-  /* 替 body 底部增加 padding，避免最後一筆資料被懸浮按鈕擋住 */
   body {
     padding-bottom: 85px; 
   }
 
-  /* 優化 Toast 提示訊息在手機上的位置，避免被底部懸浮按鈕擋住 */
   #adminToastArea {
     bottom: 90px !important; 
   }
 
-  /* 隱藏不必要的卷軸，讓畫面更乾淨 */
   .overflow-x-auto::-webkit-scrollbar {
     height: 4px;
   }
@@ -355,7 +346,7 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.2.0</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.0.0</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
