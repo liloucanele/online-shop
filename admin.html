@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="zh-TW">
 <head>
 <meta charset="utf-8"/>
@@ -38,8 +37,26 @@
     textarea { min-height: 44px; }
     .tab-active { background:#5B7290; color:#fff; }
     .tab-idle { background:#fff; color:#57534e; }
-    .tab-btn { font-size: var(--admin-text-base) !important; }
+    .tab-btn { font-size: var(--admin-text-base) !important; position: relative; overflow: visible; }
+    
+    /* UX 建議 5: 未儲存小紅點 */
+    .unsaved-dot {
+      display: none; width: 8px; height: 8px; border-radius: 999px;
+      background-color: #ef4444; position: absolute; top: 2px; right: 2px;
+      box-shadow: 0 0 0 2px #fff;
+    }
+    .tab-btn.has-unsaved .unsaved-dot { display: block; }
+    
     .mono { font-variant-numeric: tabular-nums; }
+
+    /* UX 建議 2: Tab 手機捲動提示 */
+    .tab-scroll-wrapper { position: relative; overflow: hidden; }
+    .tab-scroll-wrapper::after {
+      content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 48px;
+      background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,1));
+      pointer-events: none;
+    }
+    @media (min-width: 768px) { .tab-scroll-wrapper::after { display: none; } }
 
     /* 字級重新整理：保留清楚閱讀感，僅縮小篩選與表格欄位，不壓到內容文字 */
     #adminPanel input,
@@ -161,7 +178,8 @@
       transform: translateY(16px);
       opacity: 0;
       transition: opacity .22s ease, transform .22s ease;
-      box-shadow: 0 18px 40px rgba(28, 23, 21, .16);
+      box-shadow: 0 12px 28px rgba(28, 23, 21, .14);
+      letter-spacing: normal !important;
     }
     .admin-toast.show { transform: translateY(0); opacity: 1; }
     .admin-toast-spinner {
@@ -171,6 +189,28 @@
       animation: adminSpin .75s linear infinite;
     }
     @keyframes adminSpin { to { transform: rotate(360deg); } }
+
+    /* 手機版：改成置中貼底、滿版寬度、避開 Home Indicator，字重降低以減少壓迫感 */
+    @media (max-width: 640px) {
+      #adminToastArea {
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0 12px calc(12px + env(safe-area-inset-bottom, 0px));
+      }
+      .admin-toast {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        margin: 0 auto;
+        border-radius: 16px;
+        font-weight: 600 !important;
+        box-shadow: 0 8px 24px rgba(28, 23, 21, .18);
+      }
+    }
 
     table[data-edit-table="products"] input[data-key="price"],
     table[data-edit-table="products"] input[data-key="stock"],
@@ -305,7 +345,7 @@ table[data-edit-table="packaging"] .admin-switch {
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.1.2</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.2.0</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -326,16 +366,18 @@ table[data-edit-table="packaging"] .admin-switch {
 <p class="hidden text-sm font-bold" id="loginMessage"></p>
 </section>
 <section class="hidden space-y-5" id="adminPanel">
-<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-3 overflow-x-auto">
-<div class="flex gap-2 min-w-max" id="tabs">
-<button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard</button>
-<button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="orders" onclick="switchTab('orders')">訂單管理</button>
-<button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="products" onclick="switchTab('products')">產品</button>
-<button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="packaging" onclick="switchTab('packaging')">包裝</button>
-<button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="coupons" onclick="switchTab('coupons')">優惠券</button>
-<button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="settings" onclick="switchTab('settings')">日期設定</button>
-<button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="revenue" onclick="switchTab('revenue')">分潤統計</button>
-</div>
+<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-3 tab-scroll-wrapper">
+  <div class="overflow-x-auto scrollbar-hide" style="-ms-overflow-style: none; scrollbar-width: none;">
+    <div class="flex gap-2 min-w-max" id="tabs">
+      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="orders" onclick="switchTab('orders')">訂單管理<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="products" onclick="switchTab('products')">產品<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="packaging" onclick="switchTab('packaging')">包裝<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="coupons" onclick="switchTab('coupons')">優惠券<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="settings" onclick="switchTab('settings')">日期設定<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="revenue" onclick="switchTab('revenue')">分潤統計<span class="unsaved-dot"></span></button>
+    </div>
+  </div>
 </div>
 <p aria-live="polite" class="hidden text-sm font-bold" id="adminMessage"></p>
 <section class="tab-page space-y-5" id="tab-dashboard"></section>
@@ -348,11 +390,52 @@ table[data-edit-table="packaging"] .admin-switch {
 </section>
 </main>
 <div class="fixed right-4 bottom-4 z-[9999] flex flex-col gap-2 pointer-events-none" id="adminToastArea"></div>
+
+<!-- UX 建議 1 & 3: 統一 Confirm Modal -->
+<div id="adminConfirmModal" class="hidden fixed inset-0 z-[99999] flex items-center justify-center bg-stone-900/40 opacity-0 transition-opacity duration-200">
+  <div class="bg-white rounded-3xl p-6 max-w-sm w-full mx-4 shadow-xl transform scale-95 transition-transform duration-200" id="adminConfirmBox">
+    <h3 class="text-lg font-black text-stone-900 mb-2" id="adminConfirmTitle">確認操作</h3>
+    <p class="text-sm text-stone-500 mb-6" id="adminConfirmText">確定要執行此操作嗎？</p>
+    <div class="flex justify-end gap-3">
+      <button class="px-5 py-2.5 rounded-xl border border-stone-200 text-stone-600 font-bold hover:bg-stone-50" id="adminConfirmCancel">取消</button>
+      <button class="px-5 py-2.5 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600" id="adminConfirmOk">確定</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyA3ovLtC-hDYGL-_9CMNKk9A--TcrU-W-mN6Hc0GaZ8eDrvAsew3ZdtYBLSyimuiU/exec";
 const TOKEN_KEY = "lilou_admin_token";
 let adminData = null;
 let currentTab = "dashboard";
+
+// --- UX 建議 5: 小紅點追蹤機制 ---
+const unsavedTabs = new Set();
+function markUnsaved(tab) {
+  if (!tab || tab === 'dashboard' || tab === 'revenue') return;
+  unsavedTabs.add(tab);
+  const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+  if (btn) btn.classList.add('has-unsaved');
+}
+function clearUnsaved(tab) {
+  unsavedTabs.delete(tab);
+  const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+  if (btn) btn.classList.remove('has-unsaved');
+}
+function clearAllUnsaved() {
+  unsavedTabs.clear();
+  document.querySelectorAll('.tab-btn.has-unsaved').forEach(btn => btn.classList.remove('has-unsaved'));
+}
+
+document.addEventListener('input', e => {
+  const page = e.target.closest('.tab-page');
+  if (page) markUnsaved(page.id.replace('tab-', ''));
+});
+document.addEventListener('change', e => {
+  const page = e.target.closest('.tab-page');
+  if (page) markUnsaved(page.id.replace('tab-', ''));
+});
+// ----------------------------------
 
 function escapeHtml(value) {
   return (value ?? "").toString()
@@ -416,6 +499,32 @@ function removeAdminToast(toast) {
   toast.classList.remove("show");
   setTimeout(() => toast.remove(), 240);
 }
+
+// UX 建議 1 & 3: 封裝共用 Confirm
+function showAdminConfirm(text, onConfirm, title = "確認操作") {
+  const modal = document.getElementById("adminConfirmModal");
+  const box = document.getElementById("adminConfirmBox");
+  document.getElementById("adminConfirmTitle").textContent = title;
+  document.getElementById("adminConfirmText").textContent = text;
+  
+  modal.classList.remove("hidden");
+  requestAnimationFrame(() => {
+    modal.classList.remove("opacity-0");
+    box.classList.remove("scale-95");
+  });
+  
+  const close = () => {
+    modal.classList.add("opacity-0");
+    box.classList.add("scale-95");
+    setTimeout(() => modal.classList.add("hidden"), 200);
+  };
+  
+  const cancelBtn = document.getElementById("adminConfirmCancel");
+  const okBtn = document.getElementById("adminConfirmOk");
+  cancelBtn.onclick = close;
+  okBtn.onclick = () => { close(); onConfirm(); };
+}
+
 
 function setButtonLoading(button, loadingText) {
   if (!button || button.tagName !== "BUTTON") return null;
@@ -497,6 +606,7 @@ async function loadAll() {
       return;
     }
     adminData = data;
+    clearAllUnsaved(); // UX 建議 5: 載入後清除所有未儲存標記
     renderAll();
     hideAdminInlineMessage();
     removeAdminToast(loadingToast);
@@ -2107,10 +2217,6 @@ function filterOrders() {
     return;
   }
   area.innerHTML = orders.map(orderCard).join("");
-
-  const start = startDate;
-  const end = endDate;
-
 }
 
 function formatOrderTimestampMinute(value) {
@@ -2202,7 +2308,7 @@ function orderCard(order) {
           <div class="text-xs text-stone-400 font-bold">最後更新：${escapeHtml(order.lastUpdate || "-")}</div>
           <div class="flex flex-col md:flex-row gap-2 md:items-center md:justify-end">
             <button type="button" onclick="cancelOrderEdit('${escapeHtml(order.id)}')" class="h-11 rounded-xl border border-stone-200 bg-white text-stone-500 px-5 font-black hover:bg-stone-50">取消修改</button>
-            <button type="button" onclick="updateOrder('${escapeHtml(order.id)}')" class="h-11 rounded-xl bg-[#3E2D20] text-white px-5 font-black hover:bg-[#2B1F16]">儲存更新</button>
+            <button type="button" onclick="updateOrder('${escapeHtml(order.id)}', this)" class="h-11 rounded-xl bg-[#3E2D20] text-white px-5 font-black hover:bg-[#2B1F16]">儲存更新</button>
           </div>
         </div>
       </div>
@@ -2210,7 +2316,7 @@ function orderCard(order) {
   </article>`;
 }
 
-async function updateOrder(orderId) {
+async function updateOrder(orderId, btnElement) {
   const card = document.querySelector(`[data-order-id="${CSS.escape(orderId)}"]`);
   if (!card) return;
   const payload = {
@@ -2223,7 +2329,7 @@ async function updateOrder(orderId) {
     statusNote: card.querySelector(".admin-note").value.trim(),
     internalNote: card.querySelector(".admin-internal-note")?.value.trim() || ""
   };
-  await postAdmin(payload, `${orderId} 已更新。`);
+  await postAdmin(payload, `${orderId} 已更新。`, btnElement);
 }
 
 function cancelOrderEdit(orderId) {
@@ -2564,7 +2670,7 @@ function renderSettings() {
           <h2 class="text-xl font-black text-stone-900">日期設定</h2>
           <p class="text-sm text-stone-500 mt-1">修改後請按「儲存」。</p>
         </div>
-        <button onclick="saveSheet('settings','Settings')" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 日期設定</button>
+        <button onclick="saveSheet('settings','Settings', this)" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 日期設定</button>
       </div>
       <div data-edit-table="settings" data-keys="setting_name,value" class="space-y-5">
         ${settingsRows.map(row => settingDateBlock(row.setting_name, row.value)).join("")}
@@ -2699,7 +2805,7 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
           ${searchBox}
           <div class="flex gap-2">
             <button onclick="addRow('${tab}')" class="h-10 rounded-xl border border-stone-200 px-4 font-black text-stone-600 bg-white hover:bg-stone-50">新增一列</button>
-            <button onclick="saveSheet('${tab}','${sheetName}')" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 ${sheetName}</button>
+            <button onclick="saveSheet('${tab}','${sheetName}', this)" class="h-10 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 ${sheetName}</button>
           </div>
         </div>
       </div>
@@ -2740,6 +2846,15 @@ function getAdminCellClass(tab, key) {
   }
 
   return "min-w-[140px]";
+}
+
+// UX 建議 1: 包裝獨立的 Delete Function
+function deleteAdminRow(button, tab) {
+  showAdminConfirm('確定要刪除這列嗎？', () => {
+    button.closest('tr').remove();
+    updateEditableTableStats(tab);
+    markUnsaved(tab);
+  }, '刪除確認');
 }
 
 function editRowHtml(tab, keys, row = {}, textareaLong = false) {
@@ -2788,7 +2903,7 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false) {
     const cellClass = getAdminCellClass(tab, key);
     return `<td class="px-2 py-2 align-top ${cellClass}">${field}</td>`;
   }).join("")}<td class="px-1 py-2 align-top text-center">
-    <button onclick="this.closest('tr').remove(); updateEditableTableStats('${tab}');" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">
+    <button type="button" onclick="deleteAdminRow(this, '${tab}')" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">
       ✕
     </button>
   </td></tr>`;
@@ -2810,10 +2925,15 @@ function toggleDisplaySwitch(button) {
   button.setAttribute("aria-label", nextOn ? "上架" : "下架");
   button.setAttribute("title", nextOn ? "上架" : "下架");
   if (input) input.value = nextOn ? "TRUE" : "FALSE";
+  
   const row = button.closest("tr");
   updateEditableRowState(row);
+  
   const table = button.closest("table[data-edit-table]");
-  if (table) updateEditableTableStats(table.dataset.editTable);
+  if (table) {
+    updateEditableTableStats(table.dataset.editTable);
+    markUnsaved(table.dataset.editTable); // UX 建議 5: 切換也算未儲存
+  }
 }
 
 function updateEditableRowState(row) {
@@ -2902,6 +3022,7 @@ function appendSettingDate(button) {
   if (!date) return;
   mergeSettingDates(box, [date]);
   dateInput.value = "";
+  markUnsaved('settings');
 }
 
 function appendSettingDateRange(button) {
@@ -2913,7 +3034,7 @@ function appendSettingDateRange(button) {
   const start = new Date(startInput.value + "T00:00:00");
   const end = new Date(endInput.value + "T00:00:00");
   if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
-    alert("請確認起始日期不可晚於結束日期。");
+    showAdminToast("請確認起始日期不可晚於結束日期。", "error"); // UX 建議 3: alert() -> Toast
     return;
   }
 
@@ -2924,6 +3045,7 @@ function appendSettingDateRange(button) {
     cursor.setDate(cursor.getDate() + 1);
   }
   mergeSettingDates(box, dates);
+  markUnsaved('settings');
 }
 
 function appendSettingMonth(button) {
@@ -2943,16 +3065,21 @@ function appendSettingMonth(button) {
     dates.push(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
   }
   mergeSettingDates(box, dates);
+  markUnsaved('settings');
 }
 
 function removeSettingDate(button, date) {
   const box = getSettingBlock(button);
   setSettingDates(box, getSettingDates(box).filter(d => d !== date));
+  markUnsaved('settings');
 }
 
+// UX 建議 3: 轉換為客製 confirm
 function clearSettingDates(button) {
-  if (!confirm("確定要清空這個日期設定嗎？")) return;
-  setSettingDates(getSettingBlock(button), []);
+  showAdminConfirm("確定要清空這個日期設定嗎？", () => {
+    setSettingDates(getSettingBlock(button), []);
+    markUnsaved('settings');
+  }, "清空日期");
 }
 
 function sortSettingDates(button) {
@@ -2969,6 +3096,7 @@ function addRow(tab) {
   const newRow = table.querySelector("tbody tr:last-child");
   updateEditableRowState(newRow);
   updateEditableTableStats(tab);
+  markUnsaved(tab); // UX 建議 5: 新增列也觸發紅點
 }
 
 function collectRows(tab) {
@@ -2996,13 +3124,15 @@ function collectRows(tab) {
   });
 }
 
-async function saveSheet(tab, sheetName) {
+async function saveSheet(tab, sheetName, btnElement) {
   const rows = collectRows(tab);
-  await postAdmin({ action:"adminReplaceSheetRows", token:getToken(), sheetName, rows }, `${sheetName} 已儲存。`);
+  await postAdmin({ action:"adminReplaceSheetRows", token:getToken(), sheetName, rows }, `${sheetName} 已儲存。`, btnElement);
+  clearUnsaved(tab); // 儲存完畢清除紅點
 }
 
-async function postAdmin(payload, successMessage) {
-  const restoreButton = setButtonLoading(getActiveActionButton(), "儲存中...");
+// UX 建議 4: 解除對 document.activeElement 的依賴，直接接收 button 元素
+async function postAdmin(payload, successMessage, buttonElement = null) {
+  const restoreButton = setButtonLoading(buttonElement || getActiveActionButton(), "儲存中...");
   const loadingToast = showAdminToast("儲存中...", "loading", 0);
   hideAdminInlineMessage();
   try {
