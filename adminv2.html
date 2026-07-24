@@ -232,16 +232,16 @@
 .admin-stock-zero { border-color: #fecaca !important; background: #fef2f2 !important; color: #dc2626 !important; }
 .admin-stock-low { border-color: #fed7aa !important; background: #fff7ed !important; color: #c2410c !important; }
 .admin-edit-search { min-width: 180px; }
-@media (min-width: 768px) {
-  table[data-edit-table="products"] thead,
-    table[data-edit-table="packaging"] thead,
-    table[data-edit-table="coupons"] thead {
-      position: sticky;
-      top: 0;
-      z-index: 5;
-      background: #fff;
-      box-shadow: 0 1px 0 rgba(231,229,228,.9);
-    }
+
+/* 讓表格標題凍結（不再限制只有電腦版才有，手機版也通用） */
+table[data-edit-table="products"] thead,
+table[data-edit-table="packaging"] thead,
+table[data-edit-table="coupons"] thead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(231,229,228,.9);
 }
 
 table[data-edit-table="products"] input[data-key="price"],
@@ -271,9 +271,14 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
    📱 手機版 UI/UX 優化補丁 (Mobile UX Enhancements)
    ========================================================= */
 @media (max-width: 768px) {
-  /* 確保所有輸入框與按鈕符合最小觸控範圍 (Apple/Google 規範 44px) */
-  input, select, button, .admin-switch {
+  /* 確保所有輸入框與一般按鈕符合最小觸控範圍 (Apple/Google 規範 44px) */
+  input, select, button:not(.admin-switch) {
     min-height: 44px;
+  }
+
+  /* 確保開關保持原本比例不要被拉長 */
+  .admin-switch {
+    min-height: 28px !important;
   }
   
   /* 確保輸入字體至少 16px，防止 iOS Safari 自動放大畫面 */
