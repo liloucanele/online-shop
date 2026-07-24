@@ -164,14 +164,23 @@
       .admin-filter-panel summary { display: none; }
     }
 
+    /* 彈出提示訊息 (Toast) 優化成藥丸設計 */
     .admin-toast {
-      transform: translateY(16px);
+      transform: translateY(16px) scale(0.95);
       opacity: 0;
-      transition: opacity .22s ease, transform .22s ease;
-      box-shadow: 0 12px 28px rgba(28, 23, 21, .14);
+      transition: all .25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 8px 24px rgba(0,0,0,.15);
       letter-spacing: normal !important;
+      border-radius: 999px !important; /* 藥丸形狀 */
+      width: fit-content !important;
+      min-width: 0 !important;
+      max-width: 90vw !important;
+      padding: 10px 20px !important;
+      margin: 0 auto 10px auto;
+      pointer-events: auto;
+      font-weight: 600 !important;
     }
-    .admin-toast.show { transform: translateY(0); opacity: 1; }
+    .admin-toast.show { transform: translateY(0) scale(1); opacity: 1; }
     .admin-toast-spinner {
       width: 16px; height: 16px; border-radius: 999px;
       border: 2px solid rgba(255,255,255,.45);
@@ -179,20 +188,6 @@
       animation: adminSpin .75s linear infinite;
     }
     @keyframes adminSpin { to { transform: rotate(360deg); } }
-
-    @media (max-width: 640px) {
-      #adminToastArea {
-        left: 0; right: 0; bottom: 0;
-        display: flex; flex-direction: column; align-items: stretch;
-        padding: 0 12px calc(12px + env(safe-area-inset-bottom, 0px));
-      }
-      .admin-toast {
-        width: 100%; max-width: none; min-width: 0;
-        margin: 0 auto; border-radius: 16px;
-        font-weight: 600 !important;
-        box-shadow: 0 8px 24px rgba(28, 23, 21, .18);
-      }
-    }
 
     table[data-edit-table="products"] input[data-key="price"],
     table[data-edit-table="products"] input[data-key="stock"],
@@ -332,7 +327,7 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.2.0</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.0.0</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -376,7 +371,9 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
 <section class="tab-page hidden space-y-5" id="tab-revenue"></section>
 </section>
 </main>
-<div class="fixed right-4 bottom-4 z-[9999] flex flex-col gap-2 pointer-events-none" id="adminToastArea"></div>
+
+<!-- 修改過的浮動 Toast 區域，讓它維持在正下方 -->
+<div class="fixed inset-x-0 bottom-4 z-[9999] flex flex-col items-center justify-end pointer-events-none px-4" id="adminToastArea"></div>
 
 <div id="adminConfirmModal" class="hidden fixed inset-0 z-[99999] flex items-center justify-center bg-stone-900/40 opacity-0 transition-opacity duration-200">
   <div class="bg-white rounded-3xl p-6 max-w-sm w-full mx-4 shadow-xl transform scale-95 transition-transform duration-200" id="adminConfirmBox">
@@ -486,8 +483,9 @@ function showAdminToast(message, type = "info", duration = 2600) {
   const bgClass = isError ? "bg-red-600" : isSuccess ? "bg-emerald-600" : "bg-[#5B7290]";
   const icon = isLoading ? `<span class="admin-toast-spinner"></span>` : isError ? "❌" : isSuccess ? "✅" : "ℹ️";
 
-  toast.className = `admin-toast pointer-events-auto ${bgClass} text-white rounded-2xl px-4 py-3 min-w-[220px] max-w-[340px] flex items-center gap-2 text-sm font-black tracking-wide`;
-  toast.innerHTML = `<span class="shrink-0">${icon}</span><span class="leading-relaxed">${escapeHtml(message)}</span>`;
+  // 將 JS 中產生的 Toast 改為更乾淨的 class 設定，由 CSS 負責大部分圓角等視覺
+  toast.className = `admin-toast ${bgClass} text-white flex items-center gap-2.5 text-[15px] font-semibold tracking-wide`;
+  toast.innerHTML = `<span class="shrink-0 flex items-center justify-center">${icon}</span><span class="leading-relaxed whitespace-nowrap">${escapeHtml(message)}</span>`;
   area.appendChild(toast);
 
   requestAnimationFrame(() => toast.classList.add("show"));
@@ -1071,7 +1069,7 @@ function openOrdersByDashboardDate(dateValue) {
     if (statusFilter) statusFilter.value = "";
     if (methodFilter) methodFilter.value = "";
     if (sortFilter) sortFilter.value = "arrivalAsc";
-    if (startInput) startInput.value = date;
+    if (startInput) startInput.value = "";
     if (endInput) endInput.value = date;
     updateOrderRangeButtons("");
     filterOrders();
