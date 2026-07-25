@@ -327,7 +327,7 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
     border-radius: 4px;
   }
 
-  /* 產品／包裝／優惠券編輯清單：手機版改成獨立卡片，預設只顯示關鍵欄位，其餘欄位收合，點「更多欄位」才展開 */
+  /* 產品／包裝／優惠券編輯清單：手機版預設只顯示關鍵欄位，其餘欄位收合，點「更多欄位」才展開 */
   table[data-edit-table] {
     min-width: 0 !important;
     width: 100% !important;
@@ -335,22 +335,16 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
   }
   table[data-edit-table] colgroup { display: none; }
   table[data-edit-table] thead { display: none; }
-  table[data-edit-table] tbody {
-    display: flex;
-    flex-direction: column;
-    row-gap: 10px;
-    width: 100% !important;
-  }
+  table[data-edit-table] tbody { display: block; width: 100% !important; }
   table[data-edit-table] tbody tr {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    column-gap: 10px;
-    background: #fff;
-    border: 1px solid #e7e5e4;
-    border-radius: 16px;
-    padding: 13px 13px 11px;
+    column-gap: 12px;
+    border-bottom: 1px solid #e7e5e4;
+    padding: 10px 2px 12px;
   }
+  table[data-edit-table] tbody tr:first-child { border-top: 1px solid #e7e5e4; }
   table[data-edit-table] tbody tr.is-inactive { background: #fafaf9; }
   table[data-edit-table] td {
     display: block;
@@ -368,126 +362,26 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
     color: #a8a29e;
     margin-bottom: 3px;
   }
-
-  /* 商品／包裝名稱：當成卡片標題，去掉欄位標籤、拿掉輸入框外觀 */
-  table[data-edit-table="products"] td:has(input[data-key="name"]),
-  table[data-edit-table="packaging"] td:has(input[data-key="name"]) {
-    order: -6;
-    flex: 1 1 100%;
-    padding-top: 0 !important;
-    padding-bottom: 2px !important;
+  /* 商品的價格／庫存並排顯示，不用各佔一整行 */
+  table[data-edit-table="products"] td:has(input[data-key="price"]),
+  table[data-edit-table="products"] td:has(input[data-key="stock"]) {
+    flex: 1 1 calc(50% - 6px);
   }
-  table[data-edit-table="products"] td:has(input[data-key="name"])::before,
-  table[data-edit-table="packaging"] td:has(input[data-key="name"])::before { display: none; }
-  table[data-edit-table="products"] td:has(input[data-key="name"]) input,
-  table[data-edit-table="packaging"] td:has(input[data-key="name"]) input {
-    border: none !important;
-    background: transparent !important;
-    padding: 0 !important;
-    height: auto !important;
-    font-weight: 700 !important;
-    color: #1c1917;
-  }
-
-  /* 類型徽章＋上架開關：同一行，左右對齊 */
-  table[data-edit-table="products"] td:has(select[data-key="type"]),
-  table[data-edit-table="packaging"] td:has(select[data-key="type"]) {
-    order: -4;
-    flex: 0 1 auto;
-    padding: 4px 0 6px !important;
-  }
-  table[data-edit-table="products"] td:has(select[data-key="type"])::before,
-  table[data-edit-table="packaging"] td:has(select[data-key="type"])::before { display: none; }
-  table[data-edit-table="products"] td:has(select[data-key="type"]) select,
-  table[data-edit-table="packaging"] td:has(select[data-key="type"]) select {
-    border-radius: 999px !important;
-    border-color: #e7e5e4 !important;
-    background: #f5f5f4 !important;
-    color: #78716c !important;
-    padding: 4px 12px !important;
-    min-height: 0 !important;
-    height: auto !important;
-  }
-  table[data-edit-table="products"] td:has(input[data-key="display"]),
-  table[data-edit-table="packaging"] td:has(input[data-key="display"]) {
-    order: -4;
-    flex: 0 0 auto;
+  /* 上架狀態改成單行：左邊標籤、右邊開關，不再獨立置中一行 */
+  table[data-edit-table] td:has(input[data-key="display"]) {
     display: flex !important;
     align-items: center;
-    margin-left: auto;
-    padding: 4px 0 6px !important;
+    justify-content: space-between;
+    padding: 8px 0 !important;
   }
-  table[data-edit-table="products"] td:has(input[data-key="display"])::before,
-  table[data-edit-table="packaging"] td:has(input[data-key="display"])::before { display: none; }
+  table[data-edit-table] td:has(input[data-key="display"])::before {
+    display: inline-block;
+    margin-bottom: 0;
+  }
   table[data-edit-table] .admin-switch {
     margin-left: 0 !important;
     margin-right: 0 !important;
-    position: relative;
   }
-  /* 用 CSS 產生「上架中／已下架」文字，不用改 JS */
-  table[data-edit-table="products"] td:has(input[data-key="display"]) .admin-switch::after,
-  table[data-edit-table="packaging"] td:has(input[data-key="display"]) .admin-switch::after {
-    content: "已下架";
-    position: absolute;
-    right: calc(100% + 8px);
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .02em;
-    color: #a8a29e;
-    white-space: nowrap;
-  }
-  table[data-edit-table="products"] td:has(input[data-key="display"]) .admin-switch.is-on::after,
-  table[data-edit-table="packaging"] td:has(input[data-key="display"]) .admin-switch.is-on::after {
-    content: "上架中";
-    color: #3b6d11;
-  }
-
-  /* 價格／庫存／排序（或加價／容量／排序）：等寬統計小方塊 */
-  table[data-edit-table="products"] td:has(input[data-key="price"]),
-  table[data-edit-table="products"] td:has(input[data-key="stock"]),
-  table[data-edit-table="products"] td:has(input[data-key="sort"]),
-  table[data-edit-table="packaging"] td:has(input[data-key="extra_price"]),
-  table[data-edit-table="packaging"] td:has(input[data-key="box_size"]),
-  table[data-edit-table="packaging"] td:has(input[data-key="sort"]) {
-    order: -3;
-    flex: 1 1 0;
-    background: #fafaf9;
-    border-radius: 10px;
-    padding: 7px 9px !important;
-    margin-top: 2px;
-  }
-  table[data-edit-table="products"] td:has(input[data-key="price"])::before,
-  table[data-edit-table="products"] td:has(input[data-key="stock"])::before,
-  table[data-edit-table="products"] td:has(input[data-key="sort"])::before,
-  table[data-edit-table="packaging"] td:has(input[data-key="extra_price"])::before,
-  table[data-edit-table="packaging"] td:has(input[data-key="box_size"])::before,
-  table[data-edit-table="packaging"] td:has(input[data-key="sort"])::before {
-    color: #a8a29e;
-    margin-bottom: 2px;
-  }
-  table[data-edit-table="products"] td:has(input[data-key="price"]) input,
-  table[data-edit-table="products"] td:has(input[data-key="stock"]) input,
-  table[data-edit-table="products"] td:has(input[data-key="sort"]) input,
-  table[data-edit-table="packaging"] td:has(input[data-key="extra_price"]) input,
-  table[data-edit-table="packaging"] td:has(input[data-key="box_size"]) input,
-  table[data-edit-table="packaging"] td:has(input[data-key="sort"]) input {
-    border: none !important;
-    background: transparent !important;
-    padding: 0 !important;
-    height: auto !important;
-    font-weight: 700 !important;
-    text-align: left !important;
-  }
-  /* 庫存偏低／缺貨：整個小方塊變色，不只是輸入框 */
-  table[data-edit-table="products"] td:has(input.admin-stock-zero) {
-    background: #fef2f2 !important;
-  }
-  table[data-edit-table="products"] td:has(input.admin-stock-low) {
-    background: #fff7ed !important;
-  }
-
   /* 非摘要欄位（描述、成分、備註等）預設收合，展開後才佔用版面 */
   table[data-edit-table] td[data-detail="1"] {
     display: none;
@@ -500,9 +394,8 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
     flex: 1 1 100%;
     align-items: center;
     gap: 8px;
-    padding-top: 10px !important;
-    margin-top: 6px;
-    border-top: 1px solid #f0efed;
+    padding-top: 8px !important;
+    margin-top: 2px;
   }
   .row-toggle-btn {
     flex: 1;
@@ -2430,29 +2323,29 @@ function settingDateBlockEnhanced(label, value) {
       </button>`;
   }
 
-  return `<section class="rounded-2xl md:rounded-3xl border border-stone-200 bg-white shadow-sm overflow-hidden" data-setting-row data-setting-name="${escapeHtml(label)}">
+  return `<section class="rounded-3xl border border-stone-200 bg-white shadow-sm overflow-hidden" data-setting-row data-setting-name="${escapeHtml(label)}">
     <input type="hidden" data-key="setting_name" value="${escapeHtml(label)}">
     <input type="hidden" data-key="value" class="setting-date-value" value="${escapeHtml(cleanValue)}">
 
-    <div class="bg-stone-50/70 border-b border-stone-100 px-4 py-3 md:px-5 md:py-4 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+    <div class="bg-stone-50/70 border-b border-stone-100 px-5 py-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
       <div>
-        <h3 class="text-base md:text-lg font-black text-[#5B7290] flex items-center gap-2">📅 ${escapeHtml(label)}</h3>
+        <h3 class="text-lg font-black text-[#5B7290] flex items-center gap-2">📅 ${escapeHtml(label)}</h3>
 
       </div>
-      <div class="flex items-center gap-2">
-        ${copyBtnHtml ? copyBtnHtml.replace('class="', 'class="flex-1 justify-center xl:flex-none ') : ""}
-        <button type="button" onclick="clearSettingDates(this)" class="flex-1 xl:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-xs font-black text-red-500 hover:bg-red-100 transition-colors">
+      <div class="flex flex-wrap items-center gap-2">
+        ${copyBtnHtml}
+        <button type="button" onclick="clearSettingDates(this)" class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-xs font-black text-red-500 hover:bg-red-100 transition-colors">
             清空所有日期
         </button>
       </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-[340px_1fr] md:min-h-[380px]">
-      <div class="p-4 md:p-5 border-b md:border-b-0 md:border-r border-stone-100 bg-white">
+      <div class="p-5 border-b md:border-b-0 md:border-r border-stone-100 bg-white">
          <div class="calendar-container w-full max-w-[280px] mx-auto"></div>
       </div>
 
-      <div class="p-4 md:p-5 bg-stone-50/40">
+      <div class="p-5 bg-stone-50/40">
          <div class="flex items-center justify-between mb-4">
             <div class="text-sm font-black text-stone-500 tracking-widest">已選取日期明細</div>
             <div class="text-xs font-black text-[#5B7290] bg-[#5B7290]/10 px-2 py-0.5 rounded-full"><span class="setting-date-count">${cleanDates.length}</span> 天</div>
@@ -2673,8 +2566,8 @@ function deleteAdminRow(button, tab) {
 }
 
 const ADMIN_MOBILE_SUMMARY_KEYS = {
-  products: ["name", "price", "stock", "type", "display"],
-  packaging: ["name", "extra_price", "type", "display"],
+  products: ["name", "price", "stock", "display"],
+  packaging: ["name", "extra_price", "display"],
   coupons: ["code", "type", "value"]
 };
 
@@ -2792,8 +2685,11 @@ function filterEditableTable(tab) {
   const input = document.getElementById(`${tab}Search`);
   if (!table || !input) return;
   const q = input.value.trim().toLowerCase();
+  
   table.querySelectorAll("tbody tr").forEach(row => {
-    const text = row.textContent.toLowerCase();
+    const fields = Array.from(row.querySelectorAll("input, select, textarea"));
+    const text = fields.map(f => f.value).join(" ").toLowerCase();
+    
     row.style.display = !q || text.includes(q) ? "" : "none";
   });
 }
