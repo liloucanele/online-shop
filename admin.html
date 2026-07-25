@@ -2056,6 +2056,65 @@ function renderPackaging() {
 function renderCoupons() {
   renderEditableTable("coupons", "Coupons", ["code","type","value","min_spend","start_date","end_date"], ["折扣碼","類型","折扣值","低消","開始日","結束日"], adminData.coupons || []);
 }
+
+function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = false) {
+  const id = "tab-" + tab;
+  const isProductOrPackaging = tab === "products" || tab === "packaging";
+  
+  let noticeContent = "";
+  if (tab === "products") {
+    noticeContent = "商品類型：組合商品／單品<br>配送規則：自取與宅配／僅自取／僅宅配<br>上架狀態可直接點擊開關切換。";
+  } else if (tab === "coupons") {
+    noticeContent = "現折金額請直接輸入數字，例如 100。<br>折扣比例請輸入小數，例如 0.9 代表 9 折。";
+  }
+
+  const infoIconHtml = noticeContent ? `
+    <details class="group relative inline-block ml-2 cursor-pointer">
+      <summary class="list-none text-stone-400 hover:text-[#5B7290] transition-colors flex items-center justify-center outline-none">
+         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+           <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>
+         </svg>
+      </summary>
+      <div class="absolute z-50 left-0 top-full mt-2 w-[260px] bg-stone-800 text-white text-xs font-medium rounded-xl shadow-xl p-3.5 leading-relaxed hidden group-open:block">
+        ${noticeContent}
+      </div>
+    </details>
+  ` : "";
+
+  const stats = isProductOrPackaging ? getEditableTableStats(rows) : null;
+  const searchBox = isProductOrPackaging ? `<div class="flex flex-col md:flex-row md:items-center gap-2 md:justify-end"><div id="${tab}Stats" class="text-sm text-stone-500 font-bold whitespace-nowrap">共 ${stats.total} 個${tab === "products" ? "商品" : "包裝"}｜上架 ${stats.active}｜下架 ${stats.inactive}</div><input type="search" id="${tab}Search" oninput="filterEditableTable('${tab}')" class="admin-edit-search h-10 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold" placeholder="搜尋${tab === "products" ? "商品" : "包裝"}"></div>` : "";
+
+  document.getElementById(id).innerHTML = `
+    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex items-center">
+          <h2 class="text-xl font-black text-stone-900">${sheetName}</h2>
+          ${infoIconHtml}
+        </div>
+        <div class="flex flex-col md:flex-row md:items-center gap-2">
+          ${searchBox}
+          <div class="flex gap-2 mobile-action-bar">
+            <button onclick="addRow('${tab}')" class="flex-1 md:flex-none h-11 rounded-xl border border-stone-200 px-4 font-black text-stone-600 bg-white hover:bg-stone-50">新增一列</button>
+            <button onclick="saveSheet('${tab}','${sheetName}', this)" class="flex-1 md:flex-none h-11 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 ${sheetName}</button>
+          </div>
+        </div>
+      </div>
+      <div class="overflow-x-auto max-h-[70vh]">
+        <table class="w-full text-sm table-fixed ${getEditableTableMinWidth(tab)}" data-edit-table="${tab}" data-keys="${keys.join(",")}" data-labels="${labels.join(",")}">
+          ${getEditableTableColgroup(tab, keys)}
+          <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2 whitespace-nowrap bg-white">${l}</th>`).join("")}<th class="px-1 py-2 bg-white"></th></tr></thead>
+          <tbody>${rows.map(row => editRowHtml(tab, keys, row, textareaLong, labels)).join("")}</tbody>
+        </table>
+      </div>
+    </div>`;
+  if (isProductOrPackaging) {
+    requestAnimationFrame(() => {
+      document.querySelectorAll(`#${id} tbody tr`).forEach(updateEditableRowState);
+      updateEditableTableStats(tab);
+    });
+  }
+}
+
 function settingDisplayName(name) {
   const key = (name || "").toString().trim().toLowerCase();
   if (key === "store_available_dates" || key === "pickup_available_dates" || key.includes("store") || key.includes("pickup") || key.includes("自取")) return "自取日期";
@@ -2478,43 +2537,6 @@ function getEditableTableColgroup(tab, keys) {
     coupons: { code: "34%", type: "160px", value: "110px", min_spend: "110px", start_date: "150px", end_date: "150px" }
   };
   return `<colgroup>${keys.map(key => `<col style="width:${widthMap[tab]?.[key] || '160px'}">`).join("")}<col style="width:56px"></colgroup>`;
-}
-
-function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = false) {
-  const id = "tab-" + tab;
-  const isProductOrPackaging = tab === "products" || tab === "packaging";
-  const productNamingNotice = tab === "products" ? `<div class="rounded-2xl bg-stone-50 border border-stone-100 p-3 text-xs text-stone-500 font-bold leading-relaxed space-y-1"><p>商品類型：組合商品／單品｜配送規則：自取與宅配／僅自取／僅宅配｜上架狀態可直接點擊開關切換。</p></div>` : "";
-  const couponOperationNotice = tab === "coupons" ? `<p class="text-xs text-stone-500 font-bold leading-relaxed">現折金額請直接輸入金額，例如 100；折扣比例請輸入小數，例如 0.9 代表 9 折。</p>` : "";
-  const stats = isProductOrPackaging ? getEditableTableStats(rows) : null;
-  const searchBox = isProductOrPackaging ? `<div class="flex flex-col md:flex-row md:items-center gap-2 md:justify-end"><div id="${tab}Stats" class="text-sm text-stone-500 font-bold whitespace-nowrap">共 ${stats.total} 個${tab === "products" ? "商品" : "包裝"}｜上架 ${stats.active}｜下架 ${stats.inactive}</div><input type="search" id="${tab}Search" oninput="filterEditableTable('${tab}')" class="admin-edit-search h-10 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold" placeholder="搜尋${tab === "products" ? "商品" : "包裝"}"></div>` : "";
-
-  document.getElementById(id).innerHTML = `
-    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div><h2 class="text-xl font-black text-stone-900">${sheetName}</h2></div>
-        <div class="flex flex-col md:flex-row md:items-center gap-2">
-          ${searchBox}
-          <div class="flex gap-2 mobile-action-bar">
-            <button onclick="addRow('${tab}')" class="flex-1 md:flex-none h-11 rounded-xl border border-stone-200 px-4 font-black text-stone-600 bg-white hover:bg-stone-50">新增一列</button>
-            <button onclick="saveSheet('${tab}','${sheetName}', this)" class="flex-1 md:flex-none h-11 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 ${sheetName}</button>
-          </div>
-        </div>
-      </div>
-      ${productNamingNotice}${couponOperationNotice}
-      <div class="overflow-x-auto max-h-[70vh]">
-        <table class="w-full text-sm table-fixed ${getEditableTableMinWidth(tab)}" data-edit-table="${tab}" data-keys="${keys.join(",")}" data-labels="${labels.join(",")}">
-          ${getEditableTableColgroup(tab, keys)}
-          <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2 whitespace-nowrap bg-white">${l}</th>`).join("")}<th class="px-1 py-2 bg-white"></th></tr></thead>
-          <tbody>${rows.map(row => editRowHtml(tab, keys, row, textareaLong, labels)).join("")}</tbody>
-        </table>
-      </div>
-    </div>`;
-  if (isProductOrPackaging) {
-    requestAnimationFrame(() => {
-      document.querySelectorAll(`#${id} tbody tr`).forEach(updateEditableRowState);
-      updateEditableTableStats(tab);
-    });
-  }
 }
 
 function getAdminCellClass(tab, key) {
