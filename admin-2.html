@@ -327,7 +327,7 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
     border-radius: 4px;
   }
 
-  /* 產品／包裝／優惠券編輯表格：手機版改為逐列卡片，不再需要橫向捲動 */
+  /* 產品／包裝／優惠券編輯清單：手機版預設只顯示關鍵欄位，其餘欄位收合，點「更多欄位」才展開 */
   table[data-edit-table] {
     min-width: 0 !important;
     width: 100% !important;
@@ -342,32 +342,58 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
     width: 100% !important;
   }
   table[data-edit-table] tbody tr {
-    margin-bottom: 12px;
-    border: 1px solid #e7e5e4;
-    border-radius: 18px;
-    padding: 10px 12px 12px;
-    background: #fff;
+    border-bottom: 1px solid #e7e5e4;
+    padding: 10px 2px 12px;
   }
-  table[data-edit-table] tbody tr.is-inactive { background: #f5f5f4; }
+  table[data-edit-table] tbody tr:first-child { border-top: 1px solid #e7e5e4; }
+  table[data-edit-table] tbody tr.is-inactive { background: #fafaf9; }
   table[data-edit-table] td {
     border-top: none !important;
-    padding: 7px 0 !important;
+    padding: 4px 0 !important;
   }
   table[data-edit-table] td[data-label]:not([data-label=""])::before {
     content: attr(data-label);
     display: block;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: .05em;
+    letter-spacing: .04em;
     color: #a8a29e;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
+  }
+  /* 非摘要欄位（描述、成分、備註等）預設收合，展開後才佔用版面 */
+  table[data-edit-table] td[data-detail="1"] {
+    display: none;
+  }
+  table[data-edit-table] tbody tr.row-expanded td[data-detail="1"] {
+    display: block;
   }
   table[data-edit-table] td:last-child {
-    display: flex;
-    justify-content: flex-end;
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
     padding-top: 8px !important;
-    margin-top: 4px;
-    border-top: 1px dashed #e7e5e4 !important;
+    margin-top: 2px;
+  }
+  .row-toggle-btn {
+    flex: 1;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid #e7e5e4;
+    background: #fafaf9;
+    color: #78716c;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .row-toggle-btn .chevron { transition: transform .15s ease; }
+  tr.row-expanded .row-toggle-btn .chevron { transform: rotate(180deg); }
+  table[data-edit-table] td:last-child button[onclick^="deleteAdminRow"] {
+    width: 36px !important;
+    height: 36px !important;
+    flex-shrink: 0;
   }
 }
 </style>
@@ -375,7 +401,7 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.4.0</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.3.0</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -2466,11 +2492,25 @@ function getAdminCellClass(tab, key) {
   return "min-w-[140px]";
 }
 
+function toggleAdminRowDetail(button) {
+  const row = button.closest("tr");
+  if (!row) return;
+  const expanded = row.classList.toggle("row-expanded");
+  const label = button.querySelector("span");
+  if (label) label.textContent = expanded ? "收合欄位" : "更多欄位";
+}
+
 function deleteAdminRow(button, tab) {
   showAdminConfirm('確定要刪除這列嗎？', () => {
     button.closest('tr').remove(); updateEditableTableStats(tab); markUnsaved(tab);
   }, '刪除確認');
 }
+
+const ADMIN_MOBILE_SUMMARY_KEYS = {
+  products: ["name", "price", "stock", "display"],
+  packaging: ["name", "extra_price", "display"],
+  coupons: ["code", "type", "value"]
+};
 
 function editRowHtml(tab, keys, row = {}, textareaLong = false, labels = []) {
   const rowAttr = tab === "coupons" && (row.code || "").toString().trim() ? ` data-coupon-code="${escapeHtml((row.code || "").toString().trim())}"` : "";
@@ -2505,8 +2545,10 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false, labels = []) {
       field = `<input data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(val)}">`;
     }
 
-    return `<td class="px-2 py-2 align-top ${getAdminCellClass(tab, key)}" data-label="${escapeHtml(labels[idx] || "")}">${field}</td>`;
-  }).join("")}<td class="px-1 py-2 align-top text-center" data-label=""><button type="button" onclick="deleteAdminRow(this, '${tab}')" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">✕</button></td></tr>`;
+    const summaryKeys = ADMIN_MOBILE_SUMMARY_KEYS[tab];
+    const isDetail = summaryKeys && !summaryKeys.includes(key);
+    return `<td class="px-2 py-2 align-top ${getAdminCellClass(tab, key)}" data-label="${escapeHtml(labels[idx] || "")}"${isDetail ? ' data-detail="1"' : ""}>${field}</td>`;
+  }).join("")}<td class="px-1 py-2 align-top text-center" data-label="">${ADMIN_MOBILE_SUMMARY_KEYS[tab] ? `<button type="button" class="row-toggle-btn md:hidden" onclick="toggleAdminRowDetail(this)"><span>更多欄位</span><span class="chevron">▾</span></button>` : ""}<button type="button" onclick="deleteAdminRow(this, '${tab}')" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">✕</button></td></tr>`;
 }
 
 function isDisplayOn(value) {
