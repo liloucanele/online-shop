@@ -2323,14 +2323,13 @@ function settingDateBlockEnhanced(label, value) {
       </button>`;
   }
 
-  return `<section class="rounded-3xl border border-stone-200 bg-white shadow-sm overflow-hidden" data-setting-row data-setting-name="${escapeHtml(label)}">
+  return `<section class="rounded-3xl border border-stone-200 bg-white overflow-hidden" data-setting-row data-setting-name="${escapeHtml(label)}">
     <input type="hidden" data-key="setting_name" value="${escapeHtml(label)}">
     <input type="hidden" data-key="value" class="setting-date-value" value="${escapeHtml(cleanValue)}">
 
     <div class="bg-stone-50/70 border-b border-stone-100 px-5 py-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
       <div>
         <h3 class="text-lg font-black text-[#5B7290] flex items-center gap-2">📅 ${escapeHtml(label)}</h3>
-
       </div>
       <div class="flex flex-wrap items-center gap-2">
         ${copyBtnHtml}
@@ -2386,11 +2385,12 @@ function updateSettingCalendarAndTags(box) {
   const year = parseInt(y, 10);
   const month = parseInt(m, 10) - 1;
 
+  // 移除了切換月份按鈕上的 hover:shadow-sm
   let html = `
   <div class="flex items-center justify-between mb-3 bg-stone-50 rounded-xl p-1 border border-stone-100">
-      <button type="button" onclick="changeCalendarMonth(this, -1)" class="calendar-nav-btn w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-white hover:shadow-sm rounded-lg transition-all font-black text-lg">‹</button>
+      <button type="button" onclick="changeCalendarMonth(this, -1)" class="calendar-nav-btn w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-white rounded-lg transition-all font-black text-lg">‹</button>
       <input type="month" value="${viewMonth}" onchange="changeCalendarMonthTo(this)" class="font-black text-stone-700 bg-transparent border-none outline-none text-center cursor-pointer">
-      <button type="button" onclick="changeCalendarMonth(this, 1)" class="calendar-nav-btn w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-white hover:shadow-sm rounded-lg transition-all font-black text-lg">›</button>
+      <button type="button" onclick="changeCalendarMonth(this, 1)" class="calendar-nav-btn w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-white rounded-lg transition-all font-black text-lg">›</button>
   </div>`;
 
   html += `<div class="grid grid-cols-7 gap-1 text-center text-xs mb-4">`;
@@ -2406,8 +2406,9 @@ function updateSettingCalendarAndTags(box) {
   for(let d=1; d<=daysInMonth; d++) {
       const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const isSelected = selectedDates.includes(dateStr);
+      // 移除了選中狀態的 shadow-md
       const activeClass = isSelected 
-        ? 'bg-[#5B7290] text-white font-black shadow-md border-[#5B7290]' 
+        ? 'bg-[#5B7290] text-white font-black border-[#5B7290]' 
         : 'bg-white text-stone-700 border-stone-100 hover:border-stone-300 hover:bg-stone-50 font-semibold';
       html += `<button type="button" onclick="toggleCalendarDate(this, '${dateStr}')" class="calendar-day-btn aspect-square rounded-xl border flex items-center justify-center ${activeClass} transition-all text-sm">${d}</button>`;
   }
@@ -2431,7 +2432,8 @@ function updateSettingCalendarAndTags(box) {
   } else {
       let tagsHtml = '';
       for(const [grpMonth, dates] of Object.entries(groups)) {
-          tagsHtml += `<div class="mb-5 last:mb-0 bg-white p-3 rounded-2xl border border-stone-100 shadow-sm">
+          // 移除了內層卡片的 shadow-sm，將 border 加深為 border-stone-200
+          tagsHtml += `<div class="mb-5 last:mb-0 bg-white p-3 rounded-2xl border border-stone-200">
               <div class="text-[13px] font-black text-stone-500 tracking-widest mb-3 border-b border-stone-50 pb-2">${grpMonth.replace('-','年')}月 <span class="text-stone-400 font-bold">(${dates.length}天)</span></div>
               <div class="flex flex-wrap gap-2">
                   ${dates.map(date => {
