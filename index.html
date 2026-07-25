@@ -1026,7 +1026,15 @@
                         <div>
                             <label for="couponInput" class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">折扣碼</label>
                             <div class="flex gap-2">
-                                <input type="text" id="couponInput" onkeypress="if(event.key === 'Enter') { event.preventDefault(); applyCouponCode(true); }" class="flex-1 px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="請輸入折扣碼">
+                                <div class="relative flex-1">
+                                    <!-- 加上 oninput 事件，即時偵測字數顯示清除按鈕；加上 pr-10 預留按鈕空間 -->
+                                    <input type="text" id="couponInput" oninput="toggleCouponClearBtn()" onkeypress="if(event.key === 'Enter') { event.preventDefault(); applyCouponCode(true); }" class="w-full px-3 pr-10 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50" placeholder="請輸入折扣碼">
+                                    
+                                    <!-- 絕對定位的清除按鈕，預設隱藏 (hidden) -->
+                                    <button type="button" id="clearCouponBtn" onclick="removeCouponCode()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center bg-stone-200/70 text-stone-500 hover:bg-stone-300 hover:text-stone-700 rounded-full text-xs font-bold transition-colors cursor-pointer" aria-label="移除折扣碼">
+                                        ✕
+                                    </button>
+                                </div>
                                 <button type="button" onclick="applyCouponCode(true)" class="bg-[#5B7290] text-white font-bold px-4 md:px-6 rounded-xl hover:bg-[#3E4F66] transition-all text-sm md:text-base shrink-0 cursor-pointer h-12 md:h-14">
                                     套用
                                 </button>
@@ -1555,6 +1563,17 @@
             }
             return true;
         }
+
+        window.applyCouponCode = function(isUserClick = false) { 
+            // ... 前面的原有邏輯保留不動 ...
+
+            calculateTotal(); 
+            scheduleLilouDraftSave();
+            
+            // 加在函數的最後一行，同步按鈕狀態
+            toggleCouponClearBtn();
+        }
+
 
         function bindLilouDraftAutoSave() {
             ['custName', 'custPhone', 'custEmail', 'shipMethod', 'shipDate', 'custAddress', 'couponInput', 'orderNote'].forEach(id => {
@@ -2693,6 +2712,41 @@
 
             calculateTotal(); 
             scheduleLilouDraftSave();
+        }
+
+        // 清除折扣碼並重算金額
+        window.removeCouponCode = function() {
+            const input = document.getElementById('couponInput');
+            input.value = '';
+            appliedCoupon = null; // 取消折扣狀態
+            
+            // 清除並隱藏訊息提示
+            const msgElement = document.getElementById('couponMessage');
+            msgElement.innerText = '';
+            msgElement.classList.add('hidden');
+            
+            // 隱藏清除按鈕
+            document.getElementById('clearCouponBtn').classList.add('hidden');
+            
+            // 重新計算總額並儲存草稿
+            calculateTotal();
+            scheduleLilouDraftSave();
+        }
+
+        // 根據輸入框內容，決定是否顯示「✕」按鈕
+        window.toggleCouponClearBtn = function() {
+            const input = document.getElementById('couponInput');
+            const clearBtn = document.getElementById('clearCouponBtn');
+            
+            if (input.value.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+                // 如果使用者是用鍵盤手動把字刪光，也一併觸發解除套用
+                if (appliedCoupon) {
+                    removeCouponCode();
+                }
+            }
         }
 
         window.handleOrderSubmit = function(e) {
