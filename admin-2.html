@@ -335,19 +335,21 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
   }
   table[data-edit-table] colgroup { display: none; }
   table[data-edit-table] thead { display: none; }
-  table[data-edit-table] tbody,
-  table[data-edit-table] tr,
-  table[data-edit-table] td {
-    display: block;
-    width: 100% !important;
-  }
+  table[data-edit-table] tbody { display: block; width: 100% !important; }
   table[data-edit-table] tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    column-gap: 12px;
     border-bottom: 1px solid #e7e5e4;
     padding: 10px 2px 12px;
   }
   table[data-edit-table] tbody tr:first-child { border-top: 1px solid #e7e5e4; }
   table[data-edit-table] tbody tr.is-inactive { background: #fafaf9; }
   table[data-edit-table] td {
+    display: block;
+    flex: 1 1 100%;
+    min-width: 0;
     border-top: none !important;
     padding: 4px 0 !important;
   }
@@ -360,6 +362,26 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
     color: #a8a29e;
     margin-bottom: 3px;
   }
+  /* 商品的價格／庫存並排顯示，不用各佔一整行 */
+  table[data-edit-table="products"] td:has(input[data-key="price"]),
+  table[data-edit-table="products"] td:has(input[data-key="stock"]) {
+    flex: 1 1 calc(50% - 6px);
+  }
+  /* 上架狀態改成單行：左邊標籤、右邊開關，不再獨立置中一行 */
+  table[data-edit-table] td:has(input[data-key="display"]) {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0 !important;
+  }
+  table[data-edit-table] td:has(input[data-key="display"])::before {
+    display: inline-block;
+    margin-bottom: 0;
+  }
+  table[data-edit-table] .admin-switch {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
   /* 非摘要欄位（描述、成分、備註等）預設收合，展開後才佔用版面 */
   table[data-edit-table] td[data-detail="1"] {
     display: none;
@@ -369,6 +391,7 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
   }
   table[data-edit-table] td:last-child {
     display: flex !important;
+    flex: 1 1 100%;
     align-items: center;
     gap: 8px;
     padding-top: 8px !important;
