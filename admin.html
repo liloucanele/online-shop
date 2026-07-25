@@ -2685,8 +2685,11 @@ function filterEditableTable(tab) {
   const input = document.getElementById(`${tab}Search`);
   if (!table || !input) return;
   const q = input.value.trim().toLowerCase();
+  
   table.querySelectorAll("tbody tr").forEach(row => {
-    const text = row.textContent.toLowerCase();
+    const fields = Array.from(row.querySelectorAll("input, select, textarea"));
+    const text = fields.map(f => f.value).join(" ").toLowerCase();
+    
     row.style.display = !q || text.includes(q) ? "" : "none";
   });
 }
