@@ -975,15 +975,27 @@ function adminStatusOptionLabel(status) {
 
 function renderAdminAmountDetails(order) {
   const amount = getOrderAmountNumbers(order);
-  return `<div class="mt-2 pt-2 border-t border-stone-200 flex justify-end">
-    <div class="text-right text-xs md:text-sm text-stone-500 leading-relaxed">
-      <span>商品 <span class="mono text-stone-800 font-medium ml-1">${formatMoneyForOrder(amount.subtotal)}</span></span>
-      <span class="text-stone-300 mx-2">｜</span>
-      <span>折扣 <span class="mono text-stone-800 font-medium ml-1">${amount.discount ? formatSignedMoneyForOrder(amount.discount, true) : "NT$0"}</span></span>
-      <span class="text-stone-300 mx-2">｜</span>
-      <span>運費 <span class="mono text-stone-800 font-medium ml-1">${amount.shipping ? formatSignedMoneyForOrder(amount.shipping, false) : "NT$0"}</span></span>
-      <span class="text-stone-300 mx-2">｜</span>
-      <span class="font-semibold text-red-500">總額 <span class="mono ml-1">${formatMoneyForOrder(amount.total)}</span></span>
+  const discountText = amount.discount ? formatSignedMoneyForOrder(amount.discount, true) : "NT$0";
+  const shippingText = amount.shipping ? formatSignedMoneyForOrder(amount.shipping, false) : "NT$0";
+  const totalText = formatMoneyForOrder(amount.total);
+  const subtotalText = formatMoneyForOrder(amount.subtotal);
+  return `<div class="mt-2 pt-2 border-t border-stone-200">
+    <div class="flex flex-col gap-1 md:hidden text-sm">
+      <div class="flex items-center justify-between text-stone-500"><span>商品</span><span class="mono text-stone-800 font-medium">${subtotalText}</span></div>
+      <div class="flex items-center justify-between text-stone-500"><span>折扣</span><span class="mono text-stone-800 font-medium">${discountText}</span></div>
+      <div class="flex items-center justify-between text-stone-500"><span>運費</span><span class="mono text-stone-800 font-medium">${shippingText}</span></div>
+      <div class="flex items-center justify-between font-semibold text-red-500 mt-1 pt-1 border-t border-dashed border-stone-200"><span>總額</span><span class="mono">${totalText}</span></div>
+    </div>
+    <div class="hidden md:flex md:justify-end">
+      <div class="text-right text-sm text-stone-500 leading-relaxed">
+        <span>商品 <span class="mono text-stone-800 font-medium ml-1">${subtotalText}</span></span>
+        <span class="text-stone-300 mx-2">｜</span>
+        <span>折扣 <span class="mono text-stone-800 font-medium ml-1">${discountText}</span></span>
+        <span class="text-stone-300 mx-2">｜</span>
+        <span>運費 <span class="mono text-stone-800 font-medium ml-1">${shippingText}</span></span>
+        <span class="text-stone-300 mx-2">｜</span>
+        <span class="font-semibold text-red-500">總額 <span class="mono ml-1">${totalText}</span></span>
+      </div>
     </div>
   </div>`;
 }
@@ -1938,8 +1950,10 @@ function orderCard(order) {
     <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">訂單狀態</span><select class="admin-status mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" data-original-value="${escapeHtml(displayStatus || "")}">${statuses.map(s => `<option value="${s}" ${displayStatus === s ? "selected" : ""}>${adminStatusOptionLabel(s)}</option>`).join("")}</select></label>
     ${isPrepaidDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">信用卡付款連結</span><input class="admin-payment mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.paymentLink || "")}" data-original-value="${escapeHtml(order.paymentLink || "")}" placeholder="信用卡付款連結"></label>` : `<input type="hidden" class="admin-payment" value="${escapeHtml(order.paymentLink || "")}" data-original-value="${escapeHtml(order.paymentLink || "")}">`}
     ${isDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">貨運編號</span><input class="admin-tracking mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.trackingNo || "")}" data-original-value="${escapeHtml(order.trackingNo || "")}" placeholder="貨運編號"></label>` : `<input type="hidden" class="admin-tracking" value="${escapeHtml(order.trackingNo || "")}" data-original-value="${escapeHtml(order.trackingNo || "")}">`}
-    <label class="block ${isDelivery ? "" : "md:col-span-1"}"><span class="text-xs font-black text-stone-500 tracking-widest">訂單備註</span><input class="admin-note mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(order.statusNote || "")}" data-original-value="${escapeHtml(order.statusNote || "")}" placeholder="給客人看的訂單備註"></label>
-    <label class="block md:col-span-2"><span class="text-xs font-black text-stone-500 tracking-widest">店內備註（客人看不到）</span><textarea class="admin-internal-note mt-1 w-full rounded-xl border border-stone-200 px-3 py-2 bg-stone-50" rows="2" data-original-value="${escapeHtml(order.internalNote || "")}" placeholder="例如：已電話確認、改時間、特殊包裝需求">${escapeHtml(order.internalNote || "")}</textarea></label>`;
+    <div class="grid grid-cols-2 gap-3 md:col-span-2">
+      <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">訂單備註</span><input class="admin-note mt-1 w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm" value="${escapeHtml(order.statusNote || "")}" data-original-value="${escapeHtml(order.statusNote || "")}" placeholder="給客人看的備註"></label>
+      <label class="block"><span class="text-xs font-black text-stone-500 tracking-widest">店內備註</span><input class="admin-internal-note mt-1 w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm" value="${escapeHtml(order.internalNote || "")}" data-original-value="${escapeHtml(order.internalNote || "")}" placeholder="客人看不到，如已電話確認"></label>
+    </div>`;
 
   return `<article class="bg-white rounded-2xl border border-stone-100 shadow-sm px-4 py-3 md:px-5 md:py-4 space-y-3 ${methodCardClass(order)}" data-order-id="${escapeHtml(order.id)}">
     <div class="border-b border-stone-100 pb-2">
