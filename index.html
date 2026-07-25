@@ -314,7 +314,7 @@
             cursor: default;
             user-select: text;
         }
-        .flavor-preview-chip:not(:last-child)::after {
+        .flavor-preview-chip:not(:last-child):after {
             content: "、";
             color: #a8a29e;
             font-weight: 500;
@@ -977,6 +977,13 @@
                             </div>
                         </div>
 
+                        <div class="flex items-center gap-2.5 mt-2">
+                            <input type="checkbox" id="saveCustomerInfo" class="w-4 h-4 text-[#5B7290] border-stone-300 rounded focus:ring-[#5B7290] cursor-pointer accent-[#5B7290]">
+                            <label for="saveCustomerInfo" class="text-xs md:text-sm font-bold text-stone-600 cursor-pointer select-none">
+                                將我的資訊儲存在此瀏覽器，方便下次訂購
+                            </label>
+                        </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                             <div>
                                 <label for="shipMethod" class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">配送方式 *</label>
@@ -1536,7 +1543,9 @@
             }
 
             if ((form.couponInput || '').trim()) applyCouponCode(false);
-            showToastNotification('已為您恢復上次未完成的購物車');
+            if (cart.length > 0) {
+                showToastNotification('已為您恢復上次未完成的購物車');
+            }
             return true;
         }
 
@@ -2847,6 +2856,8 @@
                 document.getElementById('countdownOverlay').classList.add('hidden');
                 
                 if(result.status === "success") {
+                    updateSavedCustomerInfo();
+                    
                     const officialOrderId = result.orderId || orderId;
                     const officialOrderDate = result.orderDate || "";
 
@@ -3363,8 +3374,41 @@
             }
         });
 
+        function loadSavedCustomerInfo() {
+            try {
+                const savedInfo = localStorage.getItem('lilou_customer_info');
+                if (savedInfo) {
+                    const info = JSON.parse(savedInfo);
+                    if (info.name) document.getElementById('custName').value = info.name;
+                    if (info.phone) document.getElementById('custPhone').value = info.phone;
+                    if (info.email) document.getElementById('custEmail').value = info.email;
+                    document.getElementById('saveCustomerInfo').checked = true;
+                }
+            } catch (err) {
+                console.warn("無法讀取儲存的顧客資訊", err);
+            }
+        }
+
+        function updateSavedCustomerInfo() {
+            try {
+                const saveCheckbox = document.getElementById('saveCustomerInfo');
+                if (saveCheckbox && saveCheckbox.checked) {
+                    const info = {
+                        name: document.getElementById('custName').value.trim(),
+                        phone: document.getElementById('custPhone').value.trim(),
+                        email: document.getElementById('custEmail').value.trim()
+                    };
+                    localStorage.setItem('lilou_customer_info', JSON.stringify(info));
+                } else {
+                    localStorage.removeItem('lilou_customer_info');
+                }
+            } catch (err) {
+                console.warn("無法儲存顧客資訊", err);
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', bindLilouDraftAutoSave);
+        document.addEventListener('DOMContentLoaded', loadSavedCustomerInfo);
 
         fetchOptions();
     </script>
