@@ -1903,18 +1903,20 @@ function orderCard(order) {
   </article>`;
 }
 
-async function updateOrder(orderId, btnElement) {
-  const card = document.querySelector(`[data-order-id="${CSS.escape(orderId)}"]`);
-  if (!card) return;
-  const payload = {
-    action: "adminUpdateOrder", token: getToken(), orderId,
-    orderStatus: card.querySelector(".admin-status").value,
-    paymentLink: card.querySelector(".admin-payment").value.trim(),
-    trackingNo: card.querySelector(".admin-tracking").value.trim(),
-    statusNote: card.querySelector(".admin-note").value.trim(),
-    internalNote: card.querySelector(".admin-internal-note")?.value.trim() || ""
-  };
-  await postAdmin(payload, `${orderId} 已更新。`, btnElement);
+function updateOrder(orderId, btnElement) {
+  showAdminConfirm(`確定要儲存訂單 ${orderId} 的變更嗎？`, async () => {
+    const card = document.querySelector(`[data-order-id="${CSS.escape(orderId)}"]`);
+    if (!card) return;
+    const payload = {
+      action: "adminUpdateOrder", token: getToken(), orderId,
+      orderStatus: card.querySelector(".admin-status").value,
+      paymentLink: card.querySelector(".admin-payment").value.trim(),
+      trackingNo: card.querySelector(".admin-tracking").value.trim(),
+      statusNote: card.querySelector(".admin-note").value.trim(),
+      internalNote: card.querySelector(".admin-internal-note")?.value.trim() || ""
+    };
+    await postAdmin(payload, `${orderId} 已更新。`, btnElement);
+  }, "儲存訂單確認");
 }
 
 function cancelOrderEdit(orderId) {
@@ -2372,13 +2374,15 @@ function changeCalendarMonthTo(input) {
 }
 
 function clearMonthDates(btn) {
-  const box = btn.closest('[data-setting-row]');
-  const [y, m] = box.dataset.viewMonth.split('-');
-  const prefix = `${y}-${m}-`;
-  let dates = getSettingDates(box).filter(d => !d.startsWith(prefix));
-  setSettingDates(box, dates);
-  markUnsaved('settings');
-  updateSettingCalendarAndTags(box);
+  showAdminConfirm("確定要清除本月的所有日期設定嗎？", () => {
+    const box = btn.closest('[data-setting-row]');
+    const [y, m] = box.dataset.viewMonth.split('-');
+    const prefix = `${y}-${m}-`;
+    let dates = getSettingDates(box).filter(d => !d.startsWith(prefix));
+    setSettingDates(box, dates);
+    markUnsaved('settings');
+    updateSettingCalendarAndTags(box);
+  }, "清除確認");
 }
 
 function mergeSettingDatesAndRender(box, newDates) {
@@ -2715,10 +2719,13 @@ function collectRows(tab) {
   });
 }
 
-async function saveSheet(tab, sheetName, btnElement) {
-  const rows = collectRows(tab);
-  await postAdmin({ action:"adminReplaceSheetRows", token:getToken(), sheetName, rows }, `${sheetName} 已儲存。`, btnElement);
-  clearUnsaved(tab);
+function saveSheet(tab, sheetName, btnElement) {
+  showAdminConfirm(`確定要儲存「${sheetName}」的變更嗎？`, async () => {
+    const rows = collectRows(tab);
+    // 這裡的 await 現在是在使用者按下確定後，才會開始執行並等待結果
+    await postAdmin({ action:"adminReplaceSheetRows", token:getToken(), sheetName, rows }, `${sheetName} 已儲存。`, btnElement);
+    clearUnsaved(tab);
+  }, "儲存確認");
 }
 
 async function postAdmin(payload, successMessage, buttonElement = null) {
