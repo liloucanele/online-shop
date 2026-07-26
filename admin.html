@@ -2522,7 +2522,8 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false, labels = []) {
     } else if (tab === "coupons" && key === "type") {
       field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50"><option value="minus" ${val === "minus" ? "selected" : ""}>現折金額</option><option value="discount" ${val === "discount" ? "selected" : ""}>折扣比例</option></select>`;
     } else if (tab === "coupons" && (key === "start_date" || key === "end_date")) {
-      field = `<input type="date" data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${normalizeOrderDateForCompare(val)}">`;
+      // 這裡加上 onchange="updateEditableRowState(this.closest('tr'))" 讓修改日期時標籤也能即時更新
+      field = `<input type="date" data-key="${key}" onchange="updateEditableRowState(this.closest('tr'))" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${normalizeOrderDateForCompare(val)}">`;
     } else if (textareaLong && idx === 1) {
       field = `<textarea data-key="${key}" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-stone-50">${escapeHtml(val)}</textarea>`;
     } else {
@@ -2532,11 +2533,35 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false, labels = []) {
     const summaryKeys = ADMIN_MOBILE_SUMMARY_KEYS[tab];
     const isDetail = summaryKeys && !summaryKeys.includes(key);
 
+    // 處理手機版右上角標籤
     let mobileTagHtml = "";
     if ((tab === "products" || tab === "packaging") && key === "name") {
       const on = isDisplayOn(row.display === undefined || row.display === "" ? "TRUE" : row.display);
       const tagClass = on ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-red-50 text-red-600 border-red-200";
       const tagText = on ? "上架中" : "已下架";
+      mobileTagHtml = `<span class="mobile-status-tag md:hidden inline-block ml-2 px-2 py-0.5 text-[10px] font-bold border rounded-full align-text-bottom mb-1 ${tagClass}">${tagText}</span>`;
+    } else if (tab === "coupons" && key === "code") {
+      // 優惠券標籤判斷邏輯
+      const today = getTodayDateInputValue();
+      const start = normalizeOrderDateForCompare(row.start_date);
+      const end = normalizeOrderDateForCompare(row.end_date);
+      
+      let tagClass = "bg-emerald-50 text-emerald-600 border-emerald-200";
+      let tagText = "進行中";
+      
+      if (start && today < start) {
+        tagClass = "bg-blue-50 text-blue-600 border-blue-200";
+        tagText = "尚未開始";
+      } else if (end && today > end) {
+        tagClass = "bg-stone-50 text-stone-500 border-stone-200";
+        tagText = "已結束";
+      } else if (end) {
+        const diff = Math.ceil((new Date(end + "T00:00:00") - new Date(today + "T00:00:00")) / (24 * 60 * 60 * 1000));
+        if (diff <= 7) {
+          tagClass = "bg-amber-50 text-amber-600 border-amber-200";
+          tagText = `剩 ${diff} 天`;
+        }
+      }
       mobileTagHtml = `<span class="mobile-status-tag md:hidden inline-block ml-2 px-2 py-0.5 text-[10px] font-bold border rounded-full align-text-bottom mb-1 ${tagClass}">${tagText}</span>`;
     }
 
@@ -2573,6 +2598,7 @@ function toggleDisplaySwitch(button) {
 
 function updateEditableRowState(row) {
   if (!row) return;
+
   const displayInput = row.querySelector('input[data-key="display"]');
   if (displayInput) {
     const on = isDisplayOn(displayInput.value);
@@ -2583,6 +2609,38 @@ function updateEditableRowState(row) {
       tag.className = `mobile-status-tag md:hidden inline-block ml-2 px-2 py-0.5 text-[10px] font-bold border rounded-full align-text-bottom mb-1 ${on ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-red-50 text-red-600 border-red-200"}`;
     }
   }
+  
+  const codeInput = row.querySelector('input[data-key="code"]');
+  if (codeInput) {
+    const startDateInput = row.querySelector('input[data-key="start_date"]');
+    const endDateInput = row.querySelector('input[data-key="end_date"]');
+    const tag = row.querySelector('.mobile-status-tag');
+    if (tag && startDateInput && endDateInput) {
+      const today = getTodayDateInputValue();
+      const start = startDateInput.value;
+      const end = endDateInput.value;
+      
+      let tagClass = "bg-emerald-50 text-emerald-600 border-emerald-200";
+      let tagText = "進行中";
+      
+      if (start && today < start) {
+        tagClass = "bg-blue-50 text-blue-600 border-blue-200";
+        tagText = "尚未開始";
+      } else if (end && today > end) {
+        tagClass = "bg-stone-50 text-stone-500 border-stone-200";
+        tagText = "已結束";
+      } else if (end) {
+        const diff = Math.ceil((new Date(end + "T00:00:00") - new Date(today + "T00:00:00")) / (24 * 60 * 60 * 1000));
+        if (diff <= 7) {
+          tagClass = "bg-amber-50 text-amber-600 border-amber-200";
+          tagText = `剩 ${diff} 天`;
+        }
+      }
+      tag.textContent = tagText;
+      tag.className = `mobile-status-tag md:hidden inline-block ml-2 px-2 py-0.5 text-[10px] font-bold border rounded-full align-text-bottom mb-1 ${tagClass}`;
+    }
+  }
+
   const stockInput = row.querySelector('input[data-key="stock"]');
   if (stockInput) updateStockInputClass(stockInput);
 }
