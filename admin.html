@@ -380,6 +380,33 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
   }
   table[data-edit-table] tbody tr.row-expanded td:last-child button[onclick^="deleteAdminRow"] { display: flex; }
 
+  /* 1. 確保隱藏的 input 絕對不會干擾 Flexbox 排版 */
+  input[type="hidden"] { 
+    display: none !important; 
+  }
+
+  /* 2. 讓外層容器改用 flex-start，靠左對齊 */
+  table[data-edit-table] tbody tr.row-expanded td:has(input[data-key="display"])[data-detail="1"] {
+    display: flex !important; 
+    align-items: center; 
+    justify-content: flex-start !important; /* 取消原本的 space-between */
+    padding: 12px 4px 4px !important; 
+    border-top: 1px dashed #e7e5e4 !important; 
+    margin-top: 8px; 
+    margin-bottom: 0;
+  }
+
+  /* 3. 消除標題的 margin-bottom，讓文字與開關完美垂直置中 */
+  table[data-edit-table] tbody tr.row-expanded td:has(input[data-key="display"])[data-detail="1"]::before { 
+    margin-bottom: 0 !important; 
+  }
+
+  /* 4. 利用 margin-left: auto 強制把開關推到畫面的最右邊 */
+  table[data-edit-table] .admin-switch {
+    margin-left: auto !important;
+    margin-right: 0 !important;
+  }
+
   /* 更多欄位：改為簡約的文字按鈕風格 */
   .row-toggle-btn {
     flex: 1; height: 36px; border-radius: 10px; border: none !important;
