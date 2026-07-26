@@ -372,18 +372,20 @@
 
     #tabMenu {
       position: sticky;
-      top: 68px; /* 手機版 header 加上間距的高度 */
+      /* 自動計算：基礎高度 + iPhone 頂部瀏海/動態島的安全高度 */
+      top: calc(72px + env(safe-area-inset-top, 0px)); 
       z-index: 30;
       transition: transform 0.3s cubic-bezier(0.3, 0, 0, 1), opacity 0.3s ease;
     }
     @media (min-width: 768px) {
-      #tabMenu { top: 84px; } /* 電腦版高度略大 */
+      #tabMenu { top: 84px; } /* 電腦版維持原樣即可，因為沒有瀏海問題 */
     }
     .tab-menu-hidden {
-      transform: translateY(-130%); /* 往上縮排隱藏至 header 底下 */
+      transform: translateY(-130%); 
       opacity: 0;
-      pointer-events: none; /* 隱藏時不可點擊 */
+      pointer-events: none; 
     }
+    
 </style>
 </head>
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
