@@ -914,18 +914,50 @@
                             </button>
                         </div>
 
+                        <div class="pt-4 mt-2">
+                            <button type="button" onclick="scrollToLimitedProducts()" class="w-full flex items-center justify-between px-5 py-4 bg-stone-50/50 hover:bg-stone-100 transition-colors rounded-2xl border border-stone-200 cursor-pointer group">
+                                <div class="flex flex-col items-start gap-0.5 text-left">
+                                    <span class="text-[11px] font-extrabold text-stone-400 tracking-widest uppercase">我們還有其他美味</span>
+                                    <span id="promptToLimitedText" class="text-sm md:text-base font-black text-stone-800 group-hover:text-[#5B7290] transition-colors">前往限定商品</span>
+                                </div>
+                                <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-[#5B7290] group-hover:text-[#3E4F66] group-hover:shadow transition-all font-black text-lg pb-0.5 shrink-0">
+                                    ›
+                                </div>
+                            </button>
+                        </div>
+
                         <button type="button" onclick="packBoxToCart()" class="w-full bg-stone-300 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed transition-all duration-200" id="packBtn" disabled>請先選擇包裝與口味</button>
                     </div>
                 </div>
 
                 <section id="limitedProductSection" class="product-tab-panel space-y-4" role="tabpanel" aria-labelledby="limitedProductTab" hidden>
-                    <div class="rounded-2xl border border-stone-200 bg-stone-50/40 p-3 md:p-4">
+                    
+                    <div class="rounded-2xl border border-stone-200 bg-stone-50/40 p-3 md:p-4 space-y-3">
                         <div id="limitedPackageCards" class="divide-y divide-stone-100">
                             <div class="animate-pulse h-16 rounded-xl bg-stone-100"></div>
                             <div class="animate-pulse h-16 rounded-xl bg-stone-100 mt-1"></div>
                         </div>
+                        <button type="button" onclick="openNutritionSheet()" class="w-full h-11 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 active:bg-stone-100 transition-colors px-3.5 flex items-center justify-between gap-3 text-left">
+                            <span class="inline-flex items-center gap-2 min-w-0"><span class="w-5 h-5 rounded-full bg-[#5B7290]/10 text-[#5B7290] flex items-center justify-center text-xs font-black shrink-0">i</span><span class="text-xs md:text-sm font-black text-stone-700 tracking-wide truncate">查看成分與營養標示</span></span>
+                            <span class="text-stone-300 font-black text-lg leading-none shrink-0">›</span>
+                        </button>
                     </div>
-                </section>
+
+                    <div class="pt-4 mt-2">
+                        <button type="button" onclick="scrollToCustomBox()" class="w-full flex items-center justify-between px-5 py-4 bg-stone-50/50 hover:bg-stone-100 transition-colors rounded-2xl border border-stone-200 cursor-pointer group">
+                            <div class="flex flex-col items-start gap-0.5 text-left">
+                                <span class="text-[11px] font-extrabold text-stone-400 tracking-widest uppercase">我們還有其他美味</span>
+                                <span id="promptToComboText" class="text-sm md:text-base font-black text-stone-800 group-hover:text-[#5B7290] transition-colors">前往迷你可麗露</span>
+                            </div>
+                            <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-[#5B7290] group-hover:text-[#3E4F66] group-hover:shadow transition-all font-black text-lg pb-0.5 shrink-0">
+                                ›
+                            </div>
+                        </button>
+                    </div>
+
+                    <button type="button" id="addLimitedBtn" onclick="addSelectedLimitedAddonsToCart()" disabled class="w-full bg-stone-300 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed transition-all duration-200">
+                        請選擇限定商品
+                    </button>
                 </section>
 
                 <form id="orderForm" class="hidden bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-6 md:space-y-8" onsubmit="handleOrderSubmit(event)" onkeypress="return preventEnterSubmit(event)">
@@ -1751,17 +1783,32 @@
             if (!comboWrap || !limitedWrap) return;
         
             const singlePackaging = localPackaging.find(p => p.packaging_type === 'single');
+            const limitedTabName = (singlePackaging && singlePackaging.name) ? singlePackaging.name : '限定甜點專區';
+            
+            const comboTabTitleEl = document.querySelector('#miniCaneleTab .product-tab-title');
+            const comboTabName = comboTabTitleEl ? comboTabTitleEl.textContent : '迷你可麗露';
+
             if (singlePackaging && singlePackaging.name) {
                 const tabTitleEl = document.getElementById('limitedTabTitle');
                 if (tabTitleEl) {
                     tabTitleEl.textContent = singlePackaging.name;
                 }
             }
+            
+            // 動態更新：可麗露區塊下方的卡片
+            const promptToLimitedText = document.getElementById('promptToLimitedText');
+            if (promptToLimitedText) {
+                promptToLimitedText.textContent = `前往${limitedTabName}`;
+            }
+
+            // 動態更新：限定商品區塊下方的卡片
+            const promptToComboText = document.getElementById('promptToComboText');
+            if (promptToComboText) {
+                promptToComboText.textContent = `前往${comboTabName}`;
+            }
         
             const comboItems = localPackaging.filter(p => p.packaging_type !== 'single');
-            // 限定商品僅顯示 type 為 single 的品項
             const limitedProducts = localProducts.filter(p => p.type === 'single');
-            // 迷你可麗露僅顯示非 single 且非 addon 的組合品項
             const caneleProducts = localProducts.filter(p => p.type !== 'single' && p.type !== 'addon');
         
             const limitedTabCount = document.getElementById('limitedProductTabCount');
@@ -1795,6 +1842,7 @@
                     </div>
                 </button>`).join('') : `<div class="sm:col-span-3 rounded-2xl border border-dashed border-stone-200 py-8 text-center text-sm font-bold text-stone-400">目前沒有可選擇的可麗露包裝。</div>`;
         
+            // 這裡不再生成額外的按鈕，純粹渲染商品列表
             limitedWrap.innerHTML = limitedProducts.length ? limitedProducts.map((p) => {
                 const idx = localProducts.indexOf(p);
                 const qty = Number(limitedAddonQty[idx] || 0);
@@ -1819,16 +1867,22 @@
                         <button type="button" onclick="changeLimitedAddonQty(${idx}, 1)" ${qty >= available || available <= 0 ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">＋</button>
                     </div>
                 </div>`;
-            }).join('') + (() => {
-                const totalSelected = limitedProducts.reduce((sum, product) => sum + Number(limitedAddonQty[localProducts.indexOf(product)] || 0), 0);
-                return `<div class="limited-bulk-footer space-y-3 pt-3">
-                    <button type="button" onclick="openNutritionSheet()" class="w-full h-11 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 active:bg-stone-100 transition-colors px-3.5 flex items-center justify-between gap-3 text-left">
-                        <span class="inline-flex items-center gap-2 min-w-0"><span class="w-5 h-5 rounded-full bg-[#5B7290]/10 text-[#5B7290] flex items-center justify-center text-xs font-black shrink-0">i</span><span class="text-xs md:text-sm font-black text-stone-700 tracking-wide truncate">查看成分與營養標示</span></span>
-                        <span class="text-stone-300 font-black text-lg leading-none shrink-0">›</span>
-                    </button>
-                    <button type="button" onclick="addSelectedLimitedAddonsToCart()" ${totalSelected <= 0 ? 'disabled' : ''} class="w-full h-12 rounded-xl bg-[#5B7290] text-white text-sm font-black tracking-widest disabled:bg-stone-200 disabled:text-stone-400 disabled:cursor-not-allowed">${totalSelected > 0 ? `加入限定商品至購物車（共 ${totalSelected} 件）` : '請選擇限定商品'}</button>
-                </div>`;
-            })() : `<div class="rounded-2xl border border-dashed border-stone-200 py-7 text-center text-sm font-bold text-stone-400">目前沒有限定商品。</div>`;
+            }).join('') : `<div class="py-5 text-center text-sm font-bold text-stone-400">目前沒有限定商品。</div>`;
+            
+            // 單獨更新第一步 HTML 裡的「加入購物車」按鈕狀態
+            const totalSelected = limitedProducts.reduce((sum, product) => sum + Number(limitedAddonQty[localProducts.indexOf(product)] || 0), 0);
+            const addLimitedBtn = document.getElementById('addLimitedBtn');
+            if (addLimitedBtn) {
+                if (totalSelected > 0) {
+                    addLimitedBtn.disabled = false;
+                    addLimitedBtn.className = "w-full bg-[#5B7290] text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-pointer transition-colors hover:bg-[#3E4F66]";
+                    addLimitedBtn.innerText = `加入購物車（共 ${totalSelected} 件）`;
+                } else {
+                    addLimitedBtn.disabled = true;
+                    addLimitedBtn.className = "w-full bg-stone-300 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed transition-all duration-200";
+                    addLimitedBtn.innerText = "請選擇限定商品";
+                }
+            }
         
             syncPackageCardState();
         }
@@ -2956,7 +3010,7 @@
                     document.getElementById('receiptContainer').classList.remove('hidden');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-                    sharePlainText = `✨ Lilou 預購成功確認單 ✨\n\n訂單編號：${officialOrderId}\n顧客姓名：${custName}\n聯絡電話：${custPhone}\nEmail：${custEmail}\n配送方式：${lilouShippingMethodDisplayLabel(shipMethodVal)}\n預定日期：${shipDate}\n總金額：$${finalTotal} 元\n\n如有調整需求，請私訊官方官方，謝謝您的支持！`;
+                    sharePlainText = `✨ Lilou 預購成功確認單 ✨\n\n訂單編號：${officialOrderId}\n顧客姓名：${custName}\n聯絡電話：${custPhone}\nEmail：${custEmail}\n配送方式：${lilouShippingMethodDisplayLabel(shipMethodVal)}\n預定日期：${shipDate}\n總金額：${finalTotal} 元\n\n如有調整需求，請私訊官方官方，謝謝您的支持！`;
                     cart = []; appliedCoupon = null; 
                     clearLilouDraft();
                 } else if (result.status === "error") { showToastNotification("⚠️ " + result.message); }
