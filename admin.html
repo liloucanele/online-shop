@@ -228,7 +228,7 @@
 .admin-stock-low { border-color: #fed7aa !important; background: #fff7ed !important; color: #c2410c !important; }
 .admin-edit-search { min-width: 180px; }
 
-/* 讓表格標題凍結（不再限制只有電腦版才有，手機版也通用） */
+/* 讓表格標題凍結 */
 table[data-edit-table="products"] thead,
 table[data-edit-table="packaging"] thead,
 table[data-edit-table="coupons"] thead {
@@ -271,22 +271,18 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
     min-height: 44px;
   }
 
-  /* 確保開關保持原本比例不要被拉長 */
   .admin-switch {
     min-height: 28px !important;
   }
   
-  /* 排除月曆與標籤上的小按鈕，避免被強制拉長變形 */
   .calendar-day-btn, .calendar-nav-btn, .tag-remove-btn {
     min-height: unset !important;
   }
   
-  /* 確保輸入字體至少 16px，防止 iOS Safari 自動放大畫面 */
   input, select, textarea {
     font-size: 16px !important;
   }
 
-  /* 懸浮底部儲存列 */
   .mobile-action-bar {
     position: fixed;
     bottom: 0;
@@ -308,17 +304,14 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
     align-items: center;
   }
 
-  /* 替 body 底部增加 padding，避免最後一筆資料被懸浮按鈕擋住 */
   body {
     padding-bottom: 85px; 
   }
 
-  /* 優化 Toast 提示訊息在手機上的位置，避免被底部懸浮按鈕擋住 */
   #adminToastArea {
     bottom: 90px !important; 
   }
 
-  /* 隱藏不必要的卷軸，讓畫面更乾淨 */
   .overflow-x-auto::-webkit-scrollbar {
     height: 4px;
   }
@@ -327,7 +320,6 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
     border-radius: 4px;
   }
 
-  /* 產品／包裝／優惠券編輯清單：手機版預設只顯示關鍵欄位，其餘欄位收合，點「更多欄位」才展開 */
   table[data-edit-table] {
     min-width: 0 !important;
     width: 100% !important;
@@ -353,42 +345,57 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
     border-top: none !important;
     padding: 4px 0 !important;
   }
+  
+  /* 讓欄位標題與小標籤水平對齊 */
   table[data-edit-table] td[data-label]:not([data-label=""])::before {
     content: attr(data-label);
-    display: block;
+    display: inline-block;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: .04em;
     color: #a8a29e;
     margin-bottom: 3px;
+    vertical-align: middle;
   }
-  /* 商品的價格／庫存並排顯示，不用各佔一整行 */
+  
   table[data-edit-table="products"] td:has(input[data-key="price"]),
   table[data-edit-table="products"] td:has(input[data-key="stock"]) {
     flex: 1 1 calc(50% - 6px);
   }
-  /* 上架狀態改成單行：左邊標籤、右邊開關，不再獨立置中一行 */
-  table[data-edit-table] td:has(input[data-key="display"]) {
+
+  table[data-edit-table] .admin-switch {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* 強制隱藏未展開時的狀態欄位及刪除按鈕 */
+  table[data-edit-table] td[data-detail="1"] {
+    display: none;
+  }
+  table[data-edit-table] td:has(input[data-key="display"])[data-detail="1"] {
+    display: none !important;
+  }
+  table[data-edit-table] td:last-child button[onclick^="deleteAdminRow"] {
+    display: none;
+    width: 36px !important;
+    height: 36px !important;
+    flex-shrink: 0;
+  }
+
+  /* 展開狀態下的設定 */
+  table[data-edit-table] tbody tr.row-expanded td[data-detail="1"] {
+    display: block;
+  }
+  table[data-edit-table] tbody tr.row-expanded td:has(input[data-key="display"])[data-detail="1"] {
     display: flex !important;
     align-items: center;
     justify-content: space-between;
     padding: 8px 0 !important;
   }
-  table[data-edit-table] td:has(input[data-key="display"])::before {
-    display: inline-block;
-    margin-bottom: 0;
+  table[data-edit-table] tbody tr.row-expanded td:last-child button[onclick^="deleteAdminRow"] {
+    display: flex;
   }
-  table[data-edit-table] .admin-switch {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
-  /* 非摘要欄位（描述、成分、備註等）預設收合，展開後才佔用版面 */
-  table[data-edit-table] td[data-detail="1"] {
-    display: none;
-  }
-  table[data-edit-table] tbody tr.row-expanded td[data-detail="1"] {
-    display: block;
-  }
+
   table[data-edit-table] td:last-child {
     display: flex !important;
     flex: 1 1 100%;
@@ -413,11 +420,6 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
   }
   .row-toggle-btn .chevron { transition: transform .15s ease; }
   tr.row-expanded .row-toggle-btn .chevron { transform: rotate(180deg); }
-  table[data-edit-table] td:last-child button[onclick^="deleteAdminRow"] {
-    width: 36px !important;
-    height: 36px !important;
-    flex-shrink: 0;
-  }
 }
 </style>
 </head>
@@ -469,7 +471,6 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
 </section>
 </main>
 
-<!-- 修改過的浮動 Toast 區域，讓它維持在正下方 -->
 <div class="fixed inset-x-0 bottom-4 z-[9999] flex flex-col items-center justify-end pointer-events-none px-4" id="adminToastArea"></div>
 
 <div id="adminConfirmModal" class="hidden fixed inset-0 z-[99999] flex items-center justify-center bg-stone-900/40 opacity-0 transition-opacity duration-200">
@@ -515,9 +516,6 @@ document.addEventListener('change', e => {
   if (page) markUnsaved(page.id.replace('tab-', ''));
 });
 
-/* =========================================================
-   補回：日期格式化 Helper 函式庫
-   ========================================================= */
 function formatDateHyphenFromInput(value) { return normalizeOrderDateForCompare(value) || ""; }
 function formatDateDisplaySlash(value) {
   const normalized = formatDateHyphenFromInput(value);
@@ -533,7 +531,6 @@ function formatDateDisplayWithWeekday(value) {
 }
 function parseDateList(value) { return (value || "").toString().replace(/[\r\n、，]/g, ",").split(",").map(v => formatDateHyphenFromInput(v.trim())).filter(Boolean); }
 function uniqueSortedDateList(value) { return Array.from(new Set(parseDateList(value))).sort(); }
-/* ========================================================= */
 
 function escapeHtml(value) {
   return (value ?? "").toString()
@@ -908,50 +905,6 @@ function formatOrderGroupDetailsAdmin(details, order) {
   </div>${amountSummary}`;
 }
 
-function renderCompactItemSummary(details) {
-  const text = (details || "").toString().trim();
-  if (!text) return `<p class="text-stone-400 font-bold text-sm">無品項資料</p>`;
-
-  const itemSummary = {};
-  const groupRegex = /【第\d+組:\s*[^】]+】([\s\S]*?)(?=\s*｜\s*【第\d+組:|$)/g;
-  let groupMatch;
-  let hasGroup = false;
-
-  while ((groupMatch = groupRegex.exec(text)) !== null) {
-    hasGroup = true;
-    const itemsText = groupMatch[1] || "";
-    const itemRegex = /([^、｜()（）]+)[(（](\d+)/g;
-    let itemMatch;
-    while ((itemMatch = itemRegex.exec(itemsText)) !== null) {
-      const name = itemMatch[1].trim();
-      const qty = Number(itemMatch[2]) || 0;
-      if (name && qty) itemSummary[name] = (itemSummary[name] || 0) + qty;
-    }
-  }
-
-  if (!hasGroup) {
-    const itemRegex = /([^、｜()（）]+)[(（](\d+)/g;
-    let itemMatch;
-    while ((itemMatch = itemRegex.exec(text)) !== null) {
-      const name = itemMatch[1].trim();
-      const qty = Number(itemMatch[2]) || 0;
-      if (name && qty) itemSummary[name] = (itemSummary[name] || 0) + qty;
-    }
-  }
-
-  const entries = Object.entries(itemSummary).sort((a, b) => b[1] - a[1]);
-  if (!entries.length) {
-    return `<p class="text-stone-500 font-bold text-sm line-clamp-2">${escapeHtml(text)}</p>`;
-  }
-  return `<div class="flex flex-wrap gap-1.5">${entries.map(([name, qty]) => `<span class="order-item-chip inline-flex items-center rounded-full bg-white border border-stone-200 text-stone-800">${escapeHtml(name)} × ${qty}</span>`).join("")}</div>`;
-}
-
-function summaryList(summary) {
-  const entries = Object.entries(summary || {}).sort((a,b) => b[1] - a[1]);
-  if (!entries.length) return `<p class="text-stone-400 font-bold">目前無資料</p>`;
-  return entries.map(([name, qty]) => `<div class="flex items-center justify-between gap-3 bg-stone-50 rounded-xl px-3 py-2 border border-stone-100"><span class="font-bold text-stone-700">${escapeHtml(name)}</span><span class="font-black text-[#5B7290] mono">${qty}</span></div>`).join("");
-}
-
 function parseMoneyNumber(value) {
   const n = Number((value || "").toString().replace(/[^0-9.-]/g, ""));
   return isNaN(n) ? 0 : n;
@@ -1023,15 +976,6 @@ function renderAdminAmountDetails(order) {
   </div>`;
 }
 
-function getOrdersByDateRange(startDate, endDate) {
-  return (adminData.orders || []).filter(o => {
-    const orderDate = normalizeOrderDateForCompare(o.date);
-    const startOk = !startDate || (orderDate && orderDate >= startDate);
-    const endOk = !endDate || (orderDate && orderDate <= endDate);
-    return startOk && endOk;
-  });
-}
-
 function summarizeDetailsFromOrders(orders) {
   const production = {};
   const packaging = {};
@@ -1068,7 +1012,6 @@ function summarizeDetailsFromOrders(orders) {
   });
   return { production, packaging };
 }
-
 
 function addDaysToDateInput(dateInput, days) {
   const date = new Date(dateInput + "T00:00:00");
@@ -1269,16 +1212,6 @@ function getDateRangeRows(endDate, days) {
     const parts = date.split("-");
     rows.push({ date, label: `${Number(parts[1])}/${Number(parts[2])}`, revenue: 0 });
   }
-  return rows;
-}
-
-function getRevenueRowsByCreatedDate(orders, endDate, days) {
-  const rows = getDateRangeRows(endDate, days);
-  const rowMap = Object.fromEntries(rows.map(row => [row.date, row]));
-  orders.forEach(order => {
-    const createdDate = getOrderCreatedDate(order);
-    if (rowMap[createdDate]) rowMap[createdDate].revenue += parseMoneyNumber(order.total);
-  });
   return rows;
 }
 
@@ -1610,10 +1543,6 @@ function renderDashboardContent() {
       ${renderDailyRevenueChart(revenueRows, rangeRevenue, periodLabel)}
     </div>`;
 }
-
-function applyDashboardSingleDate() { renderDashboardContent(); }
-function clearDashboardFilter() { setDashboardRange("all"); }
-function filterDashboard() { renderDashboardContent(); }
 
 function dashboardOverviewCard(label, value, note) {
   return `<div class="bg-white rounded-3xl border border-stone-100 p-4 shadow-sm min-w-0">
@@ -2385,7 +2314,6 @@ function updateSettingCalendarAndTags(box) {
   const year = parseInt(y, 10);
   const month = parseInt(m, 10) - 1;
 
-  // 移除了切換月份按鈕上的 hover:shadow-sm
   let html = `
   <div class="flex items-center justify-between mb-3 bg-stone-50 rounded-xl p-1 border border-stone-100">
       <button type="button" onclick="changeCalendarMonth(this, -1)" class="calendar-nav-btn w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-white rounded-lg transition-all font-black text-lg">‹</button>
@@ -2406,7 +2334,6 @@ function updateSettingCalendarAndTags(box) {
   for(let d=1; d<=daysInMonth; d++) {
       const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const isSelected = selectedDates.includes(dateStr);
-      // 移除了選中狀態的 shadow-md
       const activeClass = isSelected 
         ? 'bg-[#5B7290] text-white font-black border-[#5B7290]' 
         : 'bg-white text-stone-700 border-stone-100 hover:border-stone-300 hover:bg-stone-50 font-semibold';
@@ -2432,7 +2359,6 @@ function updateSettingCalendarAndTags(box) {
   } else {
       let tagsHtml = '';
       for(const [grpMonth, dates] of Object.entries(groups)) {
-          // 移除了內層卡片的 shadow-sm，將 border 加深為 border-stone-200
           tagsHtml += `<div class="mb-5 last:mb-0 bg-white p-3 rounded-2xl border border-stone-200">
               <div class="text-[13px] font-black text-stone-500 tracking-widest mb-3 border-b border-stone-50 pb-2">${grpMonth.replace('-','年')}月 <span class="text-stone-400 font-bold">(${dates.length}天)</span></div>
               <div class="flex flex-wrap gap-2">
@@ -2568,8 +2494,8 @@ function deleteAdminRow(button, tab) {
 }
 
 const ADMIN_MOBILE_SUMMARY_KEYS = {
-  products: ["name", "price", "stock", "display"],
-  packaging: ["name", "extra_price", "display"],
+  products: ["name", "price", "stock"],
+  packaging: ["name"],
   coupons: ["code", "type", "value"]
 };
 
@@ -2608,7 +2534,16 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false, labels = []) {
 
     const summaryKeys = ADMIN_MOBILE_SUMMARY_KEYS[tab];
     const isDetail = summaryKeys && !summaryKeys.includes(key);
-    return `<td class="px-2 py-2 align-top ${getAdminCellClass(tab, key)}" data-label="${escapeHtml(labels[idx] || "")}"${isDetail ? ' data-detail="1"' : ""}>${field}</td>`;
+
+    let mobileTagHtml = "";
+    if ((tab === "products" || tab === "packaging") && key === "name") {
+      const on = isDisplayOn(row.display === undefined || row.display === "" ? "TRUE" : row.display);
+      const tagClass = on ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-red-50 text-red-600 border-red-200";
+      const tagText = on ? "上架中" : "已下架";
+      mobileTagHtml = `<span class="mobile-status-tag md:hidden inline-block ml-2 px-2 py-0.5 text-[10px] font-bold border rounded-full align-text-bottom mb-1 ${tagClass}">${tagText}</span>`;
+    }
+
+    return `<td class="px-2 py-2 align-top ${getAdminCellClass(tab, key)}" data-label="${escapeHtml(labels[idx] || "")}"${isDetail ? ' data-detail="1"' : ""}>${mobileTagHtml}${field}</td>`;
   }).join("")}<td class="px-1 py-2 align-top text-center" data-label="">${ADMIN_MOBILE_SUMMARY_KEYS[tab] ? `<button type="button" class="row-toggle-btn md:hidden" onclick="toggleAdminRowDetail(this)"><span>更多欄位</span><span class="chevron">▾</span></button>` : ""}<button type="button" onclick="deleteAdminRow(this, '${tab}')" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">✕</button></td></tr>`;
 }
 
@@ -2642,7 +2577,15 @@ function toggleDisplaySwitch(button) {
 function updateEditableRowState(row) {
   if (!row) return;
   const displayInput = row.querySelector('input[data-key="display"]');
-  if (displayInput) row.classList.toggle("is-inactive", !isDisplayOn(displayInput.value));
+  if (displayInput) {
+    const on = isDisplayOn(displayInput.value);
+    row.classList.toggle("is-inactive", !on);
+    const tag = row.querySelector('.mobile-status-tag');
+    if (tag) {
+      tag.textContent = on ? "上架中" : "已下架";
+      tag.className = `mobile-status-tag md:hidden inline-block ml-2 px-2 py-0.5 text-[10px] font-bold border rounded-full align-text-bottom mb-1 ${on ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-red-50 text-red-600 border-red-200"}`;
+    }
+  }
   const stockInput = row.querySelector('input[data-key="stock"]');
   if (stockInput) updateStockInputClass(stockInput);
 }
