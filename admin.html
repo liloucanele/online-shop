@@ -1964,17 +1964,17 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
   ` : "";
 
   const stats = isProductOrPackaging ? getEditableTableStats(rows) : null;
-  // 更新後的 searchBox：加入了上下架的下拉選單，並縮小搜尋框與其並排
+  
   const searchBox = isProductOrPackaging ? `
     <div class="flex flex-col md:flex-row md:items-center gap-2 md:justify-end w-full md:w-auto">
       <div id="${tab}Stats" class="text-sm text-stone-500 font-bold whitespace-nowrap">共 ${stats.total} 個${tab === "products" ? "商品" : "包裝"}｜上架 ${stats.active}｜下架 ${stats.inactive}</div>
-      <div class="flex items-center gap-2">
-        <select id="${tab}DisplayFilter" onchange="filterEditableTable('${tab}')" class="h-10 rounded-xl border border-stone-200 px-2 bg-stone-50 text-sm font-bold shrink-0 outline-none focus:border-[#5B7290]">
+      <div class="flex items-center gap-2 w-full md:w-auto">
+        <input type="search" id="${tab}Search" oninput="filterEditableTable('${tab}')" class="flex-1 md:flex-none md:w-48 h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold min-w-0 outline-none focus:border-[#5B7290]" placeholder="搜尋...">
+        <select id="${tab}DisplayFilter" onchange="filterEditableTable('${tab}')" class="shrink-0 h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold outline-none focus:border-[#5B7290]">
           <option value="">全部狀態</option>
           <option value="ON">上架中</option>
           <option value="OFF">已下架</option>
         </select>
-        <input type="search" id="${tab}Search" oninput="filterEditableTable('${tab}')" class="admin-edit-search w-32 md:w-40 h-10 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold min-w-0 outline-none focus:border-[#5B7290]" placeholder="搜尋...">
       </div>
     </div>` : "";
 
