@@ -2705,10 +2705,27 @@ function addRow(tab) {
   const textareaLong = tab === "settings";
   const defaults = tab === "products" ? { type: "combo", display: "TRUE", shipping_rule: "all", sort: "10" } : tab === "packaging" ? { type: "combo", display: "TRUE", sort: "10" } : {};
   table.querySelector("tbody").insertAdjacentHTML("beforeend", editRowHtml(tab, keys, defaults, textareaLong, labels));
+  
   const newRow = table.querySelector("tbody tr:last-child");
   updateEditableRowState(newRow);
   updateEditableTableStats(tab);
   markUnsaved(tab);
+
+  showAdminToast("已新增一列於最下方，請記得儲存", "success", 2500);
+  
+  requestAnimationFrame(() => {
+    newRow.scrollIntoView({ behavior: "smooth", block: "center" });
+    
+    const originalShadow = newRow.style.boxShadow;
+    const originalBg = newRow.style.backgroundColor;
+    newRow.style.boxShadow = "0 0 0 3px rgba(91, 114, 144, .3)";
+    newRow.style.backgroundColor = "#f8fafc";
+    
+    setTimeout(() => {
+      newRow.style.boxShadow = originalShadow;
+      newRow.style.backgroundColor = originalBg;
+    }, 1800);
+  });
 }
 
 function collectRows(tab) {
