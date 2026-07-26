@@ -409,77 +409,64 @@
         }
 
 
-        /* UX v22：大型商品分類卡片 */
+        /* UX v22：大型商品分類卡片（已優化為輕量化切換按鈕） */
         .product-tabs-card {
             overflow: visible;
         }
         .product-tab-list {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
+            gap: 6px;
+            background: #e7e5e4; /* 加入淺灰底色，營造開關的軌道感 */
+            padding: 4px;
+            border-radius: 14px; /* 外框圓角 */
         }
         .product-tab-button {
-            min-height: 116px;
-            border: 1px solid #e7e5e4;
-            border-radius: 16px;
-            padding: 16px;
-            background: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 8px;
+            background: transparent;
             color: #78716c;
-            text-align: left;
-            transition: background .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+            text-align: center; /* 文字置中 */
+            transition: background .18s ease, color .18s ease, box-shadow .18s ease;
         }
         .product-tab-button:hover {
-            border-color: #b8c2cf;
-            transform: translateY(-1px);
+            color: #292524;
         }
         .product-tab-button.is-active {
-            border-color: #5B7290;
-            background: #f5f7fa;
+            background: #fff; /* 選中時變成白底 */
             color: #292524;
-            box-shadow: 0 5px 16px rgba(91,114,144,.13);
+            box-shadow: 0 2px 8px rgba(0,0,0,.08); /* 選中時加一點陰影浮起 */
         }
         .product-tab-heading {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center; /* 標題置中 */
             gap: 8px;
         }
         .product-tab-title {
-            color: #292524;
-            font-size: 17px;
+            color: inherit;
+            font-size: 16px;
             font-weight: 900;
             letter-spacing: .03em;
         }
-        .product-tab-summary {
-            display: -webkit-box;
-            overflow: hidden;
-            margin-top: 9px;
-            color: #78716c;
-            font-size: 12px;
-            font-weight: 700;
-            line-height: 1.6;
-            -webkit-box-orient: vertical;
-            -webkit-line-clamp: 2;
-        }
+        
+        /* 隱藏佔空間的副標題與連結文字，讓它徹底變成按鈕 */
+        .product-tab-summary, 
         .product-tab-action {
-            display: block;
-            margin-top: 8px;
-            color: #5B7290;
-            font-size: 11px;
-            font-weight: 900;
-            letter-spacing: .05em;
+            display: none !important; 
         }
+
         .product-tab-count {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             min-width: 20px;
             height: 20px;
-            margin-left: 5px;
             padding: 0 6px;
             border-radius: 999px;
-            background: #e7e5e4;
-            color: #78716c;
+            background: #d6d3d1; /* 未選中時的數字背景 */
+            color: #57534e;
             font-size: 11px;
             line-height: 1;
             font-weight: 900;
@@ -490,10 +477,12 @@
         }
         .product-tab-panel[hidden] { display: none !important; }
         .product-tab-panel { padding-top: 22px; }
+        
         @media (max-width: 640px) {
-            .product-tab-list { grid-template-columns: 1fr; }
-            .product-tab-button { min-height: 106px; padding: 14px; }
-            .product-tab-title { font-size: 16px; }
+            /* 移除原本的 1fr 設定，讓手機版強制左右並排 */
+            .product-tab-list { gap: 4px; }
+            .product-tab-button { padding: 10px 4px; }
+            .product-tab-title { font-size: 15px; }
             .product-tab-panel { padding-top: 18px; }
         }
 
@@ -873,19 +862,22 @@
 
                 <section id="productTabsCard" class="product-tabs-card scroll-mt-24">
                     <div class="product-tab-list" role="tablist" aria-label="商品分類">
-                        <button type="button" id="limitedProductTab" class="product-tab-button is-active" role="tab" aria-selected="true" aria-controls="limitedProductSection" onclick="switchProductTab('limited')">
-                            <span class="product-tab-heading"><span id="limitedTabTitle" class="product-tab-title">限定商品</span><span id="limitedProductTabCount" class="product-tab-count hidden">0 款</span></span>
-                            <span id="limitedProductTabSummary" class="product-tab-summary">期間限定甜點，商品載入中⋯</span>
-                            <span class="product-tab-action">查看限定商品 ›</span>
-                        </button>
-                        <button type="button" id="miniCaneleTab" class="product-tab-button" role="tab" aria-selected="false" aria-controls="customBoxSection" onclick="switchProductTab('canele')">
+                        <!-- 1. 迷你可麗露改到前面，並加上 is-active 和 aria-selected="true" -->
+                        <button type="button" id="miniCaneleTab" class="product-tab-button is-active" role="tab" aria-selected="true" aria-controls="customBoxSection" onclick="switchProductTab('canele')">
                             <span class="product-tab-heading"><span class="product-tab-title">迷你可麗露</span><span id="miniCaneleTabCount" class="product-tab-count hidden">0 款</span></span>
                             <span id="miniCaneleTabSummary" class="product-tab-summary">自由選擇包裝與口味，商品載入中⋯</span>
                             <span class="product-tab-action">查看口味與包裝 ›</span>
                         </button>
+                        
+                        <!-- 2. 限定商品改到後面，並移除 is-active，改為 aria-selected="false" -->
+                        <button type="button" id="limitedProductTab" class="product-tab-button" role="tab" aria-selected="false" aria-controls="limitedProductSection" onclick="switchProductTab('limited')">
+                            <span class="product-tab-heading"><span id="limitedTabTitle" class="product-tab-title">限定商品</span><span id="limitedProductTabCount" class="product-tab-count hidden">0 款</span></span>
+                            <span id="limitedProductTabSummary" class="product-tab-summary">期間限定甜點，商品載入中⋯</span>
+                            <span class="product-tab-action">查看限定商品 ›</span>
+                        </button>
                     </div>
 
-                <div id="customBoxSection" class="product-tab-panel space-y-5" role="tabpanel" aria-labelledby="miniCaneleTab" hidden>
+               <div id="customBoxSection" class="product-tab-panel space-y-5" role="tabpanel" aria-labelledby="miniCaneleTab">
                     <div class="space-y-3">
                         <div class="flex items-center justify-between gap-3">
                             <div>
@@ -926,7 +918,7 @@
                     </div>
                 </div>
 
-                <section id="limitedProductSection" class="product-tab-panel space-y-4" role="tabpanel" aria-labelledby="limitedProductTab">
+                <section id="limitedProductSection" class="product-tab-panel space-y-4" role="tabpanel" aria-labelledby="limitedProductTab" hidden>
                     <div class="rounded-2xl border border-stone-200 bg-stone-50/40 p-3 md:p-4">
                         <div id="limitedPackageCards" class="divide-y divide-stone-100">
                             <div class="animate-pulse h-16 rounded-xl bg-stone-100"></div>
