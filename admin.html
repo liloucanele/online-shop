@@ -369,6 +369,21 @@
       .row-toggle-btn .chevron { transition: transform .2s ease; }
       tr.row-expanded .row-toggle-btn .chevron { transform: rotate(180deg); }
     }
+
+    #tabMenu {
+      position: sticky;
+      top: 68px; /* 手機版 header 加上間距的高度 */
+      z-index: 30;
+      transition: transform 0.3s cubic-bezier(0.3, 0, 0, 1), opacity 0.3s ease;
+    }
+    @media (min-width: 768px) {
+      #tabMenu { top: 84px; } /* 電腦版高度略大 */
+    }
+    .tab-menu-hidden {
+      transform: translateY(-130%); /* 往上縮排隱藏至 header 底下 */
+      opacity: 0;
+      pointer-events: none; /* 隱藏時不可點擊 */
+    }
 </style>
 </head>
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
@@ -395,7 +410,7 @@
 <p class="hidden text-sm font-bold" id="loginMessage"></p>
 </section>
 <section class="hidden space-y-5" id="adminPanel">
-<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-3 tab-scroll-wrapper">
+<div id="tabMenu" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-3 tab-scroll-wrapper">
   <div class="overflow-x-auto scrollbar-hide" style="-ms-overflow-style: none; scrollbar-width: none;">
     <div class="flex gap-2 min-w-max" id="tabs">
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard<span class="unsaved-dot"></span></button>
@@ -2758,6 +2773,27 @@ async function postAdmin(payload, successMessage, buttonElement = null) {
 document.getElementById("adminPassword").addEventListener("keydown", e => { if (e.key === "Enter") adminLogin(); });
 if (getToken()) { setLoggedInState(true); loadAll(); }
 window.addEventListener("resize", syncOrderFilterDetails);
+
+let lastScrollY = window.scrollY;
+
+window.addEventListener('scroll', () => {
+  const tabMenu = document.getElementById('tabMenu');
+  if (!tabMenu) return;
+
+  const currentScrollY = window.scrollY;
+  
+  // 向下滑動超過 10px，且已經離開頂部超過 100px 時 -> 隱藏菜單
+  if (currentScrollY > lastScrollY + 10 && currentScrollY > 100) {
+    tabMenu.classList.add('tab-menu-hidden');
+    lastScrollY = currentScrollY;
+  } 
+  // 向上滑動超過 10px，或是滾動回到最頂部時 -> 顯示菜單
+  else if (currentScrollY < lastScrollY - 10 || currentScrollY < 50) {
+    tabMenu.classList.remove('tab-menu-hidden');
+    lastScrollY = currentScrollY;
+  }
+}, { passive: true });
+    
 </script>
 </body>
 </html>
