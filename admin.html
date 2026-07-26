@@ -263,7 +263,7 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
 .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #d6d3d1; border-radius: 10px; }
 
 /* =========================================================
-   手機版 UI/UX 優化補丁 (Mobile UX Enhancements)
+   手機版 UI/UX 優化補丁 (Modern App Card UI)
    ========================================================= */
 @media (max-width: 768px) {
   /* 確保所有輸入框與一般按鈕符合最小觸控範圍 */
@@ -287,9 +287,7 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
   .overflow-x-auto::-webkit-scrollbar { height: 4px; }
   .overflow-x-auto::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 4px; }
 
-  /* =========================================================
-     🌟 重新設計的手機版清單卡片 (Modern App Card UI)
-     ========================================================= */
+  /* 重新設計的手機版清單卡片 */
   table[data-edit-table] { min-width: 0 !important; width: 100% !important; table-layout: auto !important; }
   table[data-edit-table] colgroup { display: none; }
   table[data-edit-table] thead { display: none; }
@@ -321,7 +319,7 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
   }
   table[data-edit-table] td:has(input[data-key="name"])::before,
   table[data-edit-table="coupons"] td:has(input[data-key="code"])::before {
-    display: none !important; /* 隱藏「商品名稱」標題字 */
+    display: none !important;
   }
   table[data-edit-table] td:has(input[data-key="name"]) input,
   table[data-edit-table="coupons"] td:has(input[data-key="code"]) input {
@@ -359,15 +357,46 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
   }
 
   /* 3. 隱藏不必要的欄位，展開後才顯示 */
-  table[data-edit-table] td[data-detail="1"] { display: none; order: 3; }
-  table[data-edit-table] td:has(input[data-key="display"])[data-detail="1"] { display: none !important; }
-
-  table[data-edit-table] tbody tr.row-expanded td[data-detail="1"] { display: block; }
-  table[data-edit-table] tbody tr.row-expanded td:has(input[data-key="display"])[data-detail="1"] {
-    display: flex !important; align-items: center; justify-content: space-between;
-    padding: 12px 4px 4px !important; border-top: 1px dashed #e7e5e4 !important; margin-top: 8px; margin-bottom: 0;
+  table[data-edit-table] td[data-detail="1"] { 
+    display: none; 
+    order: 15 !important; /* 基礎排序挪到 15 */
   }
-  table[data-edit-table] tbody tr.row-expanded td:has(input[data-key="display"])[data-detail="1"]::before { margin-bottom: 0; }
+  table[data-edit-table] td:has(input[data-key="display"])[data-detail="1"] { 
+    display: none !important; 
+  }
+
+  table[data-edit-table] tbody tr.row-expanded td[data-detail="1"] { 
+    display: block; 
+  }
+  
+  /* 上架狀態列 (虛線區塊) 排序到明細最上方 (10) */
+  table[data-edit-table] tbody tr.row-expanded td:has(input[data-key="display"])[data-detail="1"] {
+    display: flex !important; 
+    align-items: center; 
+    justify-content: flex-start !important;
+    padding: 12px 4px 4px !important; 
+    border-top: 1px dashed #e7e5e4 !important; 
+    margin-top: 8px; 
+    margin-bottom: 0;
+    order: 10 !important;
+  }
+  table[data-edit-table] tbody tr.row-expanded td:has(input[data-key="display"])[data-detail="1"]::before { 
+    margin-bottom: 0 !important; 
+  }
+  table[data-edit-table] .admin-switch {
+    margin-left: auto !important;
+    margin-right: 0 !important;
+  }
+  
+  /* 確保隱藏欄位不干擾排版 */
+  input[type="hidden"] { 
+    display: none !important; 
+  }
+
+  /* 將「類型」排序在「上架狀態」虛線下方 (11) */
+  table[data-edit-table] td:has(select[data-key="type"])[data-detail="1"] {
+    order: 11 !important;
+  }
 
   /* 4. 底部展開按鈕區塊 */
   table[data-edit-table] td:last-child {
@@ -379,33 +408,6 @@ table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-rig
     display: none; width: 36px !important; height: 36px !important; flex-shrink: 0;
   }
   table[data-edit-table] tbody tr.row-expanded td:last-child button[onclick^="deleteAdminRow"] { display: flex; }
-
-  /* 1. 確保隱藏的 input 絕對不會干擾 Flexbox 排版 */
-  input[type="hidden"] { 
-    display: none !important; 
-  }
-
-  /* 2. 讓外層容器改用 flex-start，靠左對齊 */
-  table[data-edit-table] tbody tr.row-expanded td:has(input[data-key="display"])[data-detail="1"] {
-    display: flex !important; 
-    align-items: center; 
-    justify-content: flex-start !important; /* 取消原本的 space-between */
-    padding: 12px 4px 4px !important; 
-    border-top: 1px dashed #e7e5e4 !important; 
-    margin-top: 8px; 
-    margin-bottom: 0;
-  }
-
-  /* 3. 消除標題的 margin-bottom，讓文字與開關完美垂直置中 */
-  table[data-edit-table] tbody tr.row-expanded td:has(input[data-key="display"])[data-detail="1"]::before { 
-    margin-bottom: 0 !important; 
-  }
-
-  /* 4. 利用 margin-left: auto 強制把開關推到畫面的最右邊 */
-  table[data-edit-table] .admin-switch {
-    margin-left: auto !important;
-    margin-right: 0 !important;
-  }
 
   /* 更多欄位：改為簡約的文字按鈕風格 */
   .row-toggle-btn {
@@ -1022,7 +1024,7 @@ function formatMonthDayWithWeekday(value) {
   const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
-  return `${mm}/${dd}（${weekdays[date.getDay()]}）`;
+  return `${mm}/${dd}（${weekdays[date.getDay()]})`;
 }
 
 function renderTodayPickupCard() {
