@@ -1948,6 +1948,11 @@
         }
 
         window.switchProductTab = function(tabName, options = {}) {
+            if (typeof gtag === 'function') {
+                gtag('event', 'tab_click', {
+                    tab_name: tabName === 'limited' ? '限定商品' : '迷你可麗露'
+                });
+            }
             const showLimited = tabName === 'limited';
             const canelePanel = document.getElementById('customBoxSection');
             const limitedPanel = document.getElementById('limitedProductSection');
