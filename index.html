@@ -1845,7 +1845,7 @@
             comboWrap.innerHTML = comboItems.length ? comboItems.map((p) => `
                 <button type="button" data-package-name="${lilouEscapeHtml(p.name)}" onclick="selectPackageCard('${encodeURIComponent(p.name)}')" class="lilou-package-card text-left border border-stone-200 rounded-2xl bg-white px-4 py-4 min-h-[72px]" ${p.display === false ? 'disabled' : ''}>
                     <div class="flex items-center gap-3">
-                        <span class="min-w-0 flex-1 font-black text-stone-900 text-sm md:text-base leading-snug">${lilouEscapeHtml(p.name)}</span>
+                        <span class="minw-0 flex-1 font-black text-stone-900 text-sm md:text-base leading-snug">${lilouEscapeHtml(p.name)}</span>
                         ${p.extra_price > 0 ? `<span class="lilou-item-price">+NT$${Number(p.extra_price).toLocaleString('zh-TW')}</span>` : ''}
                         <span class="lilou-package-check w-5 h-5 rounded-full border border-stone-300 text-transparent flex items-center justify-center text-[10px] shrink-0">✓</span>
                     </div>
@@ -3012,6 +3012,15 @@
                             <div><strong>配送方式：</strong>${lilouShippingMethodDisplayLabel(shipMethodVal)}</div>
                             <div><strong>預定日期：</strong>${shipDate}</div>
                         </div>
+                        
+                        ${lilouOrderMethodIsStore(shipMethodVal) ? `
+                        <div class="mt-4 pt-4 border-t border-stone-100">
+                            <button type="button" onclick="smartAddToCalendar('${officialOrderId}', '${shipDate}', '${finalDatabaseAddress.replace(/'/g, "\\'")}')" class="w-full bg-white hover:bg-stone-50 text-stone-700 font-bold h-12 rounded-xl transition-colors text-sm flex items-center justify-center gap-2 border border-stone-200 shadow-sm cursor-pointer">
+                                📅 將取貨日加入行事曆
+                            </button>
+                        </div>
+                        ` : ''}
+
                         <div class="border-t border-dashed border-stone-200 my-4 pt-4 text-sm font-mono text-stone-600 space-y-1"><div class="font-bold text-stone-800 mb-1">購物明細：</div>${cartDetailsHtml}</div>
                         <div class="text-right text-lg font-black text-[#5B7290] pt-2 border-t border-stone-100 mb-4">總金額：$${finalTotal} 元</div>
                         <div class="text-sm font-medium text-stone-600 leading-relaxed bg-stone-50 border border-stone-200 p-4 rounded-xl">如需要修改訂單內容，請私訊官方 LINE 或 Instagram，我們將由人工為您調整。謝謝😀</div>
@@ -3361,6 +3370,15 @@
                     </div>
                 `;
 
+                // 新增行事曆智慧判斷按鈕 (Only for store pickup)
+                const calendarActionHtml = isStorePickup ? `
+                    <div class="pt-2">
+                        <button type="button" onclick="smartAddToCalendar('${escapeHtml(order.id)}', '${escapeHtml(order.date)}', '${escapeHtml(order.address || "高雄市前鎮區景德路72巷12號").replace(/'/g, "\\'")}')" class="w-full bg-white hover:bg-stone-50 text-stone-700 font-bold h-11 rounded-xl transition-colors text-sm flex items-center justify-center gap-2 border border-stone-200 shadow-xs cursor-pointer">
+                            📅 將取貨日加入行事曆
+                        </button>
+                    </div>
+                ` : "";
+
                 const fullArticle = `
                     <article class="bg-white p-5 md:p-6 rounded-2xl border border-stone-100 shadow-xs space-y-4">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border-b border-stone-100 pb-3">
@@ -3387,8 +3405,9 @@
                         </div>
 
                         ${pickupInfo}
+                        ${calendarActionHtml}
 
-                        <div class="space-y-2 text-sm text-stone-700">
+                        <div class="space-y-2 text-sm text-stone-700 mt-4">
                             <div><strong>配送方式：</strong>${lilouOrderMethodLabelFromBackend(method)}</div>
                             ${renderCustomerOrderDetailBlock(order)}
                             ${order.lastUpdate ? `<div><strong>最後更新：</strong>${escapeHtml(order.lastUpdate)}</div>` : ""}
@@ -3535,6 +3554,66 @@
                 }
             } catch (err) {
                 console.warn("無法儲存顧客資訊", err);
+            }
+        }
+        
+        // --- 新增：智慧型加入行事曆功能 ---
+        window.addToCalendar = function(type, orderId, dateStr, address) {
+            const dateMatch = (dateStr || "").match(/\d{4}\/\d{2}\/\d{2}/);
+            const cleanDate = dateMatch ? dateMatch[0].replace(/\//g, '') : (dateStr || "").replace(/[^0-9]/g, '').substring(0, 8);
+            
+            if (!cleanDate || cleanDate.length !== 8) {
+                showToastNotification("⚠️ 取貨日期格式無法解析，無法加入行事曆");
+                return;
+            }
+
+            const start = `${cleanDate}T140000`;
+            const end = `${cleanDate}T180000`;
+            
+            // --- UPDATED TITLE AND DESCRIPTION ---
+            const title = `粒露Lilou | 門市自取提醒`;
+            const description = `您的 Lilou 訂單 (${orderId}) 預定於${dateStr}取貨付款。\n門市營業時間為14:00-18:00，詳細請至網站查詢訂單：https://www.lilou.food/`;
+            const safeAddress = address || "高雄市前鎮區景德路72巷12號";
+
+            if (type === 'google') {
+                const url = new URL('https://calendar.google.com/calendar/render');
+                url.searchParams.append('action', 'TEMPLATE');
+                url.searchParams.append('text', title);
+                url.searchParams.append('dates', `${start}/${end}`);
+                url.searchParams.append('details', description);
+                url.searchParams.append('location', safeAddress);
+                window.open(url.toString(), '_blank');
+            } else if (type === 'apple') {
+                const icsContent = [
+                    'BEGIN:VCALENDAR',
+                    'VERSION:2.0',
+                    'BEGIN:VEVENT',
+                    `DTSTART;TZID=Asia/Taipei:${start}`,
+                    `DTEND;TZID=Asia/Taipei:${end}`,
+                    `SUMMARY:${title}`,
+                    `DESCRIPTION:${description.replace(/\n/g, '\\n')}`,
+                    `LOCATION:${safeAddress}`,
+                    'END:VEVENT',
+                    'END:VCALENDAR'
+                ].join('\n');
+
+                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `Lilou_Order_${orderId}.ics`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        window.smartAddToCalendar = function(orderId, dateStr, address) {
+            const ua = navigator.userAgent || navigator.vendor || window.opera;
+            const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+            if (isIOS) {
+                addToCalendar('apple', orderId, dateStr, address);
+            } else {
+                addToCalendar('google', orderId, dateStr, address);
             }
         }
 
