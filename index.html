@@ -921,7 +921,11 @@
                             </button>
                         </div>
 
-                        <div class="-mt-1">
+                        <!-- 移至上方的：加入購物車（組合）按鈕 -->
+                        <button type="button" onclick="packBoxToCart()" class="w-full bg-stone-300 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed transition-all duration-200" id="packBtn" disabled>請先選擇包裝與口味</button>
+                        
+                        <!-- 移至下方的：我們還有其他美味卡片 -->
+                        <div class="mb-6 md:mb-8">
                             <button type="button" onclick="scrollToLimitedProducts()" class="w-full flex items-center justify-between px-5 py-4 bg-stone-50/50 hover:bg-stone-100 transition-colors rounded-2xl border border-stone-200 cursor-pointer group">
                                 <div class="flex flex-col items-start gap-0.5 text-left">
                                     <span class="text-[11px] font-extrabold text-stone-400 tracking-widest uppercase">我們還有其他美味</span>
@@ -932,8 +936,6 @@
                                 </div>
                             </button>
                         </div>
-
-                        <button type="button" onclick="packBoxToCart()" class="w-full bg-stone-300 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed transition-all duration-200" id="packBtn" disabled>請先選擇包裝與口味</button>
                     </div>
                 </div>
 
@@ -950,7 +952,11 @@
                         </button>
                     </div>
 
-                    <div class="-mt-1">
+                    <button type="button" id="addLimitedBtn" onclick="addSelectedLimitedAddonsToCart()" disabled class="w-full bg-stone-300 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed transition-all duration-200">
+                        請選擇限定商品
+                    </button>
+
+                    <div class="mb-6 md:mb-8">
                         <button type="button" onclick="scrollToCustomBox()" class="w-full flex items-center justify-between px-5 py-4 bg-stone-50/50 hover:bg-stone-100 transition-colors rounded-2xl border border-stone-200 cursor-pointer group">
                             <div class="flex flex-col items-start gap-0.5 text-left">
                                 <span class="text-[11px] font-extrabold text-stone-400 tracking-widest uppercase">我們還有其他美味</span>
@@ -961,10 +967,6 @@
                             </div>
                         </button>
                     </div>
-
-                    <button type="button" id="addLimitedBtn" onclick="addSelectedLimitedAddonsToCart()" disabled class="w-full bg-stone-300 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed transition-all duration-200">
-                        請選擇限定商品
-                    </button>
                 </section>
 
                 <form id="orderForm" class="hidden bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-6 md:space-y-8" onsubmit="handleOrderSubmit(event)" onkeypress="return preventEnterSubmit(event)">
