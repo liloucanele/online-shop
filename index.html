@@ -769,7 +769,7 @@
         function lilouShippingMethodDisplayLabel(method) {
             if (method === "store") return "門市自取付款";
             if (method === "delivery_cod") return "7-11取貨付款";
-            return "7-11取貨（信用卡付款）";
+            return "7-11取貨（線上付款）";
         }
 
         function lilouOrderMethodIsStore(method) {
@@ -789,7 +789,7 @@
         function lilouOrderMethodLabelFromBackend(method) {
             if (lilouOrderMethodIsStore(method)) return "門市自取付款";
             if (lilouOrderMethodIsCod(method)) return "7-11取貨付款";
-            return "7-11取貨（信用卡付款）";
+            return "7-11取貨（線上付款）";
         }
 
         function lilouGetOrderShippingMethod(order = {}) {
@@ -1028,7 +1028,7 @@
                                 <select id="shipMethod" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] cursor-pointer h-12 md:h-14 bg-stone-50/50" onchange="handleShippingMethodChange()" required>
                                     <option value="store">門市自取付款</option>
                                     <option value="delivery_cod">7-11取貨付款（運費+$129）</option>
-                                    <!-- <option value="delivery">7-11取貨（信用卡付款，運費+$129）</option> -->
+                                    <!-- <option value="delivery">7-11取貨（線上付款，運費+$129）</option> -->
                                 </select>
                             </div>
                             <div>
@@ -1051,8 +1051,8 @@
                         </div>
 
                         <div id="deliveryPaymentNotice" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs md:text-sm text-amber-900 font-bold leading-relaxed">
-                            <div class="font-black mb-1">7-11取貨信用卡付款提醒</div>
-                            <div>若您選擇 7-11取貨（信用卡付款），付款連結將寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的付款按鈕完成付款。</div>
+                            <div class="font-black mb-1">7-11取貨線上付款提醒</div>
+                            <div>若您選擇 7-11取貨（線上／ATM轉帳付款），付款連結將寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的付款按鈕完成付款。</div>
                         </div>
 
                         <!-- 折扣碼 -->
@@ -1207,7 +1207,7 @@
 
 
             <div id="overlayPaymentNotice" class="hidden bg-amber-50 border border-amber-200 p-4 rounded-xl text-left text-xs md:text-sm text-amber-900 font-bold leading-relaxed">
-                若您選擇 7-11取貨（信用卡付款），付款連結將寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的付款按鈕完成付款。
+                若您選擇 7-11取貨（線上/ATM付款付款），付款連結將寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的付款按鈕完成付款。
 
             </div>
 
@@ -2845,7 +2845,7 @@
                 return;
             }
             if (shipMethodVal === 'store' && shippingFlags.hasDeliveryOnly) {
-                showToastNotification("⚠️ 您的購物車包含僅宅配商品，請改為 7-11取貨（信用卡付款）。");
+                showToastNotification("⚠️ 您的購物車包含僅宅配商品，請改為7-11店到店。");
                 document.getElementById('shipMethod').value = 'delivery';
                 handleShippingMethodChange();
                 return;
@@ -2929,7 +2929,7 @@
                 return;
             }
             if (s.shipMethodVal === 'store' && shippingFlags.hasDeliveryOnly) {
-                showToastNotification("⚠️ 您的購物車包含僅宅配商品，請改為 7-11取貨（信用卡付款）。");
+                showToastNotification("⚠️ 您的購物車包含僅宅配商品，請改為 7-11店到店。");
                 document.getElementById('shipMethod').value = 'delivery';
                 handleShippingMethodChange();
                 pendingOrderSnapshot = null;
@@ -3001,7 +3001,7 @@
                     
                     document.getElementById('receiptContent').innerHTML = `
                         <div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">重要提醒：請務必留存或截圖此訂購明細！方便您取貨時確認內容。</div>
-                        ${lilouIsPrepaidDeliveryMethod(shipMethodVal) ? `<div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">提醒您：7-11取貨（信用卡付款）的付款連結將另行寄送至您的 Email，請留意收件並於期限內完成付款。若未收到付款通知信件，也可以至網站左上角「查詢訂單」，輸入訂購時填寫的手機號碼後，點選付款按鈕完成付款。</div>` : ``}
+                        ${lilouIsPrepaidDeliveryMethod(shipMethodVal) ? `<div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">提醒您：7-11取貨（線上付款）的付款連結將另行寄送至您的 Email，請留意收件並於期限內完成付款。若未收到付款通知信件，也可以至網站左上角「查詢訂單」，輸入訂購時填寫的手機號碼後，點選付款按鈕完成付款。</div>` : ``}
                         <div class="space-y-3 text-stone-700 text-sm font-mono">
                             <div><strong>訂單編號：</strong>${officialOrderId}</div>
                             ${officialOrderDate ? `<div><strong>下單日期：</strong>${officialOrderDate}</div>` : ``}
@@ -3083,7 +3083,7 @@
             }
 
             if (status === "待付款" && isPrepaidDelivery) {
-                return "您的訂單已成立。請點擊下方「前往信用卡付款」按鈕進行付款，如有疑慮請私訊 Lilou 官方 LINE 或 Instagram。";
+                return "您的訂單已成立。請點擊下方「前往線上付款」按鈕進行付款，如有疑慮請私訊 Lilou 官方 LINE 或 Instagram。";
             }
 
             if (status === "待出貨") {
@@ -3315,7 +3315,7 @@
                             </div>
                             <a href="${escapeHtml(order.paymentLink)}" target="_blank" rel="noopener"
                                class="block w-full text-center bg-[#3E2D20] text-white font-black rounded-xl h-12 leading-[3rem] hover:bg-[#2B1F16] transition-colors">
-                                前往信用卡付款
+                                前往線上付款
                             </a>
                         </div>
                     `;
