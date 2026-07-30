@@ -929,7 +929,7 @@
                             <button type="button" onclick="scrollToLimitedProducts()" class="w-full flex items-center justify-between px-5 py-4 bg-stone-50/50 hover:bg-stone-100 transition-colors rounded-2xl border border-stone-200 cursor-pointer group">
                                 <div class="flex flex-col items-start gap-0.5 text-left">
                                     <span class="text-[11px] font-extrabold text-stone-400 tracking-widest uppercase">我們還有其他美味</span>
-                                    <span id="promptToLimitedText" class="text-sm md:text-base font-black text-stone-800 group-hover:text-[#5B7290] transition-colors">前往限定商品</span>
+                                    <span id="promptToLimitedText" class="text-sm md:text-base font-black text-stone-800 group-hover:text-[#5B7290] transition-colors">選購限定商品</span>
                                 </div>
                                 <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-[#5B7290] group-hover:text-[#3E4F66] group-hover:shadow transition-all font-black text-lg pb-0.5 shrink-0">
                                     ›
@@ -960,7 +960,7 @@
                         <button type="button" onclick="scrollToCustomBox()" class="w-full flex items-center justify-between px-5 py-4 bg-stone-50/50 hover:bg-stone-100 transition-colors rounded-2xl border border-stone-200 cursor-pointer group">
                             <div class="flex flex-col items-start gap-0.5 text-left">
                                 <span class="text-[11px] font-extrabold text-stone-400 tracking-widest uppercase">我們還有其他美味</span>
-                                <span id="promptToComboText" class="text-sm md:text-base font-black text-stone-800 group-hover:text-[#5B7290] transition-colors">前往迷你可麗露</span>
+                                <span id="promptToComboText" class="text-sm md:text-base font-black text-stone-800 group-hover:text-[#5B7290] transition-colors">選購迷你可麗露</span>
                             </div>
                             <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-[#5B7290] group-hover:text-[#3E4F66] group-hover:shadow transition-all font-black text-lg pb-0.5 shrink-0">
                                 ›
@@ -1807,13 +1807,13 @@
             // 動態更新：可麗露區塊下方的卡片
             const promptToLimitedText = document.getElementById('promptToLimitedText');
             if (promptToLimitedText) {
-                promptToLimitedText.textContent = `前往${limitedTabName}`;
+                promptToLimitedText.textContent = `選購${limitedTabName}`;
             }
 
             // 動態更新：限定商品區塊下方的卡片
             const promptToComboText = document.getElementById('promptToComboText');
             if (promptToComboText) {
-                promptToComboText.textContent = `前往${comboTabName}`;
+                promptToComboText.textContent = `選購${comboTabName}`;
             }
         
             const comboItems = localPackaging.filter(p => p.packaging_type !== 'single');
