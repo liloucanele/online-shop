@@ -1573,7 +1573,7 @@ function getOrderMethodFamily(order) { return getOrderMethodType(order) === "sto
 function getOrderShippingLabel(order) { return getOrderMethodFamily(order) === "delivery" ? "🚚 7-11 店到店" : "🏪 門市自取"; }
 function getOrderPaymentLabel(order) {
   const type = getOrderMethodType(order);
-  if (type === "delivery") return "💳 信用卡付款";
+  if (type === "delivery") return "💳 線上付款";
   if (type === "delivery_cod") return "💵 取貨付款";
   return "💰 現場付款";
 }
