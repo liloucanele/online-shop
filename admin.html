@@ -2753,6 +2753,43 @@ function collectRows(tab) {
   });
 }
 
+function openOrderFromDashboard(orderId) {
+  switchTab("orders");
+
+  requestAnimationFrame(() => {
+    const statusFilter = document.getElementById("orderStatusFilter");
+    const methodFilter = document.getElementById("orderMethodFilter");
+    const startInput = document.getElementById("orderStartDate");
+    const endInput = document.getElementById("orderEndDate");
+    if (statusFilter) statusFilter.value = "";
+    if (methodFilter) methodFilter.value = "";
+    if (startInput) startInput.value = "";
+    if (endInput) endInput.value = "";
+    updateOrderRangeButtons("");
+
+    const searchInput = document.getElementById("orderSearch");
+    if (searchInput) {
+      searchInput.value = orderId;
+      filterOrders();
+    }
+
+    requestAnimationFrame(() => {
+      const target = document.querySelector(`[data-order-id="${(window.CSS && CSS.escape) ? CSS.escape(orderId) : orderId}"]`);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        const originalBoxShadow = target.style.boxShadow;
+        const originalBackground = target.style.backgroundColor;
+        target.style.boxShadow = "0 0 0 3px rgba(91, 114, 144, .24)";
+        target.style.backgroundColor = "#fffdf5";
+        setTimeout(() => { 
+          target.style.boxShadow = originalBoxShadow; 
+          target.style.backgroundColor = originalBackground;
+        }, 2200);
+      }
+    });
+  });
+}
+
 function saveSheet(tab, sheetName, btnElement) {
   showAdminConfirm(`確定要儲存「${sheetName}」的變更嗎？`, async () => {
     const rows = collectRows(tab);
