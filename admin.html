@@ -1341,7 +1341,14 @@ function getRevenueRowsForRange(orders, startDate, endDate) {
   return rows;
 }
 
-function getDashboardDefaultRange() { return { start: "", end: "" }; }
+function getDashboardDefaultRange() {
+  const today = getTodayDateInputValue();
+  const now = new Date(today + "T00:00:00");
+  return {
+    start: formatDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1)),
+    end: formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0))
+  };
+}
 function getDashboardSevenDayRange() {
   const today = getTodayDateInputValue();
   return { start: addDaysToDateInput(today, -6), end: today };
@@ -1438,7 +1445,7 @@ function renderDashboardFilterPanel() {
     <summary class="cursor-pointer flex items-center justify-between gap-3 px-1 py-1">
       <div>
         <div class="font-semibold text-[#5B7290]">篩選 Dashboard</div>
-        <div id="dashboardFilterMobileSummary" class="text-xs text-stone-400 mt-0.5">全部期間｜全部配送</div>
+        <div id="dashboardFilterMobileSummary" class="text-xs text-stone-400 mt-0.5">本月｜全部配送</div>
       </div>
       <span class="text-xs font-semibold text-stone-400">展開</span>
     </summary>
@@ -1459,7 +1466,7 @@ function renderDashboardFilterPanel() {
           ${dashboardRangeButton("all", "全部")}
         </div>
       </div>
-      <div id="dashboardFilterStatus" class="hidden md:block text-sm font-medium text-stone-500">目前顯示：全部期間｜全部配送｜依下單日期統計</div>
+      <div id="dashboardFilterStatus" class="hidden md:block text-sm font-medium text-stone-500">目前顯示：本月｜全部配送｜依下單日期統計</div>
     </div>
   </details>`;
 }
@@ -2153,7 +2160,6 @@ function getRevenueShareRows() {
   const methodFilter = document.getElementById("revenueMethodFilter")?.value || "";
 
   return (adminData.orders || []).filter(order => {
-      if (normalizeAdminStatus(order.orderStatus) === "已取消") return false;
       const orderDate = normalizeOrderDateForCompare(order.date || order.timestamp || "");
       if (startDate && (!orderDate || orderDate < startDate)) return false;
       if (endDate && (!orderDate || orderDate > endDate)) return false;
@@ -2162,10 +2168,12 @@ function getRevenueShareRows() {
     }).map(order => {
       const rateInfo = getRevenueRateForOrder(order);
       const amount = parseMoneyNumber(order.total);
+      const status = normalizeAdminStatus(order.orderStatus || "");
+      const cancelled = status === "已取消";
       return {
         id: order.id || "", date: normalizeOrderDateForCompare(order.date || order.timestamp || ""),
         name: order.name || "", methodType: getOrderMethodType(order), methodLabel: getOrderMethodLabel(order),
-        status: normalizeAdminStatus(order.orderStatus || ""), amount, month: rateInfo.month,
+        status, cancelled, amount, month: rateInfo.month,
         rate: rateInfo.rate, commission: amount * rateInfo.rate / 100, missingRate: rateInfo.missing
       };
     }).sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.id || "").localeCompare(b.id || ""));
@@ -2177,8 +2185,9 @@ function filterRevenueShare() {
   const note = document.getElementById("revenueRateNote");
   if (!area || !note) return;
 
+  const billableRows = rows.filter(row => !row.cancelled);
   const settings = getRevenueSettingsRows();
-  const months = Array.from(new Set(rows.map(row => row.month).filter(Boolean))).sort();
+  const months = Array.from(new Set(billableRows.map(row => row.month).filter(Boolean))).sort();
   const noteRows = months.map(month => {
     const setting = getRevenueSettingByMonth(month);
     if (!setting) return `${month}：未設定比例`;
@@ -2187,33 +2196,35 @@ function filterRevenueShare() {
   note.textContent = noteRows.length ? `套用比例：${noteRows.join("；")}` : (settings.length ? "此區間目前沒有可計算訂單。" : "尚未讀取到 Revenue_Settings，請確認試算表分頁名稱與欄位。");
 
   const summary = { store: { label: "門市自取", count: 0, amount: 0, commission: 0 }, delivery: { label: "7-11店到店", count: 0, amount: 0, commission: 0 } };
-  rows.forEach(row => {
+  billableRows.forEach(row => {
     const target = row.methodType === "store" ? summary.store : summary.delivery;
     target.count += 1; target.amount += row.amount; target.commission += row.commission;
   });
 
-  const totalAmount = rows.reduce((sum, row) => sum + row.amount, 0);
-  const totalCommission = rows.reduce((sum, row) => sum + row.commission, 0);
+  const totalAmount = billableRows.reduce((sum, row) => sum + row.amount, 0);
+  const totalCommission = billableRows.reduce((sum, row) => sum + row.commission, 0);
+  const cancelledCount = rows.length - billableRows.length;
   area.innerHTML = `
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-      ${revenueShareKpi("訂單數", rows.length + " 筆", "不含已取消")}
+      ${revenueShareKpi("訂單數", billableRows.length + " 筆", "不含已取消")}
       ${revenueShareKpi("總營業額", formatCurrency(totalAmount), "依篩選區間")}
       ${revenueShareKpi("預估分潤", formatCurrency(totalCommission), "依每月比例")}
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${revenueMethodCard(summary.store)}${revenueMethodCard(summary.delivery)}</div>
     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
-      <div class="flex items-center justify-between gap-3 mb-3"><h3 class="font-black text-[#5B7290] tracking-widest">分潤明細</h3><span class="text-xs font-black text-stone-400">${rows.length} 筆</span></div>
+      <div class="flex items-center justify-between gap-3 mb-3"><h3 class="font-black text-[#5B7290] tracking-widest">分潤明細</h3><span class="text-xs font-black text-stone-400">${rows.length} 筆${cancelledCount ? `（含已取消 ${cancelledCount} 筆）` : ""}</span></div>
       ${rows.length ? `
         <div class="overflow-x-auto">
           <table class="min-w-full text-sm">
             <thead class="text-xs text-stone-400 tracking-widest border-b border-stone-100">
-              <tr><th class="text-left py-2 pr-3 font-black">訂單</th><th class="text-left py-2 pr-3 font-black">日期</th><th class="text-left py-2 pr-3 font-black">出貨方式</th><th class="text-right py-2 pr-3 font-black">金額</th><th class="text-right py-2 pr-3 font-black">比例</th><th class="text-right py-2 font-black">分潤</th></tr>
+              <tr><th class="text-left py-2 pr-3 font-black">訂單</th><th class="text-left py-2 pr-3 font-black">日期</th><th class="text-left py-2 pr-3 font-black">出貨方式</th><th class="text-left py-2 pr-3 font-black">狀態</th><th class="text-right py-2 pr-3 font-black">金額</th><th class="text-right py-2 pr-3 font-black">比例</th><th class="text-right py-2 font-black">分潤</th></tr>
             </thead>
             <tbody class="divide-y divide-stone-100">
-              ${rows.map(row => `<tr><td class="py-2 pr-3 font-bold text-stone-800 whitespace-nowrap">${escapeHtml(row.id)}</td><td class="py-2 pr-3 text-stone-600 whitespace-nowrap">${escapeHtml(row.date || "-")}</td><td class="py-2 pr-3 text-stone-600 whitespace-nowrap">${escapeHtml(row.methodLabel)}</td><td class="py-2 pr-3 text-right mono text-stone-800">${formatCurrency(row.amount)}</td><td class="py-2 pr-3 text-right mono ${row.missingRate ? "text-red-500 font-black" : "text-stone-600"}">${row.rate}%</td><td class="py-2 text-right mono font-black text-[#5B7290]">${formatCurrency(row.commission)}</td></tr>`).join("")}
+              ${rows.map(row => `<tr class="${row.cancelled ? "opacity-50" : ""}"><td class="py-2 pr-3 font-bold text-stone-800 whitespace-nowrap">${escapeHtml(row.id)}</td><td class="py-2 pr-3 text-stone-600 whitespace-nowrap">${escapeHtml(row.date || "-")}</td><td class="py-2 pr-3 text-stone-600 whitespace-nowrap">${escapeHtml(row.methodLabel)}</td><td class="py-2 pr-3 whitespace-nowrap"><span class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-bold ${statusClass(row.status)}">${escapeHtml(row.status || "-")}</span></td><td class="py-2 pr-3 text-right mono text-stone-800 ${row.cancelled ? "line-through" : ""}">${formatCurrency(row.amount)}</td><td class="py-2 pr-3 text-right mono ${row.missingRate ? "text-red-500 font-black" : "text-stone-600"}">${row.rate}%</td><td class="py-2 text-right mono font-black text-[#5B7290] ${row.cancelled ? "line-through" : ""}">${formatCurrency(row.commission)}</td></tr>`).join("")}
             </tbody>
           </table>
-        </div>` : `<p class="text-stone-400 font-bold">目前沒有符合條件的訂單。</p>`}
+        </div>
+        ${cancelledCount ? `<p class="mt-3 text-xs font-bold text-stone-400">已取消訂單以刪除線標示，僅供對帳留存，不計入以上金額與分潤加總。</p>` : ""}` : `<p class="text-stone-400 font-bold">目前沒有符合條件的訂單。</p>`}
     </div>`;
 }
 
@@ -2237,8 +2248,8 @@ function setRevenueCurrentMonth() {
 function exportRevenueShareCsv() {
   const rows = getRevenueShareRows();
   if (!rows.length) { showAdminToast("目前沒有可匯出的分潤資料。", "info"); return; }
-  const header = ["訂單編號", "日期", "出貨方式", "金額", "比例", "分潤"];
-  const body = rows.map(row => [row.id, row.date, row.methodLabel, Math.round(row.amount), row.rate, Math.round(row.commission)]);
+  const header = ["訂單編號", "日期", "出貨方式", "狀態", "金額", "比例", "分潤"];
+  const body = rows.map(row => [row.id, row.date, row.methodLabel, row.status, Math.round(row.amount), row.rate, Math.round(row.commission)]);
   const csv = [header].concat(body).map(row => row.map(value => `"${(value ?? "").toString().replace(/"/g, '""')}"`).join(",")).join("\n");
   const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
