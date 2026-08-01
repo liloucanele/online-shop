@@ -1342,12 +1342,7 @@ function getRevenueRowsForRange(orders, startDate, endDate) {
 }
 
 function getDashboardDefaultRange() {
-  const today = getTodayDateInputValue();
-  const now = new Date(today + "T00:00:00");
-  return {
-    start: formatDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1)),
-    end: formatDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0))
-  };
+  return { start: "", end: "" };
 }
 function getDashboardSevenDayRange() {
   const today = getTodayDateInputValue();
