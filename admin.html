@@ -195,6 +195,7 @@
     table[data-edit-table="packaging"] input[data-key="extra_price"],
     table[data-edit-table="packaging"] input[data-key="box_size"],
     table[data-edit-table="packaging"] input[data-key="sort"],
+    table[data-edit-table="categories"] input[data-key="sort"],
     table[data-edit-table="coupons"] input[data-key="value"],
     table[data-edit-table="coupons"] input[data-key="min_spend"] {
       padding-left: 10px !important;
@@ -228,6 +229,7 @@
 
     /* 讓表格標題凍結 */
     table[data-edit-table="products"] thead,
+    table[data-edit-table="categories"] thead,
     table[data-edit-table="packaging"] thead,
     table[data-edit-table="coupons"] thead {
       position: sticky;
@@ -242,18 +244,22 @@
     table[data-edit-table="products"] input[data-key="sort"],
     table[data-edit-table="packaging"] input[data-key="extra_price"],
     table[data-edit-table="packaging"] input[data-key="box_size"],
-    table[data-edit-table="packaging"] input[data-key="sort"] {
+    table[data-edit-table="packaging"] input[data-key="sort"],
+    table[data-edit-table="categories"] input[data-key="sort"] {
       text-align: center !important; padding-left: 6px !important; padding-right: 6px !important;
     }
     table[data-edit-table="products"] select[data-key="type"],
     table[data-edit-table="products"] select[data-key="shipping_rule"],
-    table[data-edit-table="packaging"] select[data-key="type"] {
+    table[data-edit-table="packaging"] select[data-key="type"],
+    table[data-edit-table="categories"] select[data-key="behavior"] {
       padding-left: 8px !important; padding-right: 8px !important;
     }
     table[data-edit-table="products"] td:has(input[data-key="display"]),
-    table[data-edit-table="packaging"] td:has(input[data-key="display"]) { text-align: center; }
+    table[data-edit-table="packaging"] td:has(input[data-key="display"]),
+    table[data-edit-table="categories"] td:has(input[data-key="display"]) { text-align: center; }
     table[data-edit-table="products"] .admin-switch,
-    table[data-edit-table="packaging"] .admin-switch { margin-left: auto; margin-right: auto; }
+    table[data-edit-table="packaging"] .admin-switch,
+    table[data-edit-table="categories"] .admin-switch { margin-left: auto; margin-right: auto; }
 
     /* 日期設定專用 Scrollbar */
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
@@ -303,13 +309,16 @@
       }
 
       table[data-edit-table] td:has(input[data-key="name"]),
+      table[data-edit-table] td:has(input[data-key="id"]),
       table[data-edit-table="coupons"] td:has(input[data-key="code"]) {
         position: relative; order: 1; padding-right: 60px !important; margin-bottom: 16px;
       }
       table[data-edit-table] td:has(input[data-key="name"])::before,
+      table[data-edit-table] td:has(input[data-key="id"])::before,
       table[data-edit-table="coupons"] td:has(input[data-key="code"])::before { display: none !important; }
       
       table[data-edit-table] td:has(input[data-key="name"]) input,
+      table[data-edit-table] td:has(input[data-key="id"]) input,
       table[data-edit-table="coupons"] td:has(input[data-key="code"]) input {
         font-size: 19px !important; font-weight: 900 !important; color: #292524 !important;
         border: none !important; background: transparent !important; padding: 0 !important;
@@ -353,6 +362,7 @@
       
       input[type="hidden"] { display: none !important; }
       table[data-edit-table] td:has(select[data-key="type"])[data-detail="1"] { order: 11 !important; }
+      table[data-edit-table] td:has(select[data-key="behavior"])[data-detail="1"] { order: 11 !important; }
 
       table[data-edit-table] td:last-child {
         display: flex !important; flex: 1 1 100%; align-items: center; gap: 8px;
@@ -391,7 +401,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.3.1</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.3.2</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -417,10 +427,11 @@
     <div class="flex gap-2 min-w-max" id="tabs">
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard<span class="unsaved-dot"></span></button>
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="orders" onclick="switchTab('orders')">訂單管理<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="categories" onclick="switchTab('categories')">分類<span class="unsaved-dot"></span></button>
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="products" onclick="switchTab('products')">產品<span class="unsaved-dot"></span></button>
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="packaging" onclick="switchTab('packaging')">包裝<span class="unsaved-dot"></span></button>
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="coupons" onclick="switchTab('coupons')">優惠券<span class="unsaved-dot"></span></button>
-      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="settings" onclick="switchTab('settings')">日期設定<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="settings" onclick="switchTab('settings')">設定<span class="unsaved-dot"></span></button>
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="revenue" onclick="switchTab('revenue')">分潤統計<span class="unsaved-dot"></span></button>
     </div>
   </div>
@@ -428,6 +439,7 @@
 <p aria-live="polite" class="hidden text-sm font-bold" id="adminMessage"></p>
 <section class="tab-page space-y-5" id="tab-dashboard"></section>
 <section class="tab-page hidden space-y-5" id="tab-orders"></section>
+<section class="tab-page hidden space-y-5" id="tab-categories"></section>
 <section class="tab-page hidden space-y-5" id="tab-products"></section>
 <section class="tab-page hidden space-y-5" id="tab-packaging"></section>
 <section class="tab-page hidden space-y-5" id="tab-coupons"></section>
@@ -681,6 +693,7 @@ async function loadAll() {
 function renderAll() {
   renderDashboard();
   renderOrders();
+  renderCategories();
   renderProducts();
   renderPackaging();
   renderCoupons();
@@ -1508,7 +1521,6 @@ function updateDashboardRangeButtons(state){
     });
 }
 
-// 補上 Dashboard 篩選函式
 function filterDashboard() {
   renderDashboardContent();
 }
@@ -2014,6 +2026,9 @@ function cancelOrderEdit(orderId) {
   showAdminToast(`${orderId} 已取消修改。`, "info", 1800);
 }
 
+function renderCategories() {
+  renderEditableTable("categories", "Categories 分類管理", ["id","name","behavior","display","sort"], ["ID(英文代號)","頁籤名稱","選購模式(combo包裝/single單品)","顯示","排序"], adminData.categories || []);
+}
 function renderProducts() {
   renderEditableTable("products", "Products", ["name","price","stock","type","display","shipping_rule","sort","description","ingredients","allergens","storage","weight","nutrition","origin_manufacturer"], ["商品名稱","價格","庫存","類型","上架狀態","配送","排序","商品描述","成分","過敏原","保存方式","重量","營養標示","原產地與製造商"], adminData.products || []);
 }
@@ -2026,11 +2041,13 @@ function renderCoupons() {
 
 function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = false) {
   const id = "tab-" + tab;
-  const isProductOrPackaging = tab === "products" || tab === "packaging";
+  const isConfigTab = tab === "products" || tab === "packaging" || tab === "categories";
   
   let noticeContent = "";
-  if (tab === "products") {
-    noticeContent = "商品類型：組合商品／單品<br>配送規則：自取與宅配／僅自取／僅宅配<br>上架狀態可直接點擊開關切換。";
+  if (tab === "categories") {
+    noticeContent = "設定前台顯示的頁籤與行為。選購模式會決定該頁籤是「單品直接加入購物車」還是「需要先選包裝」。";
+  } else if (tab === "products") {
+    noticeContent = "商品類型請對應分類 ID（如：combo、single、giftbox）。<br>配送規則：自取與宅配／僅自取／僅宅配<br>上架狀態可直接點擊開關切換。";
   } else if (tab === "coupons") {
     noticeContent = "現折金額請直接輸入數字，例如 100。<br>折扣比例請輸入小數，例如 0.9 代表 9 折。";
   }
@@ -2048,11 +2065,12 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
     </details>
   ` : "";
 
-  const stats = isProductOrPackaging ? getEditableTableStats(rows) : null;
+  const stats = isConfigTab ? getEditableTableStats(rows) : null;
+  const labelText = tab === "products" ? "商品" : tab === "packaging" ? "包裝" : "分類";
   
-  const searchBox = isProductOrPackaging ? `
+  const searchBox = isConfigTab ? `
     <div class="flex flex-col md:flex-row md:items-center gap-2 md:justify-end w-full md:w-auto">
-      <div id="${tab}Stats" class="text-sm text-stone-500 font-bold whitespace-nowrap">共 ${stats.total} 個${tab === "products" ? "商品" : "包裝"}｜上架 ${stats.active}｜下架 ${stats.inactive}</div>
+      <div id="${tab}Stats" class="text-sm text-stone-500 font-bold whitespace-nowrap">共 ${stats.total} 個${labelText}｜上架 ${stats.active}｜下架 ${stats.inactive}</div>
       <div class="flex items-center gap-2 w-full md:w-auto">
         <input type="search" id="${tab}Search" oninput="filterEditableTable('${tab}')" class="flex-1 md:flex-none md:w-48 h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold min-w-0 outline-none focus:border-[#5B7290]" placeholder="搜尋...">
         <select id="${tab}DisplayFilter" onchange="filterEditableTable('${tab}')" class="shrink-0 h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold outline-none focus:border-[#5B7290]">
@@ -2086,7 +2104,7 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
         </table>
       </div>
     </div>`;
-  if (isProductOrPackaging) {
+  if (isConfigTab) {
     requestAnimationFrame(() => {
       document.querySelectorAll(`#${id} tbody tr`).forEach(updateEditableRowState);
       updateEditableTableStats(tab);
@@ -2275,14 +2293,36 @@ function renderSettings() {
     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-5">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h2 class="text-xl font-black text-stone-900">日期設定</h2>
+          <h2 class="text-xl font-black text-stone-900">設定</h2>
+          <p class="text-sm text-stone-500 mt-1">包含營業日期與其他活動參數設定。</p>
         </div>
         <div class="mobile-action-bar flex w-full md:w-auto">
-          <button onclick="saveSheet('settings','Settings', this)" class="w-full h-11 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存 日期設定</button>
+          <button onclick="saveSheet('settings','Settings', this)" class="w-full h-11 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存設定</button>
         </div>
+      </div>
+      <div class="border-t border-stone-100 pt-4 mb-4">
+        <h3 class="text-lg font-black text-stone-800 mb-2">營業日期設定</h3>
       </div>
       <div data-edit-table="settings" data-keys="setting_name,value" class="space-y-6">
         ${settingsRows.map(row => settingDateBlockEnhanced(row.setting_name, row.value)).join("")}
+      </div>
+      
+      <div class="border-t border-stone-100 pt-6 mt-6 mb-4">
+        <h3 class="text-lg font-black text-stone-800 mb-2">其他系統參數 (列表)</h3>
+      </div>
+      <div class="overflow-x-auto max-h-[70vh]">
+        <table class="w-full text-sm table-fixed min-w-[500px]" data-edit-table="settings_list" data-keys="setting_name,value" data-labels="參數名稱,設定值">
+          <colgroup><col style="width:240px"><col style="width:240px"><col style="width:56px"></colgroup>
+          <thead><tr class="text-left text-xs tracking-widest text-stone-400"><th class="px-2 py-2 whitespace-nowrap bg-white">參數名稱</th><th class="px-2 py-2 whitespace-nowrap bg-white">設定值</th><th class="px-1 py-2 bg-white"></th></tr></thead>
+          <tbody>
+            ${(adminData.settings || [])
+                .filter(row => settingDisplayName(row.setting_name) !== "自取日期" && settingDisplayName(row.setting_name) !== "店到店出貨日期")
+                .map(row => editRowHtml("settings", ["setting_name", "value"], row, true, ["參數名稱", "設定值"])).join("")}
+          </tbody>
+        </table>
+      </div>
+      <div class="flex justify-start mt-3">
+         <button onclick="addRow('settings')" class="h-11 rounded-xl border border-stone-200 px-4 font-black text-stone-600 bg-stone-50 hover:bg-stone-100">新增一列參數</button>
       </div>
     </div>`;
     
@@ -2307,7 +2347,7 @@ function settingDateBlockEnhanced(label, value) {
   }
 
   return `<section class="rounded-3xl border border-stone-200 bg-white overflow-hidden" data-setting-row data-setting-name="${escapeHtml(label)}">
-    <input type="hidden" data-key="setting_name" value="${escapeHtml(label)}">
+    <input type="hidden" data-key="setting_name" value="${label === '自取日期' ? 'pickup_available_dates' : 'delivery_available_dates'}">
     <input type="hidden" data-key="value" class="setting-date-value" value="${escapeHtml(cleanValue)}">
 
     <div class="bg-stone-50/70 border-b border-stone-100 px-5 py-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
@@ -2472,14 +2512,6 @@ function clearMonthDates(btn) {
   }, "清除確認");
 }
 
-function mergeSettingDatesAndRender(box, newDates) {
-  let current = getSettingDates(box);
-  const merged = Array.from(new Set([...current, ...newDates]));
-  setSettingDates(box, merged);
-  markUnsaved('settings');
-  updateSettingCalendarAndTags(box);
-}
-
 function copyDatesFromSetting(btn, sourceLabel) {
   const box = btn.closest('[data-setting-row]');
   const targetLabel = box.dataset.settingName;
@@ -2508,6 +2540,7 @@ function clearSettingDates(button) {
 /* ========================================================= */
 
 function getEditableTableMinWidth(tab) {
+  if (tab === "categories") return "min-w-[700px]";
   if (tab === "products") return "min-w-[2680px]";
   if (tab === "packaging") return "min-w-[820px]";
   if (tab === "coupons") return "min-w-[980px]";
@@ -2516,6 +2549,7 @@ function getEditableTableMinWidth(tab) {
 
 function getEditableTableColgroup(tab, keys) {
   const widthMap = {
+    categories: { id: "120px", name: "180px", behavior: "210px", display: "82px", sort: "70px" },
     products: { name: "190px", price: "70px", stock: "70px", type: "105px", display: "82px", shipping_rule: "112px", sort: "60px", description: "300px", ingredients: "330px", allergens: "300px", storage: "300px", weight: "80px", nutrition: "380px", origin_manufacturer: "320px" },
     packaging: { name: "280px", extra_price: "85px", box_size: "80px", type: "115px", display: "82px", sort: "70px" },
     coupons: { code: "34%", type: "160px", value: "110px", min_spend: "110px", start_date: "150px", end_date: "150px" }
@@ -2524,6 +2558,10 @@ function getEditableTableColgroup(tab, keys) {
 }
 
 function getAdminCellClass(tab, key) {
+  if (tab === "categories") {
+    if (["id", "sort"].includes(key)) return "w-[120px]";
+    if (["behavior", "display"].includes(key)) return "";
+  }
   if (tab === "products") {
     if (["price", "stock", "sort"].includes(key)) return "w-[70px]";
     if (key === "weight") return "w-[90px]";
@@ -2550,6 +2588,7 @@ function deleteAdminRow(button, tab) {
 }
 
 const ADMIN_MOBILE_SUMMARY_KEYS = {
+  categories: ["id", "name", "behavior"],
   products: ["name", "price", "stock"],
   packaging: ["name"],
   coupons: ["code", "type", "value"]
@@ -2558,7 +2597,7 @@ const ADMIN_MOBILE_SUMMARY_KEYS = {
 function editRowHtml(tab, keys, row = {}, textareaLong = false, labels = []) {
   const rowAttr = tab === "coupons" && (row.code || "").toString().trim() ? ` data-coupon-code="${escapeHtml((row.code || "").toString().trim())}"` : "";
   const displayValue = row.display === undefined || row.display === "" ? "TRUE" : row.display;
-  const inactiveClass = (tab === "products" || tab === "packaging") && !isDisplayOn(displayValue) ? " is-inactive" : "";
+  const inactiveClass = (tab === "products" || tab === "packaging" || tab === "categories") && !isDisplayOn(displayValue) ? " is-inactive" : "";
 
   return `<tr class="admin-edit-row border-t border-stone-100 transition-colors${inactiveClass}"${rowAttr}>${keys.map((key, idx) => {
     const val = row[key] || "";
@@ -2567,7 +2606,10 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false, labels = []) {
     if ((tab === "products" || tab === "packaging") && key === "type") {
       const cleanVal = (val || "combo").toString().trim().toLowerCase();
       field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50"><option value="combo" ${cleanVal === "combo" ? "selected" : ""}>組合商品</option><option value="single" ${cleanVal === "single" ? "selected" : ""}>單品</option></select>`;
-    } else if ((tab === "products" || tab === "packaging") && key === "display") {
+    } else if (tab === "categories" && key === "behavior") {
+      const cleanVal = (val || "combo").toString().trim().toLowerCase();
+      field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50"><option value="combo" ${cleanVal === "combo" ? "selected" : ""}>需選包裝與口味 (combo)</option><option value="single" ${cleanVal === "single" ? "selected" : ""}>直接加入購物車 (single)</option></select>`;
+    } else if ((tab === "products" || tab === "packaging" || tab === "categories") && key === "display") {
       const on = isDisplayOn(val === undefined || val === "" ? "TRUE" : val);
       field = `${renderDisplaySwitch(on)}<input type="hidden" data-key="${key}" value="${on ? "TRUE" : "FALSE"}">`;
     } else if (tab === "products" && key === "stock") {
@@ -2592,7 +2634,7 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false, labels = []) {
     const isDetail = summaryKeys && !summaryKeys.includes(key);
 
     let mobileTagHtml = "";
-    if ((tab === "products" || tab === "packaging") && key === "name") {
+    if ((tab === "products" || tab === "packaging" || tab === "categories") && key === (tab === "categories" ? "id" : "name")) {
       const on = isDisplayOn(row.display === undefined || row.display === "" ? "TRUE" : row.display);
       const tagClass = on ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-red-50 text-red-600 border-red-200";
       const tagText = on ? "上架中" : "已下架";
@@ -2723,7 +2765,7 @@ function getEditableTableStats(rows) {
 }
 
 function updateEditableTableStats(tab) {
-  if (!(tab === "products" || tab === "packaging")) return;
+  if (!(tab === "products" || tab === "packaging" || tab === "categories")) return;
   const table = document.querySelector(`[data-edit-table="${tab}"]`);
   const statsEl = document.getElementById(`${tab}Stats`);
   if (!table || !statsEl) return;
@@ -2733,10 +2775,10 @@ function updateEditableTableStats(tab) {
     const input = row.querySelector('input[data-key="display"]');
     return !input || isDisplayOn(input.value);
   }).length;
-  statsEl.textContent = `共 ${total} 個${tab === "products" ? "商品" : "包裝"}｜上架 ${active}｜下架 ${total - active}`;
+  const label = tab === "products" ? "商品" : tab === "packaging" ? "包裝" : "分類";
+  statsEl.textContent = `共 ${total} 個${label}｜上架 ${active}｜下架 ${total - active}`;
 }
 
-// 升級版篩選函式，支援關鍵字與商品狀態雙重篩選
 function filterEditableTable(tab) {
   const table = document.querySelector(`[data-edit-table="${tab}"]`);
   const input = document.getElementById(`${tab}Search`);
@@ -2747,12 +2789,10 @@ function filterEditableTable(tab) {
   const statusFilter = statusSelect ? statusSelect.value : "";
   
   table.querySelectorAll("tbody tr").forEach(row => {
-    // 檢查關鍵字
     const fields = Array.from(row.querySelectorAll("input, select, textarea"));
     const text = fields.map(f => f.value).join(" ").toLowerCase();
     const textMatch = !q || text.includes(q);
     
-    // 檢查上下架狀態
     let statusMatch = true;
     if (statusFilter) {
       const displayInput = row.querySelector('input[data-key="display"]');
@@ -2763,17 +2803,21 @@ function filterEditableTable(tab) {
       }
     }
     
-    // 同時符合才顯示
     row.style.display = (textMatch && statusMatch) ? "" : "none";
   });
 }
 
 function addRow(tab) {
-  const table = document.querySelector(`[data-edit-table="${tab}"]`);
+  let table = document.querySelector(`[data-edit-table="${tab}"]`);
+  // Handle settings list fallback
+  if (!table && tab === "settings") {
+    table = document.querySelector(`[data-edit-table="settings_list"]`);
+  }
+  
   const keys = table.dataset.keys.split(",");
   const labels = (table.dataset.labels || "").split(",");
   const textareaLong = tab === "settings";
-  const defaults = tab === "products" ? { type: "combo", display: "TRUE", shipping_rule: "all", sort: "10" } : tab === "packaging" ? { type: "combo", display: "TRUE", sort: "10" } : {};
+  const defaults = tab === "categories" ? { behavior: "combo", display: "TRUE", sort: "10" } : tab === "products" ? { type: "combo", display: "TRUE", shipping_rule: "all", sort: "10" } : tab === "packaging" ? { type: "combo", display: "TRUE", sort: "10" } : {};
   table.querySelector("tbody").insertAdjacentHTML("beforeend", editRowHtml(tab, keys, defaults, textareaLong, labels));
   
   const newRow = table.querySelector("tbody tr:last-child");
@@ -2799,20 +2843,27 @@ function addRow(tab) {
 }
 
 function collectRows(tab) {
-  const table = document.querySelector(`[data-edit-table="${tab}"]`);
-  const keys = table.dataset.keys.split(",");
-
+  let table = document.querySelector(`[data-edit-table="${tab}"]`);
+  
   if (tab === "settings") {
-    return [...table.querySelectorAll("[data-setting-row]")].map(row => {
-      const obj = {};
-      keys.forEach(key => {
-        const input = row.querySelector(`[data-key="${key}"]`);
-        obj[key] = input ? input.value.trim() : "";
-      });
-      return obj;
+    // 組合視覺化日期與條列式設定
+    const listTable = document.querySelector(`[data-edit-table="settings_list"]`);
+    const dateRows = [...document.querySelectorAll("[data-setting-row]")].map(row => {
+      return {
+        setting_name: row.querySelector(`[data-key="setting_name"]`).value.trim(),
+        value: row.querySelector(`[data-key="value"]`).value.trim()
+      };
     });
+    const listRows = [...listTable.querySelectorAll("tbody tr")].map(tr => {
+      return {
+        setting_name: tr.querySelector(`[data-key="setting_name"]`)?.value.trim() || "",
+        value: tr.querySelector(`[data-key="value"]`)?.value.trim() || ""
+      };
+    });
+    return [...dateRows, ...listRows];
   }
 
+  const keys = table.dataset.keys.split(",");
   return [...table.querySelectorAll("tbody tr")].map(tr => {
     const obj = {};
     keys.forEach(key => {
@@ -2863,7 +2914,6 @@ function openOrderFromDashboard(orderId) {
 function saveSheet(tab, sheetName, btnElement) {
   showAdminConfirm(`確定要儲存「${sheetName}」的變更嗎？`, async () => {
     const rows = collectRows(tab);
-    // 這裡的 await 現在是在使用者按下確定後，才會開始執行並等待結果
     await postAdmin({ action:"adminReplaceSheetRows", token:getToken(), sheetName, rows }, `${sheetName} 已儲存。`, btnElement);
     clearUnsaved(tab);
   }, "儲存確認");
@@ -2908,12 +2958,10 @@ window.addEventListener('scroll', () => {
 
   const currentScrollY = window.scrollY;
   
-  // 向下滑動超過 10px，且已經離開頂部超過 100px 時 -> 隱藏菜單
   if (currentScrollY > lastScrollY + 10 && currentScrollY > 100) {
     tabMenu.classList.add('tab-menu-hidden');
     lastScrollY = currentScrollY;
   } 
-  // 向上滑動超過 10px，或是滾動回到最頂部時 -> 顯示菜單
   else if (currentScrollY < lastScrollY - 10 || currentScrollY < 50) {
     tabMenu.classList.remove('tab-menu-hidden');
     lastScrollY = currentScrollY;
