@@ -316,13 +316,16 @@
       }
 
       table[data-edit-table] td:has(input[data-key="name"]),
+      table[data-edit-table] td:has(input[data-key="id"]),
       table[data-edit-table="coupons"] td:has(input[data-key="code"]) {
         position: relative; order: 1; padding-right: 60px !important; margin-bottom: 16px;
       }
       table[data-edit-table] td:has(input[data-key="name"])::before,
+      table[data-edit-table] td:has(input[data-key="id"])::before,
       table[data-edit-table="coupons"] td:has(input[data-key="code"])::before { display: none !important; }
       
       table[data-edit-table] td:has(input[data-key="name"]) input,
+      table[data-edit-table] td:has(input[data-key="id"]) input,
       table[data-edit-table="coupons"] td:has(input[data-key="code"]) input {
         font-size: 19px !important; font-weight: 900 !important; color: #292524 !important;
         border: none !important; background: transparent !important; padding: 0 !important;
@@ -2309,52 +2312,148 @@ function settingValueByLabel(label) {
   return found ? (found.value || "") : "";
 }
 
+function getSettingsVal(key, defaultVal) {
+  const found = (adminData.settings || []).find(r => r.setting_name === key);
+  return found ? found.value : defaultVal;
+}
+
 function renderSettings() {
   const settingsRows = [
     { setting_name: "自取日期", value: settingValueByLabel("自取日期") },
     { setting_name: "店到店出貨日期", value: settingValueByLabel("店到店出貨日期") }
   ];
 
+  // 取得活動宣傳設定
+  const promo_enabled = isDisplayOn(getSettingsVal("promo_enabled", "TRUE"));
+  const promo_eyebrow = getSettingsVal("promo_eyebrow", "中秋限定禮盒");
+  const promo_title = getSettingsVal("promo_title", "把團圓的心意裝進一盒甜點");
+  const promo_desc = getSettingsVal("promo_desc", "限量製作，預購至 9 月 20 日，售完為止。");
+  const promo_image = getSettingsVal("promo_image", "images/seasonal-gift-box.jpg");
+  const promo_btn_text = getSettingsVal("promo_btn_text", "立即預購");
+  const promo_btn_link = getSettingsVal("promo_btn_link", "giftbox");
+
+  // 將分類動態轉換為按鈕跳轉的下拉選單
+  const categoryOptions = (adminData.categories || []).map(c =>
+     `<option value="${escapeHtml(c.id)}" ${c.id === promo_btn_link ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
+  ).join("");
+
   document.getElementById("tab-settings").innerHTML = `
     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-5">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <h2 class="text-xl font-black text-stone-900">設定</h2>
-          <p class="text-sm text-stone-500 mt-1">包含營業日期與其他活動參數設定。</p>
+          <p class="text-sm text-stone-500 mt-1">包含營業日期與首頁活動宣傳設定。</p>
         </div>
         <div class="mobile-action-bar flex w-full md:w-auto">
-          <button onclick="saveSheet('settings','Settings', this)" class="w-full h-11 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存設定</button>
+          <button onclick="saveSettingsTab(this)" class="w-full h-11 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存設定</button>
         </div>
       </div>
+      
+      <!-- 營業日期設定 -->
       <div class="border-t border-stone-100 pt-4 mb-4">
         <h3 class="text-lg font-black text-stone-800 mb-2">營業日期設定</h3>
       </div>
-      <div data-edit-table="settings" data-keys="setting_name,value" class="space-y-6">
+      <div id="settingsDateContainer" class="space-y-6">
         ${settingsRows.map(row => settingDateBlockEnhanced(row.setting_name, row.value)).join("")}
       </div>
       
+      <!-- 首頁活動宣傳設定 -->
       <div class="border-t border-stone-100 pt-6 mt-6 mb-4">
-        <h3 class="text-lg font-black text-stone-800 mb-2">其他系統參數 (列表)</h3>
-      </div>
-      <div class="overflow-x-auto max-h-[70vh]">
-        <table class="w-full text-sm table-fixed min-w-[500px]" data-edit-table="settings_list" data-keys="setting_name,value" data-labels="參數名稱,設定值">
-          <colgroup><col style="width:240px"><col style="width:240px"><col style="width:56px"></colgroup>
-          <thead><tr class="text-left text-xs tracking-widest text-stone-400"><th class="px-2 py-2 whitespace-nowrap bg-white">參數名稱</th><th class="px-2 py-2 whitespace-nowrap bg-white">設定值</th><th class="px-1 py-2 bg-white"></th></tr></thead>
-          <tbody>
-            ${(adminData.settings || [])
-                .filter(row => settingDisplayName(row.setting_name) !== "自取日期" && settingDisplayName(row.setting_name) !== "店到店出貨日期")
-                .map(row => editRowHtml("settings", ["setting_name", "value"], row, true, ["參數名稱", "設定值"])).join("")}
-          </tbody>
-        </table>
-      </div>
-      <div class="flex justify-start mt-3">
-         <button onclick="addRow('settings')" class="h-11 rounded-xl border border-stone-200 px-4 font-black text-stone-600 bg-stone-50 hover:bg-stone-100">新增一列參數</button>
+        <div class="flex items-center gap-3 mb-2">
+            <h3 class="text-lg font-black text-stone-800">首頁活動宣傳卡片</h3>
+            <button type="button" onclick="togglePromoSwitch(this)" class="admin-switch ${promo_enabled ? "is-on" : ""}"><span></span></button>
+            <input type="hidden" id="promo_enabled" value="${promo_enabled ? "TRUE" : "FALSE"}">
+        </div>
+        <p class="text-sm text-stone-500 mb-4">設定前台首頁最上方的大型圖片與活動文案。若關閉上方開關，則前台不會顯示此區塊。</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_minmax(200px,300px)] gap-6 bg-stone-50 rounded-2xl p-4 md:p-6 border border-stone-200">
+           <!-- 表單欄位 -->
+           <div class="space-y-4">
+              <label class="block">
+                 <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5 uppercase">活動小標題 (Eyebrow)</span>
+                 <input id="promo_eyebrow" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(promo_eyebrow)}" placeholder="例如：中秋限定禮盒" oninput="markUnsaved('settings');">
+              </label>
+              <label class="block">
+                 <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5 uppercase">活動大標題 (Title)</span>
+                 <input id="promo_title" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(promo_title)}" placeholder="例如：把團圓的心意裝進一盒甜點" oninput="markUnsaved('settings');">
+              </label>
+              <label class="block">
+                 <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5 uppercase">活動說明 (Description)</span>
+                 <textarea id="promo_desc" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-white resize-none focus:outline-none focus:border-[#5B7290]" rows="2" placeholder="限量製作，售完為止..." oninput="markUnsaved('settings');">${escapeHtml(promo_desc)}</textarea>
+              </label>
+              <div class="grid grid-cols-2 gap-3">
+                  <label class="block">
+                     <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5 uppercase">按鈕文字</span>
+                     <input id="promo_btn_text" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(promo_btn_text)}" placeholder="立即預購" oninput="markUnsaved('settings');">
+                  </label>
+                  <label class="block">
+                     <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5 uppercase">按鈕跳轉分類</span>
+                     <select id="promo_btn_link" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white cursor-pointer focus:outline-none focus:border-[#5B7290]" onchange="markUnsaved('settings');">
+                        ${categoryOptions}
+                     </select>
+                  </label>
+              </div>
+              <label class="block">
+                 <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5 uppercase">圖片路徑或網址 (Image URL)</span>
+                 <input id="promo_image" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white font-mono text-sm focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(promo_image)}" placeholder="例如：images/seasonal-gift-box.jpg" oninput="document.getElementById('promo_preview').src=this.value; markUnsaved('settings');">
+              </label>
+           </div>
+
+           <!-- 預覽圖區塊 -->
+           <div class="flex flex-col gap-2">
+              <span class="text-[11px] font-black text-stone-500 tracking-widest block uppercase">圖片預覽</span>
+              <div class="flex-1 bg-stone-200 rounded-xl border border-stone-300 overflow-hidden relative min-h-[160px] shadow-inner">
+                 <img id="promo_preview" src="${escapeHtml(promo_image)}" onerror="this.src='https://placehold.co/600x400/e7e5e4/a8a29e?text=Image+Not+Found'" class="w-full h-full object-cover absolute inset-0">
+              </div>
+           </div>
+        </div>
       </div>
     </div>`;
     
   document.querySelectorAll('[data-setting-row]').forEach(box => {
     updateSettingCalendarAndTags(box);
   });
+}
+
+function togglePromoSwitch(button) {
+  const nextOn = !button.classList.contains("is-on");
+  button.classList.toggle("is-on", nextOn);
+  document.getElementById('promo_enabled').value = nextOn ? "TRUE" : "FALSE";
+  markUnsaved('settings');
+}
+
+function saveSettingsTab(btn) {
+  showAdminConfirm(`確定要儲存「設定」的變更嗎？`, async () => {
+    const currentSettingsMap = {};
+    
+    // 1. 保留所有原有的設定 (避免蓋掉其他隱藏的系統參數)
+    (adminData.settings || []).forEach(r => {
+      currentSettingsMap[r.setting_name] = r.value;
+    });
+
+    // 2. 覆寫日期設定
+    document.querySelectorAll("#settingsDateContainer [data-setting-row]").forEach(row => {
+      const key = row.querySelector('[data-key="setting_name"]').value;
+      const val = row.querySelector('.setting-date-value').value.trim();
+      currentSettingsMap[key] = val;
+    });
+
+    // 3. 覆寫活動宣傳設定
+    const promoKeys = ["promo_enabled", "promo_eyebrow", "promo_title", "promo_desc", "promo_btn_text", "promo_btn_link", "promo_image"];
+    promoKeys.forEach(k => {
+       const el = document.getElementById(k);
+       if (el) currentSettingsMap[k] = el.value.trim();
+    });
+
+    // 轉回陣列格式送出
+    const rows = Object.keys(currentSettingsMap).map(k => ({
+       setting_name: k,
+       value: currentSettingsMap[k]
+    }));
+
+    await postAdmin({ action:"adminReplaceSheetRows", token:getToken(), sheetName: "Settings", rows }, `設定 已儲存。`, btn);
+    clearUnsaved("settings");
+  }, "儲存確認");
 }
 
 function settingDateBlockEnhanced(label, value) {
