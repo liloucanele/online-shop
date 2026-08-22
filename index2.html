@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <!--Developed by TylerChen Design 2026 | UX v17-->
+    <!--Developed by TylerChen Design 2026 | UX v18-->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lilou 粒露｜迷你可麗露專賣</title>
@@ -324,8 +324,6 @@
                 pointer-events: none;
             }
         }
-
-    
 
         /* UX v10：包裝完整顯示、口味摘要展開、限定商品一次加入 */
         #comboPackageCards {
@@ -752,7 +750,7 @@
 
     <div class="max-w-3xl mx-auto p-4 md:p-6 md:py-12 flex-1 w-full">
         <main id="formContainer" class="space-y-6 md:space-y-8">
-            <div id="shopContentWrapper" class="space-y-6 md:space-y-8">
+            <div id="shopContentWrapper" class="space-y-4 md:space-y-8">
                 
                 <!-- 1. 活動宣傳卡片：平時隱藏；有推出禮盒時再由下方設定開啟 -->
                 <section id="seasonalGiftSection" class="hidden relative overflow-hidden rounded-[2rem] shadow-md group cursor-pointer border border-stone-200/50" onclick="document.getElementById('seasonalGiftButton').click()">
@@ -787,7 +785,7 @@
                     </div>
                 </section>
 
-                <!-- 2. 中秋禮盒圖輯 Lookbook -->
+                <!-- 2. 輪播圖集 Lookbook -->
                 <section id="heroGallerySection">
                     <div class="flex items-center justify-between px-2 mb-3">
                         <h2 class="text-xs md:text-sm font-black text-[#5B7290] tracking-widest uppercase">Product Details</h2>
@@ -861,6 +859,7 @@
                     <div class="product-tab-list" role="tablist" aria-label="商品分類">
                         <!-- 將由 JS 動態生成 -->
                     </div>
+                </section>
 
                <div id="customBoxSection" class="product-tab-panel space-y-5" role="tabpanel">
                     <div class="space-y-3">
@@ -1171,6 +1170,11 @@
                 img.src = '';
             }, 300);
         }
+
+        document.addEventListener('DOMContentLoaded', bindLilouDraftAutoSave);
+        document.addEventListener('DOMContentLoaded', loadSavedCustomerInfo);
+
+        fetchOptions();
     </script>
 </body>
 </html>
