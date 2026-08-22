@@ -390,7 +390,9 @@
             color: #78716c;
             text-align: center; /* 文字置中 */
             transition: background .18s ease, color .18s ease, box-shadow .18s ease;
-            flex-shrink: 0;
+            flex: 1; /* 讓按鈕平均分配剩餘寬度 */
+            white-space: nowrap; /* 確保文字不會換行 */
+            min-width: max-content; /* 確保當分類變多時可以正常橫向滾動 */
         }
         .product-tab-button:hover {
             color: #292524;
