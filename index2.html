@@ -1898,7 +1898,14 @@
                 {id: 'single', name: '其他限定甜點', behavior: 'single', display: true, sort: 20}
             ]).filter(c => c.display).sort((a, b) => a.sort - b.sort);
 
-            if (!currentCategoryId && localCategories.length > 0) {
+            // 讀取網址中的 ?tab= 參數
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetTab = urlParams.get('tab');
+
+            // 如果網址有帶參數，且該分類存在，就將預設頁籤設為該分類
+            if (targetTab && localCategories.some(c => c.id === targetTab)) {
+                currentCategoryId = targetTab;
+            } else if (!currentCategoryId && localCategories.length > 0) {
                 currentCategoryId = localCategories[0].id;
             }
 
