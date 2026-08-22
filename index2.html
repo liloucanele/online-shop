@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <!--Developed by TylerChen Design 2026-->
+    <!--Developed by TylerChen Design 2026 | UX v16-->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lilou 粒露｜迷你可麗露專賣</title>
@@ -794,22 +794,22 @@
                     <div id="galleryScroll" class="flex overflow-x-auto gap-3 md:gap-4 snap-x snap-mandatory pb-2 -mx-4 px-4 md:mx-0 md:px-0" style="-ms-overflow-style: none; scrollbar-width: none;">
                         <style>#galleryScroll::-webkit-scrollbar { display: none; }</style>
                         
-                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox('images/gift-1.jpg')">
+                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox(0)">
                             <img src="images/gift-1.jpg" alt="Lilou 實拍 1" class="w-full h-full object-cover transition-transform duration-[0.8s] ease-out group-hover:scale-110" fetchpriority="high">
                         </div>
-                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox('images/gift-2.jpg')">
+                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox(1)">
                             <img src="images/gift-2.jpg" alt="Lilou 實拍 2" class="w-full h-full object-cover transition-transform duration-[0.8s] ease-out group-hover:scale-110">
                         </div>
-                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox('images/gift-3.jpg')">
+                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox(2)">
                             <img src="images/gift-3.jpg" alt="Lilou 實拍 3" class="w-full h-full object-cover transition-transform duration-[0.8s] ease-out group-hover:scale-110">
                         </div>
-                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox('images/gift-4.jpg')">
+                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox(3)">
                             <img src="images/gift-4.jpg" alt="Lilou 實拍 4" class="w-full h-full object-cover transition-transform duration-[0.8s] ease-out group-hover:scale-110">
                         </div>
-                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox('images/gift-5.jpg')">
+                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox(4)">
                             <img src="images/gift-5.jpg" alt="Lilou 實拍 5" class="w-full h-full object-cover transition-transform duration-[0.8s] ease-out group-hover:scale-110">
                         </div>
-                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox('images/gift-6.jpg')">
+                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox(5)">
                             <img src="images/gift-6.jpg" alt="Lilou 實拍 6" class="w-full h-full object-cover transition-transform duration-[0.8s] ease-out group-hover:scale-110">
                         </div>
                     </div>
@@ -1174,11 +1174,23 @@
     </div>
 
     <!-- 圖片點擊放大 (Lightbox) 遮罩層 -->
-    <div id="imageLightboxOverlay" class="fixed inset-0 z-[10001] hidden bg-stone-950/90 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 transition-opacity duration-300" onclick="closeLightbox()">
-        <button type="button" onclick="closeLightbox()" class="absolute top-4 right-4 md:top-6 md:right-6 w-10 h-10 bg-white/10 text-white rounded-full flex items-center justify-center font-black text-xl hover:bg-white/25 transition-colors cursor-pointer">
+    <div id="imageLightboxOverlay" class="fixed inset-0 z-[10001] hidden bg-stone-950/95 backdrop-blur-md flex items-center justify-center p-4 opacity-0 transition-opacity duration-300" onclick="closeLightbox()">
+        <!-- 關閉按鈕 -->
+        <button type="button" onclick="closeLightbox()" class="absolute top-4 right-4 md:top-6 md:right-6 w-10 h-10 bg-white/10 text-white rounded-full flex items-center justify-center font-black text-xl hover:bg-white/25 transition-colors cursor-pointer z-50">
             ✕
         </button>
-        <img id="lightboxImage" src="" alt="放大預覽" class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl object-contain scale-95 transition-transform duration-300" onclick="event.stopPropagation()">
+        
+        <!-- 上一張按鈕 -->
+        <button type="button" onclick="prevLightboxImage(event)" class="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/5 text-white rounded-full flex items-center justify-center font-black text-3xl hover:bg-white/20 transition-colors cursor-pointer z-50">
+            ‹
+        </button>
+
+        <!-- 下一張按鈕 -->
+        <button type="button" onclick="nextLightboxImage(event)" class="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/5 text-white rounded-full flex items-center justify-center font-black text-3xl hover:bg-white/20 transition-colors cursor-pointer z-50">
+            ›
+        </button>
+
+        <img id="lightboxImage" src="" alt="放大預覽" class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl object-contain scale-95 transition-transform duration-300 relative z-40" onclick="event.stopPropagation()">
     </div>
 
     <script>
@@ -3763,12 +3775,23 @@
         }
 
         // --- 圖片點擊放大 (Lightbox) 控制 ---
-        window.openLightbox = function(imageSrc) {
+        let currentLightboxIndex = 0;
+        const lightboxImages = [
+            'images/gift-1.jpg',
+            'images/gift-2.jpg',
+            'images/gift-3.jpg',
+            'images/gift-4.jpg',
+            'images/gift-5.jpg',
+            'images/gift-6.jpg'
+        ];
+
+        window.openLightbox = function(index) {
+            currentLightboxIndex = index;
             const overlay = document.getElementById('imageLightboxOverlay');
             const lightboxImg = document.getElementById('lightboxImage');
             
             if (overlay && lightboxImg) {
-                lightboxImg.src = imageSrc;
+                lightboxImg.src = lightboxImages[currentLightboxIndex];
                 overlay.classList.remove('hidden');
                 // 觸發瀏覽器重繪以啟動動畫
                 void overlay.offsetWidth; 
@@ -3776,6 +3799,9 @@
                 lightboxImg.classList.remove('scale-95');
                 lightboxImg.classList.add('scale-100');
                 document.body.style.overflow = 'hidden'; // 鎖定背景滾動
+                
+                // 綁定鍵盤事件 (支援左右鍵切換與 Esc 關閉)
+                document.addEventListener('keydown', lightboxKeydownHandler);
             }
         }
 
@@ -3788,12 +3814,37 @@
                 lightboxImg.classList.remove('scale-100');
                 lightboxImg.classList.add('scale-95');
                 
+                // 解除鍵盤事件
+                document.removeEventListener('keydown', lightboxKeydownHandler);
+
                 // 等待動畫結束 (300ms) 後再隱藏
                 setTimeout(() => {
                     overlay.classList.add('hidden');
                     document.body.style.overflow = ''; // 恢復背景滾動
                     lightboxImg.src = ""; // 清空圖片來源
                 }, 300);
+            }
+        }
+
+        window.prevLightboxImage = function(event) {
+            if (event) event.stopPropagation(); // 避免點擊按鈕時觸發背景關閉
+            currentLightboxIndex = (currentLightboxIndex - 1 + lightboxImages.length) % lightboxImages.length;
+            document.getElementById('lightboxImage').src = lightboxImages[currentLightboxIndex];
+        }
+
+        window.nextLightboxImage = function(event) {
+            if (event) event.stopPropagation();
+            currentLightboxIndex = (currentLightboxIndex + 1) % lightboxImages.length;
+            document.getElementById('lightboxImage').src = lightboxImages[currentLightboxIndex];
+        }
+
+        function lightboxKeydownHandler(e) {
+            if (e.key === 'ArrowLeft') {
+                window.prevLightboxImage();
+            } else if (e.key === 'ArrowRight') {
+                window.nextLightboxImage();
+            } else if (e.key === 'Escape') {
+                window.closeLightbox();
             }
         }
 
