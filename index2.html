@@ -1527,7 +1527,7 @@
                 addrInput.className = "w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50 text-stone-800 font-normal";
                 shipFeeDisplay.querySelector('span').innerText = `+$${shippingFee}`;
                 shipFeeDisplay.classList.remove('hidden');
-                dateLabel.innerText = "希望到貨日期 *(中秋節期間為宅配旺季，物流配送量較大，實際到貨時間將依物流公司配送狀況為準)";
+                dateLabel.innerText = "希望到貨日期 *";
                 if (deliveryNotice) deliveryNotice.classList.toggle("hidden", !lilouIsPrepaidDeliveryMethod(method));
             } else {
                 addressLabel.innerText = "自取門市地址";
