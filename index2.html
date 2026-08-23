@@ -1004,6 +1004,12 @@
                             <div>若您選擇 7-11取貨（線上付款），付款連結將寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的付款按鈕完成付款。</div>
                         </div>
 
+                        <!-- 中秋宅配提醒 -->
+                        <div id="midAutumnNotice" class="hidden bg-orange-50 border border-orange-200 rounded-xl p-4 text-xs md:text-sm text-orange-900 font-bold leading-relaxed">
+                            <span class="font-black mb-1 block">⚠️ 宅配註明</span>
+                            中秋節期間為宅配旺季，物流配送量較大，實際到貨時間將依物流公司配送狀況為準。
+                        </div>
+
                         <!-- 折扣碼 -->
                         <div>
                             <label for="couponInput" class="block text-xs md:text-sm font-bold text-stone-600 mb-1.5">折扣碼</label>
@@ -1514,6 +1520,7 @@
             const mapLink = document.getElementById('mapLink');
             const addressLabel = document.getElementById('addressLabel');
             const deliveryNotice = document.getElementById('deliveryPaymentNotice');
+            const midAutumnNotice = document.getElementById('midAutumnNotice'); // 新增中秋提醒節點
             
             if(lilouIsDeliveryMethod(method)) {
                 addressLabel.innerText = "7-11 取貨門市名稱 *";
@@ -1529,6 +1536,7 @@
                 shipFeeDisplay.classList.remove('hidden');
                 dateLabel.innerText = "希望到貨日期 *";
                 if (deliveryNotice) deliveryNotice.classList.toggle("hidden", !lilouIsPrepaidDeliveryMethod(method));
+                if (midAutumnNotice) midAutumnNotice.classList.remove("hidden"); // 選宅配時顯示中秋提醒
             } else {
                 addressLabel.innerText = "自取門市地址";
                 mapLink.style.display = 'none'; 
@@ -1539,6 +1547,7 @@
                 shipFeeDisplay.classList.add('hidden');
                 dateLabel.innerText = "門市自取日期 *";
                 if (deliveryNotice) deliveryNotice.classList.add("hidden");
+                if (midAutumnNotice) midAutumnNotice.classList.add("hidden"); // 選自取時隱藏中秋提醒
             }
             renderAvailableDates(method);
             calculateTotal();
@@ -1898,9 +1907,15 @@
                 {id: 'single', name: '其他限定甜點', behavior: 'single', display: true, sort: 20}
             ]).filter(c => c.display).sort((a, b) => a.sort - b.sort);
 
-            // 讀取網址中的 ?tab= 參數
+            // 讀取網址中的參數
             const urlParams = new URLSearchParams(window.location.search);
+            const targetMode = urlParams.get('mode'); // 新增 mode 參數
             const targetTab = urlParams.get('tab');
+
+            // 如果網址參數指定要看「查詢訂單」，就自動切換過去
+            if (targetMode === 'query') {
+                switchMode('query');
+            }
 
             // 如果網址有帶參數，且該分類存在，就將預設頁籤設為該分類
             if (targetTab && localCategories.some(c => c.id === targetTab)) {
