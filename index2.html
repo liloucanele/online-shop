@@ -729,6 +729,17 @@
 
             return candidates[0] || "";
         }
+        
+        // --- 新增：判斷購物車是否有中秋商品的函數 ---
+        function hasMidAutumnProductInCart() {
+            return cart.some(box => {
+                if ((box.boxName || "").includes("中秋")) return true;
+                return (box.flavors || []).some(f => {
+                    const p = localProducts.find(x => x.name === f.name);
+                    return p && (p.type === 'giftbox' || (p.name || "").includes("中秋"));
+                });
+            });
+        }
     </script>
 
     <nav class="bg-[#5B7290] text-white p-4 md:p-5 shadow-sm sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
@@ -1379,6 +1390,17 @@
 
             return candidates[0] || "";
         }
+        
+        // --- 新增：判斷購物車是否有中秋商品的函數 ---
+        function hasMidAutumnProductInCart() {
+            return cart.some(box => {
+                if ((box.boxName || "").includes("中秋")) return true;
+                return (box.flavors || []).some(f => {
+                    const p = localProducts.find(x => x.name === f.name);
+                    return p && (p.type === 'giftbox' || (p.name || "").includes("中秋"));
+                });
+            });
+        }
     </script>
 
     <script>
@@ -1601,6 +1623,9 @@
             const targetDates = isDelivery ? localDeliveryDates : localPickupDates;
             const minDate = lilouDateThresholdString(isDelivery ? 7 : 3);
             
+            // --- 新增：判斷購物車是否有中秋商品 ---
+            const isMidAutumn = hasMidAutumnProductInCart();
+
             let optionsHtml = "";
             let hasValidDate = false;
 
@@ -1608,6 +1633,15 @@
                 targetDates.forEach(dateStr => {
                     const cleanDate = lilouNormalizeDateForCompare(dateStr);
                     if(cleanDate !== "" && cleanDate >= minDate) {
+                        
+                        // --- 新增：中秋節專屬日期區間限制 (9/11 - 9/27) ---
+                        if (isMidAutumn) {
+                            const md = cleanDate.substring(5); // 取得 "MM/DD"
+                            if (md < "09/11" || md > "09/27") {
+                                return; // 如果不在區間內，直接跳過這天
+                            }
+                        }
+
                         let wStr = getWeekdayStr(cleanDate);
                         optionsHtml += `<option value="${cleanDate}">${cleanDate}${wStr}</option>`;
                         hasValidDate = true;
@@ -2712,6 +2746,7 @@
                 updateFloatingCartButton();
                 container.innerHTML = `<p class="text-stone-400 text-center py-6 text-xs md:text-base">購物車目前空空的喔！</p>`; 
                 updateShippingSelectAvailability();
+                renderAvailableDates(document.getElementById('shipMethod').value); // 購物車為空時更新日期選單
                 calculateTotal(); 
                 return; 
             } 
@@ -2788,6 +2823,8 @@
                     </div>
                 </div>`;
             }).join(''); 
+            
+            renderAvailableDates(document.getElementById('shipMethod').value); // 加入購物車後更新日期選單
             calculateTotal(); 
         }
 
