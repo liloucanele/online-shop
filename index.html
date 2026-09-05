@@ -619,10 +619,9 @@
                     </div>
                 </section>
 
-                <!-- 4. 商品分類頁籤與內容 (內建骨架屏) -->
+                <!-- 4. 商品分類頁籤與內容 (無縫骨架屏) -->
                 <section id="productTabsCard" class="product-tabs-card scroll-mt-24">
                     <div class="product-tab-list" role="tablist" aria-label="商品分類">
-                        <!-- 預設先長出骨架按鈕，提升即時感 -->
                         <div class="h-10 bg-stone-200/60 animate-pulse rounded-xl flex-1"></div>
                         <div class="h-10 bg-stone-200/60 animate-pulse rounded-xl flex-1"></div>
                     </div>
@@ -983,7 +982,7 @@
         let localCategories = []; 
         let currentCategoryId = ""; 
         let localProducts = []; 
-        let localPackaging = [];
+        let localPackaging = []; 
         let localCoupons = []; 
         let currentBoxLimit = null;
         const limitedAddonQty = {};
@@ -1617,15 +1616,15 @@
             document.body.style.overflow = '';
         }
 
-        // --- 方案 A：無阻斷加載，立即呈現局部骨架屏與快取資料 ---
+        // --- 資料抓取與自動連動更新邏輯 ---
         async function fetchOptions() {
             const CACHE_KEY = "lilou_shop_fast_cache";
             const TIME_KEY = "lilou_shop_cache_time";
-            const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
+            const CACHE_MAX_AGE = 5 * 60 * 1000; // 5分鐘快取，兼顧快速開啟與後台改動靈敏度
             const now = Date.now();
             let hasRenderedCache = false;
 
-            // 1. 若有快取，0 秒瞬間填入資料讓使用者瀏覽
+            // 1. 若有快取，0 秒立即渲染（骨架屏與既有內容無縫銜接）
             try {
                 const cachedText = localStorage.getItem(CACHE_KEY);
                 const cachedTime = Number(localStorage.getItem(TIME_KEY) || 0);
@@ -1637,13 +1636,17 @@
                 console.warn("讀取快取失敗", err);
             }
 
-            // 2. 背景靜默拉取最新資料更新庫存
+            // 2. 背景向 Google 試算表拉取最新設定
             try {
                 const cacheBuster = `&_=${now}`;
                 const res = await fetch(`${API_URL}?action=getFormOptions${cacheBuster}`);
                 const data = await res.json();
+                
+                // 儲存最新快取
                 localStorage.setItem(CACHE_KEY, JSON.stringify(data));
                 localStorage.setItem(TIME_KEY, now.toString());
+                
+                // 重新以最新資料渲染並刷新頁籤名稱
                 renderUIWithData(data);
             } catch (err) {
                 console.error("同步最新資料失敗", err);
@@ -1654,10 +1657,12 @@
         }
 
         function renderUIWithData(data) {
-            localCategories = (data.categories || [
-                {id: 'combo', name: '迷你可麗露', behavior: 'combo', display: true, sort: 10},
-                {id: 'single', name: '其他限定甜點', behavior: 'single', display: true, sort: 20}
-            ]).filter(c => c.display).sort((a, b) => a.sort - b.sort);
+            // 完全由試算表的 categories 工作表主導，無硬編碼中文
+            if (Array.isArray(data.categories) && data.categories.length > 0) {
+                localCategories = data.categories
+                    .filter(c => c.display)
+                    .sort((a, b) => a.sort - b.sort);
+            }
 
             const urlParams = new URLSearchParams(window.location.search);
             const targetMode = urlParams.get('mode');
@@ -1718,6 +1723,7 @@
                 }
             }
 
+            // 即時重新繪製上方頁籤與下方面板，確保試算表改名後自動替換
             renderTabs();
             switchProductTab(currentCategoryId);
             
