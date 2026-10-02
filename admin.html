@@ -451,6 +451,7 @@
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="packaging" onclick="switchTab('packaging')">包裝<span class="unsaved-dot"></span></button>
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="coupons" onclick="switchTab('coupons')">優惠券<span class="unsaved-dot"></span></button>
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="settings" onclick="switchTab('settings')">設定<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="pages" onclick="switchTab('pages')">頁面<span class="unsaved-dot"></span></button>
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="revenue" onclick="switchTab('revenue')">分潤統計<span class="unsaved-dot"></span></button>
     </div>
   </div>
@@ -464,6 +465,7 @@
 <section class="tab-page hidden space-y-5" id="tab-coupons"></section>
 <section class="tab-page hidden space-y-5" id="tab-settings"></section>
 <section class="tab-page hidden space-y-5" id="tab-revenue"></section>
+<section class="tab-page hidden space-y-5" id="tab-pages"></section>
 </section>
 </main>
 
@@ -718,6 +720,7 @@ function renderAll() {
   renderCoupons();
   renderSettings();
   renderRevenueShare();
+  renderPagesEditor(true);
   switchTab(currentTab);
 }
 
@@ -2162,6 +2165,213 @@ const DATE_RULE_SETTING_LABELS = { pickup_min_days: "自取最早 D+", pickup_ma
 function scrollAdminTable(tab, dir) {
   const box = document.querySelector(`[data-table-scroll="${tab}"]`);
   if (box) box.scrollBy({ left: dir * Math.max(320, box.clientWidth * 0.6), behavior: "smooth" });
+}
+
+// ===== 頁面編輯（前台導覽列的自訂頁，例如「客製服務」）=====
+let pagesDraft = { pages: [], blocks: [] };
+let selectedPageId = "";
+const PAGE_INPUT = "w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 focus:outline-none focus:border-[#5B7290]";
+
+function renderPagesEditor(reset) {
+  if (reset || !pagesDraft.pages.length && (adminData?.pages || []).length) {
+    pagesDraft = {
+      pages: (adminData?.pages || []).map(p => Object.assign({}, p)),
+      blocks: (adminData?.pageBlocks || []).map(b => Object.assign({}, b))
+    };
+  }
+  if (!pagesDraft.pages.some(p => p.page_id === selectedPageId)) selectedPageId = pagesDraft.pages[0]?.page_id || "";
+  const page = pagesDraft.pages.find(p => p.page_id === selectedPageId);
+  const blocks = pagesDraft.blocks.filter(b => b.page_id === selectedPageId);
+  const el = document.getElementById("tab-pages");
+  if (!el) return;
+  el.innerHTML = `
+  <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-5" id="pagesEditor">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div>
+        <h2 class="text-xl font-black text-stone-900">頁面</h2>
+        <p class="text-sm text-stone-500 mt-1">顯示在前台上方導覽列「我要購物」與「查詢訂單」中間，適合放客製服務、關於我們、常見問題。</p>
+      </div>
+      <div class="flex gap-2 mobile-action-bar">
+        <button type="button" onclick="addPage()" class="flex-1 md:flex-none h-11 rounded-xl border border-stone-200 px-4 font-black text-stone-600 bg-white hover:bg-stone-50">＋ 新增頁面</button>
+        <button type="button" onclick="savePages(this)" class="flex-1 md:flex-none h-11 rounded-xl bg-[#5B7290] text-white px-4 font-black hover:bg-[#3E4F66]">儲存頁面</button>
+      </div>
+    </div>
+    <div class="flex gap-2 overflow-x-auto pb-1">
+      ${pagesDraft.pages.map(p => `<button type="button" onclick="selectPage('${escapeHtml(p.page_id)}')" class="shrink-0 h-10 px-4 rounded-full border text-sm font-black ${p.page_id === selectedPageId ? "bg-[#5B7290] text-white border-[#5B7290]" : "bg-white text-stone-600 border-stone-200"}">${escapeHtml(p.nav_label || p.title || "未命名")}${isDisplayOn(p.display) ? "" : `<span class="ml-1.5 text-[10px] font-bold ${p.page_id === selectedPageId ? "text-white/80" : "text-red-500"}">未顯示</span>`}</button>`).join("") || `<span class="text-sm text-stone-400 font-bold">尚未建立頁面，按「新增頁面」開始。</span>`}
+    </div>
+    ${page ? `
+    <div class="rounded-2xl border border-stone-200 bg-stone-50/60 p-4 space-y-4">
+      <div class="flex items-center gap-3">
+        <h3 class="text-base font-black text-stone-800 flex-1">頁面設定</h3>
+        <span class="text-xs font-bold text-stone-500">在前台顯示</span>
+        <button type="button" onclick="togglePageDisplay()" class="admin-switch ${isDisplayOn(page.display) ? "is-on" : ""}" aria-label="在前台顯示"><span></span></button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <label class="block"><span class="text-xs font-black text-stone-500 block mb-1">導覽列名稱（建議 4 字內）</span><input data-page-field="nav_label" class="${PAGE_INPUT}" value="${escapeHtml(page.nav_label)}" placeholder="例：客製服務"></label>
+        <label class="block"><span class="text-xs font-black text-stone-500 block mb-1">導覽列英文（選填）</span><input data-page-field="nav_label_en" class="${PAGE_INPUT}" value="${escapeHtml(page.nav_label_en)}" placeholder="例：Custom Orders"></label>
+        <label class="block"><span class="text-xs font-black text-stone-500 block mb-1">頁面標題</span><input data-page-field="title" class="${PAGE_INPUT}" value="${escapeHtml(page.title)}"></label>
+        <label class="block"><span class="text-xs font-black text-stone-500 block mb-1">英文標題（選填）</span><input data-page-field="title_en" class="${PAGE_INPUT}" value="${escapeHtml(page.title_en)}"></label>
+      </div>
+      <label class="block"><span class="text-xs font-black text-stone-500 block mb-1">開頭說明（選填）</span><textarea data-page-field="intro" rows="2" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-stone-50 focus:outline-none focus:border-[#5B7290]">${escapeHtml(page.intro)}</textarea></label>
+      <div class="flex flex-wrap items-center gap-2 text-xs font-bold text-stone-500">
+        <span>前台連結：www.lilou.food/?page=${escapeHtml(page.page_id)}</span>
+        <span class="flex-1"></span>
+        <button type="button" onclick="movePage(-1)" class="h-9 px-3 rounded-lg border border-stone-200 bg-white text-stone-600">導覽列往前</button>
+        <button type="button" onclick="movePage(1)" class="h-9 px-3 rounded-lg border border-stone-200 bg-white text-stone-600">往後</button>
+        <button type="button" onclick="deletePage()" class="h-9 px-3 rounded-lg border border-red-200 bg-red-50 text-red-500">刪除頁面</button>
+      </div>
+    </div>
+    <div class="space-y-1">
+      <h3 class="text-base font-black text-stone-800">內容區塊</h3>
+      <p class="text-xs text-stone-500 leading-relaxed">內文小技巧：一行一段；開頭打「- 」變成條列；開頭打「## 」變成小標題；用 **兩組星號** 包住文字會變粗體。按鈕連結留空會連到官方 LINE。</p>
+    </div>
+    <div class="space-y-4">
+      ${blocks.map((b, i) => pageBlockCardHtml(b, i, blocks.length)).join("") || `<div class="rounded-2xl border border-dashed border-stone-200 py-8 text-center text-sm font-bold text-stone-400">這個頁面還沒有內容，按下方「新增區塊」。</div>`}
+    </div>
+    <button type="button" onclick="addPageBlock()" class="w-full h-12 rounded-xl border-2 border-dashed border-stone-200 text-stone-500 font-black hover:bg-stone-50">＋ 新增區塊</button>` : ""}
+  </div>`;
+  const editor = document.getElementById("pagesEditor");
+  editor.addEventListener("input", onPagesEditorInput);
+}
+
+function pageBlockCardHtml(b, i, total) {
+  const id = escapeHtml(b.block_id);
+  const img = (b.image || "").trim();
+  return `<div class="rounded-2xl border border-stone-200 bg-white p-4 space-y-3" data-block-id="${id}">
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-black text-[#5B7290] bg-[#5B7290]/10 rounded-full px-2.5 py-1">區塊 ${i + 1}</span>
+      <span class="flex-1"></span>
+      <span class="text-xs font-bold text-stone-500">顯示</span>
+      <button type="button" onclick="toggleBlockDisplay('${id}')" class="admin-switch ${isDisplayOn(b.display) ? "is-on" : ""}" aria-label="顯示區塊"><span></span></button>
+      <button type="button" onclick="moveBlock('${id}', -1)" ${i === 0 ? "disabled" : ""} aria-label="往上" class="w-9 h-9 rounded-lg border border-stone-200 font-black text-stone-500 disabled:opacity-30">↑</button>
+      <button type="button" onclick="moveBlock('${id}', 1)" ${i === total - 1 ? "disabled" : ""} aria-label="往下" class="w-9 h-9 rounded-lg border border-stone-200 font-black text-stone-500 disabled:opacity-30">↓</button>
+      <button type="button" onclick="deleteBlock('${id}')" aria-label="刪除區塊" class="w-9 h-9 rounded-lg bg-red-50 text-red-500 font-black">✕</button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <label class="block"><span class="text-xs font-black text-stone-500 block mb-1">標題</span><input data-block-field="title" class="${PAGE_INPUT}" value="${escapeHtml(b.title)}" placeholder="例：婚禮小物"></label>
+      <label class="block"><span class="text-xs font-black text-stone-500 block mb-1">英文標題（選填）</span><input data-block-field="title_en" class="${PAGE_INPUT}" value="${escapeHtml(b.title_en)}" placeholder="例：Wedding Favors"></label>
+    </div>
+    <label class="block"><span class="text-xs font-black text-stone-500 block mb-1">內文</span><textarea data-block-field="body" rows="6" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-stone-50 leading-relaxed focus:outline-none focus:border-[#5B7290]">${escapeHtml(b.body)}</textarea></label>
+    <div class="flex items-center gap-3">
+      <div class="w-24 h-16 rounded-xl border border-stone-200 bg-stone-100 overflow-hidden flex items-center justify-center text-[11px] font-bold text-stone-400 shrink-0">${img ? `<img src="${escapeHtml(img)}" alt="" class="w-full h-full object-cover">` : "無照片"}</div>
+      <label class="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-[#5B7290] text-white text-sm font-black cursor-pointer">上傳照片<input type="file" accept="image/*" class="hidden" onchange="uploadBlockImage(this, '${id}')"></label>
+      ${img ? `<button type="button" onclick="setBlockField('${id}', 'image', ''); renderPagesEditor()" class="h-10 px-4 rounded-xl border border-stone-200 bg-white text-sm font-black text-stone-500">移除照片</button>` : ""}
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <label class="block"><span class="text-xs font-black text-stone-500 block mb-1">按鈕文字（留空＝不顯示按鈕）</span><input data-block-field="button_text" class="${PAGE_INPUT}" value="${escapeHtml(b.button_text)}" placeholder="例：LINE 洽詢"></label>
+      <label class="block"><span class="text-xs font-black text-stone-500 block mb-1">按鈕連結（留空＝官方 LINE）</span><input data-block-field="button_link" class="${PAGE_INPUT} font-mono text-sm" value="${escapeHtml(b.button_link)}" placeholder="https://"></label>
+    </div>
+  </div>`;
+}
+
+function onPagesEditorInput(e) {
+  const t = e.target;
+  if (t.dataset.pageField) {
+    const page = pagesDraft.pages.find(p => p.page_id === selectedPageId);
+    if (page) page[t.dataset.pageField] = t.value;
+    markUnsaved("pages");
+  } else if (t.dataset.blockField) {
+    const card = t.closest("[data-block-id]");
+    if (card) setBlockField(card.dataset.blockId, t.dataset.blockField, t.value);
+  }
+}
+function setBlockField(blockId, field, value) {
+  const b = pagesDraft.blocks.find(x => x.block_id === blockId);
+  if (b) { b[field] = value; markUnsaved("pages"); }
+}
+function selectPage(id) { selectedPageId = id; renderPagesEditor(); }
+function addPage() {
+  const id = "p" + Date.now().toString(36);
+  pagesDraft.pages.push({ page_id: id, nav_label: "新頁面", nav_label_en: "", title: "新頁面", title_en: "", intro: "", display: "FALSE", sort: "" });
+  selectedPageId = id;
+  markUnsaved("pages");
+  renderPagesEditor();
+}
+function togglePageDisplay() {
+  const page = pagesDraft.pages.find(p => p.page_id === selectedPageId);
+  if (!page) return;
+  page.display = isDisplayOn(page.display) ? "FALSE" : "TRUE";
+  markUnsaved("pages"); renderPagesEditor();
+}
+function movePage(dir) {
+  const i = pagesDraft.pages.findIndex(p => p.page_id === selectedPageId);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= pagesDraft.pages.length) return;
+  [pagesDraft.pages[i], pagesDraft.pages[j]] = [pagesDraft.pages[j], pagesDraft.pages[i]];
+  markUnsaved("pages"); renderPagesEditor();
+}
+function deletePage() {
+  const page = pagesDraft.pages.find(p => p.page_id === selectedPageId);
+  if (!page) return;
+  showAdminConfirm(`確定要刪除「${page.nav_label || page.title}」頁面和它的所有區塊嗎？（按儲存後才會生效）`, () => {
+    pagesDraft.pages = pagesDraft.pages.filter(p => p.page_id !== selectedPageId);
+    pagesDraft.blocks = pagesDraft.blocks.filter(b => b.page_id !== selectedPageId);
+    selectedPageId = "";
+    markUnsaved("pages"); renderPagesEditor();
+  }, "刪除頁面");
+}
+function addPageBlock() {
+  pagesDraft.blocks.push({ block_id: "b" + Date.now().toString(36), page_id: selectedPageId, title: "", title_en: "", body: "", image: "", button_text: "LINE 洽詢", button_link: "", display: "TRUE", sort: "" });
+  markUnsaved("pages"); renderPagesEditor();
+}
+function toggleBlockDisplay(id) {
+  const b = pagesDraft.blocks.find(x => x.block_id === id);
+  if (!b) return;
+  b.display = isDisplayOn(b.display) ? "FALSE" : "TRUE";
+  markUnsaved("pages"); renderPagesEditor();
+}
+function moveBlock(id, dir) {
+  const list = pagesDraft.blocks.filter(b => b.page_id === selectedPageId);
+  const i = list.findIndex(b => b.block_id === id), j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  const a = pagesDraft.blocks.indexOf(list[i]), c = pagesDraft.blocks.indexOf(list[j]);
+  [pagesDraft.blocks[a], pagesDraft.blocks[c]] = [pagesDraft.blocks[c], pagesDraft.blocks[a]];
+  markUnsaved("pages"); renderPagesEditor();
+}
+function deleteBlock(id) {
+  showAdminConfirm("確定要刪除這個區塊嗎？（按儲存後才會生效）", () => {
+    pagesDraft.blocks = pagesDraft.blocks.filter(b => b.block_id !== id);
+    markUnsaved("pages"); renderPagesEditor();
+  }, "刪除區塊");
+}
+async function uploadBlockImage(fileInput, id) {
+  const file = fileInput.files && fileInput.files[0];
+  if (!file) return;
+  const t = showAdminToast("照片壓縮上傳中...", "loading", 0);
+  try {
+    const url = await uploadImageToDrive(file, "page.jpg", 1600);
+    setBlockField(id, "image", url);
+    removeAdminToast(t);
+    showAdminToast("照片已上傳，按「儲存頁面」後生效", "success", 4200);
+    renderPagesEditor();
+  } catch (err) {
+    removeAdminToast(t);
+    showAdminToast("上傳失敗：" + err.message, "error", 4200);
+  } finally { fileInput.value = ""; }
+}
+function savePages(btn) {
+  const bad = pagesDraft.pages.find(p => !(p.nav_label || "").trim());
+  if (bad) { showAdminToast("每個頁面都要填「導覽列名稱」。", "error", 4200); return; }
+  showAdminConfirm("確定要儲存「頁面」的變更嗎？", async () => {
+    const pageRows = pagesDraft.pages.map((p, i) => ({ page_id: p.page_id, nav_label: (p.nav_label || "").trim(), nav_label_en: (p.nav_label_en || "").trim(), title: (p.title || p.nav_label || "").trim(), title_en: (p.title_en || "").trim(), intro: p.intro || "", display: isDisplayOn(p.display) ? "TRUE" : "FALSE", sort: String((i + 1) * 10) }));
+    const blockRows = [];
+    pagesDraft.pages.forEach(p => pagesDraft.blocks.filter(b => b.page_id === p.page_id && ((b.title || "").trim() || (b.body || "").trim() || (b.image || "").trim())).forEach((b, i) => blockRows.push({ block_id: b.block_id, page_id: b.page_id, title: (b.title || "").trim(), title_en: (b.title_en || "").trim(), body: b.body || "", image: (b.image || "").trim(), button_text: (b.button_text || "").trim(), button_link: (b.button_link || "").trim(), display: isDisplayOn(b.display) ? "TRUE" : "FALSE", sort: String((i + 1) * 10) })));
+    const t = showAdminToast("儲存中...", "loading", 0);
+    try {
+      for (const [sheetName, rows] of [["Pages", pageRows], ["PageBlocks", blockRows]]) {
+        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "adminReplaceSheetRows", token: getToken(), sheetName, rows }) });
+        const data = await res.json();
+        if (data.status !== "success") throw new Error(data.message || "儲存失敗");
+      }
+      removeAdminToast(t);
+      clearUnsaved("pages");
+      showAdminToast("頁面已儲存，前台約 1 分鐘內更新", "success");
+      await loadAll();
+    } catch (err) {
+      removeAdminToast(t);
+      showAdminToast("儲存失敗：" + err.message, "error", 4200);
+    }
+  }, "儲存確認");
 }
 
 function settingDisplayName(name) {
