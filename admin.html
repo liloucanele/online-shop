@@ -2034,13 +2034,13 @@ function cancelOrderEdit(orderId) {
 }
 
 function renderCategories() {
-  renderEditableTable("categories", "Categories 分類管理", ["id","name","behavior","display","sort"], ["系統ID","頁籤名稱","選購模式(combo包裝/single單品)","顯示","排序"], adminData.categories || []);
+  renderEditableTable("categories", "Categories 分類管理", ["id","name","name_en","behavior","display","sort","pickup_min_days","pickup_max_days","delivery_min_days","delivery_max_days","pickup_date_rule","delivery_date_rule","date_notice"], ["系統ID","頁籤名稱","英文名稱","選購模式(combo包裝/single單品)","顯示","排序","自取最早 D+","自取最晚 D+","宅配最早 D+","宅配最晚 D+","自取開放期間","宅配開放期間","給客人的日期提醒"], adminData.categories || []);
 }
 function renderProducts() {
-  renderEditableTable("products", "Products", ["name","price","stock","type","display","shipping_rule","sort","description","ingredients","allergens","storage","weight","nutrition","origin_manufacturer"], ["商品名稱","價格","庫存","類型","上架狀態","配送","排序","商品描述","成分","過敏原","保存方式","重量","營養標示","原產地與製造商"], adminData.products || []);
+  renderEditableTable("products", "Products", ["name","name_en","image","price","stock","min_per_order","max_per_order","type","display","shipping_rule","sort","description","ingredients","allergens","storage","weight","nutrition","origin_manufacturer"], ["商品名稱","英文名稱","商品照片","價格","庫存","每筆最少","每筆最多","類型","上架狀態","配送","排序","商品描述","成分","過敏原","保存方式","重量","營養標示","原產地與製造商"], adminData.products || []);
 }
 function renderPackaging() {
-  renderEditableTable("packaging", "Packaging", ["name","extra_price","box_size","type","display","sort"], ["包裝名稱","加價","容量","類型","上架狀態","排序"], adminData.packaging || []);
+  renderEditableTable("packaging", "Packaging", ["name","name_en","extra_price","box_size","type","display","sort"], ["包裝名稱","英文名稱","加價","容量","類型","上架狀態","排序"], adminData.packaging || []);
 }
 function renderCoupons() {
   renderEditableTable("coupons", "Coupons", ["code","type","value","min_spend","start_date","end_date"], ["折扣碼","類型","折扣值","低消","開始日","結束日"], adminData.coupons || []);
@@ -2141,8 +2141,10 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
   }
 }
 
+const DATE_RULE_SETTING_LABELS = { pickup_min_days: "自取最早 D+", pickup_max_days: "自取最晚 D+", delivery_min_days: "宅配最早 D+", delivery_max_days: "宅配最晚 D+", order_cutoff_time: "下單截止時間" };
 function settingDisplayName(name) {
   const key = (name || "").toString().trim().toLowerCase();
+  if (DATE_RULE_SETTING_LABELS[key]) return DATE_RULE_SETTING_LABELS[key];
   if (key === "store_available_dates" || key === "pickup_available_dates" || key.includes("store") || key.includes("pickup") || key.includes("自取")) return "自取日期";
   if (key === "delivery_available_dates" || key.includes("delivery") || key.includes("711") || key.includes("7-11") || key.includes("店到店")) return "店到店出貨日期";
   return name || "未命名設定";
@@ -2356,6 +2358,23 @@ function renderSettings() {
       <div id="settingsDateContainer" class="space-y-6">
         ${settingsRows.map(row => settingDateBlockEnhanced(row.setting_name, row.value)).join("")}
       </div>
+
+      <!-- 第2階段：全站日期規則 -->
+      <div class="border-t border-stone-100 pt-6 mt-6">
+        <h3 class="text-lg font-black text-stone-800 mb-1">日期規則</h3>
+        <p class="text-sm text-stone-500 mb-4">客人能選的日期 = 上方開放日期中，落在「最早～最晚」區間內的日子。超過截止時間下單，算隔天下單。分類各自的規則在「分類」頁設定。</p>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 bg-stone-50 rounded-2xl p-4 border border-stone-200">
+          ${[["pickup_min_days","自取最早 D+","3"],["pickup_max_days","自取最晚 D+","30"],["delivery_min_days","宅配最早 D+","7"],["delivery_max_days","宅配最晚 D+","30"]].map(([k, label, def]) => `
+          <label class="block">
+            <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5">${label}</span>
+            <input id="rule_${k}" type="number" min="0" inputmode="numeric" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white font-black focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(getSettingsVal(k, def))}" oninput="markUnsaved('settings');">
+          </label>`).join("")}
+          <label class="block col-span-2 md:col-span-1">
+            <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5">下單截止時間</span>
+            <input id="rule_order_cutoff_time" type="time" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white font-black focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(getSettingsVal("order_cutoff_time", "18:00"))}" oninput="markUnsaved('settings');">
+          </label>
+        </div>
+      </div>
       
       <!-- 首頁活動宣傳設定 -->
       <div class="border-t border-stone-100 pt-6 mt-6 mb-4">
@@ -2436,6 +2455,12 @@ function saveSettingsTab(btn) {
       const key = row.querySelector('[data-key="setting_name"]').value;
       const val = row.querySelector('.setting-date-value').value.trim();
       currentSettingsMap[key] = val;
+    });
+
+    // 2-1. 覆寫日期規則
+    ["pickup_min_days", "pickup_max_days", "delivery_min_days", "delivery_max_days", "order_cutoff_time"].forEach(k => {
+      const el = document.getElementById("rule_" + k);
+      if (el) currentSettingsMap[k] = el.value.trim();
     });
 
     // 3. 覆寫活動宣傳設定
@@ -2665,18 +2690,18 @@ function clearSettingDates(button) {
 /* ========================================================= */
 
 function getEditableTableMinWidth(tab) {
-  if (tab === "categories") return "min-w-[700px]";
-  if (tab === "products") return "min-w-[2680px]";
-  if (tab === "packaging") return "min-w-[820px]";
+  if (tab === "categories") return "min-w-[1980px]";
+  if (tab === "products") return "min-w-[3280px]";
+  if (tab === "packaging") return "min-w-[1020px]";
   if (tab === "coupons") return "min-w-[980px]";
   return "min-w-[720px]";
 }
 
 function getEditableTableColgroup(tab, keys) {
   const widthMap = {
-    categories: { id: "120px", name: "180px", behavior: "210px", display: "82px", sort: "70px" },
-    products: { name: "190px", price: "70px", stock: "70px", type: "105px", display: "82px", shipping_rule: "112px", sort: "60px", description: "300px", ingredients: "330px", allergens: "300px", storage: "300px", weight: "80px", nutrition: "380px", origin_manufacturer: "320px" },
-    packaging: { name: "280px", extra_price: "85px", box_size: "80px", type: "115px", display: "82px", sort: "70px" },
+    categories: { id: "120px", name: "180px", name_en: "170px", behavior: "210px", display: "82px", sort: "70px", pickup_min_days: "90px", pickup_max_days: "90px", delivery_min_days: "90px", delivery_max_days: "90px", pickup_date_rule: "230px", delivery_date_rule: "230px", date_notice: "260px" },
+    products: { name: "190px", name_en: "180px", image: "250px", min_per_order: "80px", max_per_order: "80px", price: "70px", stock: "70px", type: "105px", display: "82px", shipping_rule: "112px", sort: "60px", description: "300px", ingredients: "330px", allergens: "300px", storage: "300px", weight: "80px", nutrition: "380px", origin_manufacturer: "320px" },
+    packaging: { name: "280px", name_en: "180px", extra_price: "85px", box_size: "80px", type: "115px", display: "82px", sort: "70px" },
     coupons: { code: "34%", type: "160px", value: "110px", min_spend: "110px", start_date: "150px", end_date: "150px" }
   };
   return `<colgroup>${keys.map(key => `<col style="width:${widthMap[tab]?.[key] || '160px'}">`).join("")}<col style="width:56px"></colgroup>`;
@@ -2736,6 +2761,13 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false, labels = []) {
     } else if ((tab === "products" || tab === "packaging" || tab === "categories") && key === "display") {
       const on = isDisplayOn(val === undefined || val === "" ? "TRUE" : val);
       field = `${renderDisplaySwitch(on)}<input type="hidden" data-key="${key}" value="${on ? "TRUE" : "FALSE"}">`;
+    } else if (tab === "products" && key === "image") {
+      field = productImageFieldHtml(val);
+    } else if ((tab === "products" && (key === "min_per_order" || key === "max_per_order")) || (tab === "categories" && /_(min|max)_days$/.test(key))) {
+      field = `<input data-key="${key}" type="number" min="0" inputmode="numeric" placeholder="不限" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(val)}">`;
+    } else if (tab === "categories" && (key === "pickup_date_rule" || key === "delivery_date_rule" || key === "date_notice")) {
+      const ph = key === "date_notice" ? "例：中秋禮盒自取至 9/27、宅配至 9/20" : "例：2026/09/11~2026/09/27（留空＝不限）";
+      field = `<textarea data-key="${key}" placeholder="${ph}" class="w-full min-h-[64px] rounded-xl border border-stone-200 px-3 py-2 bg-stone-50 leading-relaxed text-sm">${escapeHtml(val)}</textarea>`;
     } else if (tab === "products" && key === "stock") {
       field = `<input data-key="${key}" type="number" inputmode="numeric" oninput="updateStockInputClass(this)" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50 ${stockInputClass(val)}" value="${escapeHtml(val)}">`;
     } else if (tab === "products" && key === "shipping_rule") {
@@ -2789,6 +2821,86 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false, labels = []) {
 
     return `<td class="px-2 py-2 align-top ${getAdminCellClass(tab, key)}" data-label="${escapeHtml(labels[idx] || "")}"${isDetail ? ' data-detail="1"' : ""}>${mobileTagHtml}${field}</td>`;
   }).join("")}<td class="px-1 py-2 align-top text-center" data-label="">${ADMIN_MOBILE_SUMMARY_KEYS[tab] ? `<button type="button" class="row-toggle-btn md:hidden" onclick="toggleAdminRowDetail(this)"><span>更多欄位</span><span class="chevron">▾</span></button>` : ""}<button type="button" onclick="deleteAdminRow(this, '${tab}')" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">✕</button></td></tr>`;
+}
+
+// ===== 第2階段：商品照片欄位（上傳前在手機上壓縮）=====
+function productImageFieldHtml(val) {
+  const url = (val || "").toString().trim();
+  return `<div class="flex items-start gap-2" data-image-field>
+    <div class="w-14 h-14 shrink-0 rounded-xl border border-stone-200 bg-stone-100 overflow-hidden flex items-center justify-center text-[10px] font-bold text-stone-400" data-image-preview>${url ? `<img src="${escapeHtml(url)}" alt="" class="w-full h-full object-cover">` : "無圖"}</div>
+    <div class="flex-1 min-w-0 space-y-1.5">
+      <input data-key="image" class="w-full h-9 rounded-lg border border-stone-200 px-2 bg-stone-50 text-xs font-mono" placeholder="照片網址（選填）" value="${escapeHtml(url)}" oninput="refreshImagePreview(this)">
+      <div class="flex gap-1.5">
+        <label class="inline-flex items-center justify-center h-9 px-3 rounded-lg bg-[#5B7290] text-white text-xs font-black cursor-pointer hover:bg-[#3E4F66]">上傳照片<input type="file" accept="image/*" class="hidden" onchange="uploadProductImage(this)"></label>
+        <button type="button" onclick="clearProductImage(this)" class="h-9 px-3 rounded-lg border border-stone-200 bg-white text-xs font-black text-stone-500">移除</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function refreshImagePreview(input) {
+  const wrap = input.closest("[data-image-field]");
+  const box = wrap?.querySelector("[data-image-preview]");
+  if (!box) return;
+  const url = input.value.trim();
+  box.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="" class="w-full h-full object-cover">` : "無圖";
+}
+
+function clearProductImage(button) {
+  const input = button.closest("[data-image-field]").querySelector('[data-key="image"]');
+  input.value = "";
+  refreshImagePreview(input);
+  markUnsaved("products");
+}
+
+function compressImageFile(file, maxSize = 1000, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("讀取照片失敗"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("無法讀取這張照片，請換一張"));
+      img.onload = () => {
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadProductImage(fileInput) {
+  const file = fileInput.files && fileInput.files[0];
+  if (!file) return;
+  const wrap = fileInput.closest("[data-image-field]");
+  const urlInput = wrap.querySelector('[data-key="image"]');
+  const row = fileInput.closest("tr");
+  const productName = row?.querySelector('[data-key="name"]')?.value.trim() || "product";
+  const loadingToast = showAdminToast("照片壓縮上傳中...", "loading", 0);
+  try {
+    const dataUrl = await compressImageFile(file);
+    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "adminUploadImage", token: getToken(), fileName: productName + ".jpg", mimeType: "image/jpeg", base64: dataUrl }) });
+    const data = await res.json();
+    removeAdminToast(loadingToast);
+    if (data.status !== "success") { showAdminToast(data.message || "上傳失敗。", "error", 4200); return; }
+    urlInput.value = data.url;
+    refreshImagePreview(urlInput);
+    markUnsaved("products");
+    showAdminToast("照片已上傳，按「儲存」後生效", "success", 4200);
+  } catch (err) {
+    removeAdminToast(loadingToast);
+    showAdminToast("上傳失敗：" + err.message, "error", 4200);
+  } finally {
+    fileInput.value = "";
+  }
 }
 
 function isDisplayOn(value) {
