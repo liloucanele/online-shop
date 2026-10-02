@@ -420,7 +420,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.7.0</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.7.1</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -2260,7 +2260,7 @@ function pageBlockCardHtml(b, i, total) {
     <label class="block"><span class="text-xs font-black text-stone-500 block mb-1">內文</span><textarea data-block-field="body" rows="6" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-stone-50 leading-relaxed focus:outline-none focus:border-[#5B7290]">${escapeHtml(b.body)}</textarea></label>
     <div class="flex items-center gap-3">
       <div class="w-24 h-16 rounded-xl border border-stone-200 bg-stone-100 overflow-hidden flex items-center justify-center text-[11px] font-bold text-stone-400 shrink-0">${img ? `<img src="${escapeHtml(previewSrc(img))}" alt="" class="w-full h-full object-cover">` : "無照片"}</div>
-      <label class="block flex-1 min-w-0"><span class="text-xs font-black text-stone-500 block mb-1">照片（選填）</span><input data-block-field="image" class="${PAGE_INPUT} font-mono text-sm" value="${escapeHtml(img)}" placeholder="images/檔名.jpg" onchange="renderPagesEditor()"><span class="flex items-center gap-2 mt-1.5"><label class="inline-flex items-center justify-center h-9 px-3 rounded-lg bg-[#5B7290] text-white text-xs font-black cursor-pointer shrink-0">上傳照片<input type="file" accept="image/*" class="hidden" onchange="uploadBlockImage(this, '${id}')"></label><span class="text-[11px] font-bold text-stone-400">或填 images/檔名.jpg</span></span></label>
+      <div class="flex flex-col gap-1.5"><span class="text-xs font-black text-stone-500">照片（選填）</span><div class="flex items-center gap-2"><label class="inline-flex items-center justify-center h-9 px-3 rounded-lg bg-[#5B7290] text-white text-xs font-black cursor-pointer shrink-0">${img ? "更換照片" : "上傳照片"}<input type="file" accept="image/*" class="hidden" onchange="uploadBlockImage(this, '${id}')"></label>${img ? `<button type="button" onclick="setBlockField('${id}', 'image', ''); renderPagesEditor()" class="h-9 px-3 rounded-lg border border-stone-200 bg-white text-xs font-black text-stone-500">移除</button>` : ""}</div></div>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <label class="block"><span class="text-xs font-black text-stone-500 block mb-1">按鈕文字（留空＝不顯示按鈕）</span><input data-block-field="button_text" class="${PAGE_INPUT}" value="${escapeHtml(b.button_text)}" placeholder="例：LINE 洽詢"></label>
@@ -2636,17 +2636,17 @@ function renderSettings() {
                   </label>
               </div>
               <label class="block">
-                 <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5 uppercase">圖片路徑或網址 (Image URL)</span>
-                 <input id="promo_image" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white font-mono text-sm focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(promo_image)}" placeholder="例如：images/seasonal-gift-box.jpg" oninput="document.getElementById('promo_preview').src=this.value; markUnsaved('settings');">
+                 <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5 uppercase">活動大圖</span>
+                 <input type="hidden" id="promo_image" value="${escapeHtml(promo_image)}">
               </label>
-              <div class="flex items-center gap-2"><label class="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-[#5B7290] text-white text-sm font-black cursor-pointer hover:bg-[#3E4F66] shrink-0">上傳大圖<input type="file" accept="image/*" class="hidden" onchange="uploadPromoImage(this)"></label><span class="text-xs font-bold text-stone-400">或填 images/檔名.jpg</span></div>
+              <div class="flex items-center gap-2"><label class="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-[#5B7290] text-white text-sm font-black cursor-pointer hover:bg-[#3E4F66] shrink-0">更換大圖<input type="file" accept="image/*" class="hidden" onchange="uploadPromoImage(this)"></label><span class="text-xs font-bold text-stone-400">右側為目前的圖片預覽</span></div>
            </div>
 
            <!-- 預覽圖區塊 -->
            <div class="flex flex-col gap-2">
               <span class="text-[11px] font-black text-stone-500 tracking-widest block uppercase">圖片預覽</span>
               <div class="flex-1 bg-stone-200 rounded-xl border border-stone-300 overflow-hidden relative min-h-[160px] shadow-inner">
-                 <img id="promo_preview" src="${escapeHtml(promo_image)}" onerror="this.src='https://placehold.co/600x400/e7e5e4/a8a29e?text=Image+Not+Found'" class="w-full h-full object-cover absolute inset-0">
+                 <img id="promo_preview" src="${escapeHtml(previewSrc(promo_image))}" onerror="this.src='https://placehold.co/600x400/e7e5e4/a8a29e?text=Image+Not+Found'" class="w-full h-full object-cover absolute inset-0">
               </div>
            </div>
         </div>
@@ -2666,12 +2666,10 @@ function renderSettings() {
       <!-- 首頁小圖輪播 -->
       <div class="border-t border-stone-100 pt-6 mt-6">
         <h3 class="text-lg font-black text-stone-800 mb-1">首頁小圖輪播</h3>
-        <p class="text-sm text-stone-500 mb-4">首頁大圖下方可左右滑的方形照片。可以直接「上傳照片」（可多選），或填 images/檔名.jpg 後按「加入連結」；用箭頭調整順序。</p>
+        <p class="text-sm text-stone-500 mb-4">首頁大圖下方可左右滑的方形照片。按「上傳照片」加入（可一次多選），用箭頭調整順序，✕ 移除。</p>
         <input type="hidden" id="gallery_images" value="${escapeHtml(gallery_images)}">
         <div id="galleryManager" class="grid grid-cols-3 md:grid-cols-6 gap-3"></div>
         <div class="mt-3 flex gap-2">
-          <input id="galleryNewUrl" class="flex-1 min-w-0 h-11 rounded-xl border border-stone-200 px-3 bg-white font-mono text-sm" placeholder="images/gift-7.jpg" onkeydown="if(event.key==='Enter'){event.preventDefault();addGalleryUrl();}">
-          <button type="button" onclick="addGalleryUrl()" class="shrink-0 h-11 px-4 rounded-xl border border-stone-200 bg-white text-stone-600 text-sm font-black hover:bg-stone-50">＋ 加入連結</button>
           <label class="shrink-0 inline-flex items-center justify-center h-11 px-4 rounded-xl bg-[#5B7290] text-white text-sm font-black cursor-pointer hover:bg-[#3E4F66]">上傳照片<input type="file" accept="image/*" multiple class="hidden" onchange="uploadGalleryImages(this)"></label>
         </div>
       </div>
@@ -2950,7 +2948,7 @@ function getEditableTableMinWidth(tab) {
 function getEditableTableColgroup(tab, keys) {
   const widthMap = {
     categories: { id: "120px", name: "180px", name_en: "170px", behavior: "210px", display: "82px", sort: "70px", pickup_min_days: "90px", pickup_max_days: "90px", delivery_min_days: "90px", delivery_max_days: "90px", pickup_date_rule: "230px", delivery_date_rule: "230px", date_notice: "260px" },
-    products: { name: "190px", name_en: "180px", image: "250px", min_per_order: "80px", max_per_order: "80px", price: "70px", stock: "70px", type: "105px", display: "82px", shipping_rule: "112px", sort: "60px", description: "300px", ingredients: "330px", allergens: "300px", storage: "300px", weight: "80px", nutrition: "380px", origin_manufacturer: "320px" },
+    products: { name: "190px", name_en: "180px", image: "190px", min_per_order: "80px", max_per_order: "80px", price: "70px", stock: "70px", type: "105px", display: "82px", shipping_rule: "112px", sort: "60px", description: "300px", ingredients: "330px", allergens: "300px", storage: "300px", weight: "80px", nutrition: "380px", origin_manufacturer: "320px" },
     packaging: { name: "280px", name_en: "180px", extra_price: "85px", box_size: "80px", type: "115px", display: "82px", sort: "70px" },
     cakeoptions: { group: "200px", name: "170px", name_en: "170px", price: "90px", input: "220px", included_qty: "90px", max_qty: "90px", display: "82px", sort: "70px" },
     coupons: { code: "34%", type: "160px", value: "110px", min_spend: "110px", start_date: "150px", end_date: "150px" }
@@ -3084,24 +3082,26 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false, labels = []) {
 // ===== 商品照片欄位：填 GitHub images 資料夾的路徑或完整網址 =====
 function productImageFieldHtml(val) {
   const url = (val || "").toString().trim();
-  return `<div class="flex items-start gap-2" data-image-field>
-    <div class="w-14 h-14 shrink-0 rounded-xl border border-stone-200 bg-stone-100 overflow-hidden flex items-center justify-center text-[10px] font-bold text-stone-400" data-image-preview>${url ? `<img src="${escapeHtml(url)}" alt="" class="w-full h-full object-cover">` : "無圖"}</div>
-    <div class="flex-1 min-w-0 space-y-1.5">
-      <input data-key="image" class="w-full h-9 rounded-lg border border-stone-200 px-2 bg-stone-50 text-xs font-mono" placeholder="images/檔名.jpg（選填）" value="${escapeHtml(url)}" oninput="refreshImagePreview(this)">
-      <div class="flex items-center gap-1.5">
-        <label class="inline-flex items-center justify-center h-8 px-3 rounded-lg bg-[#5B7290] text-white text-xs font-black cursor-pointer hover:bg-[#3E4F66] shrink-0">上傳照片<input type="file" accept="image/*" class="hidden" onchange="uploadProductImage(this)"></label>
-        <span class="text-[10px] font-bold text-stone-400 leading-snug">或填 images/檔名.jpg</span>
-      </div>
+  return `<div class="flex items-center gap-2" data-image-field>
+    <div class="w-14 h-14 shrink-0 rounded-xl border border-stone-200 bg-stone-100 overflow-hidden flex items-center justify-center text-[10px] font-bold text-stone-400" data-image-preview>${url ? `<img src="${escapeHtml(previewSrc(url))}" alt="" class="w-full h-full object-cover">` : "無圖"}</div>
+    <input type="hidden" data-key="image" value="${escapeHtml(url)}">
+    <div class="flex flex-col gap-1.5">
+      <label class="inline-flex items-center justify-center h-8 px-3 rounded-lg bg-[#5B7290] text-white text-xs font-black cursor-pointer hover:bg-[#3E4F66] whitespace-nowrap"><span data-image-btn-text>${url ? "更換照片" : "上傳照片"}</span><input type="file" accept="image/*" class="hidden" onchange="uploadProductImage(this)"></label>
+      <button type="button" onclick="clearProductImage(this)" data-image-remove class="${url ? "" : "hidden "}h-8 px-3 rounded-lg border border-stone-200 bg-white text-xs font-black text-stone-500 whitespace-nowrap">移除</button>
     </div>
   </div>`;
 }
 
 function refreshImagePreview(input) {
   const wrap = input.closest("[data-image-field]");
-  const box = wrap?.querySelector("[data-image-preview]");
-  if (!box) return;
+  if (!wrap) return;
   const url = input.value.trim();
-  box.innerHTML = url ? `<img src="${escapeHtml(previewSrc(url))}" alt="" class="w-full h-full object-cover">` : "無圖";
+  const box = wrap.querySelector("[data-image-preview]");
+  if (box) box.innerHTML = url ? `<img src="${escapeHtml(previewSrc(url))}" alt="" class="w-full h-full object-cover">` : "無圖";
+  const txt = wrap.querySelector("[data-image-btn-text]");
+  if (txt) txt.textContent = url ? "更換照片" : "上傳照片";
+  const rm = wrap.querySelector("[data-image-remove]");
+  if (rm) rm.classList.toggle("hidden", !url);
 }
 
 function clearProductImage(button) {
