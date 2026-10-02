@@ -420,7 +420,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.6.0</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.7.0</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -2259,9 +2259,8 @@ function pageBlockCardHtml(b, i, total) {
     </div>
     <label class="block"><span class="text-xs font-black text-stone-500 block mb-1">內文</span><textarea data-block-field="body" rows="6" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-stone-50 leading-relaxed focus:outline-none focus:border-[#5B7290]">${escapeHtml(b.body)}</textarea></label>
     <div class="flex items-center gap-3">
-      <div class="w-24 h-16 rounded-xl border border-stone-200 bg-stone-100 overflow-hidden flex items-center justify-center text-[11px] font-bold text-stone-400 shrink-0">${img ? `<img src="${escapeHtml(img)}" alt="" class="w-full h-full object-cover">` : "無照片"}</div>
-      <label class="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-[#5B7290] text-white text-sm font-black cursor-pointer">上傳照片<input type="file" accept="image/*" class="hidden" onchange="uploadBlockImage(this, '${id}')"></label>
-      ${img ? `<button type="button" onclick="setBlockField('${id}', 'image', ''); renderPagesEditor()" class="h-10 px-4 rounded-xl border border-stone-200 bg-white text-sm font-black text-stone-500">移除照片</button>` : ""}
+      <div class="w-24 h-16 rounded-xl border border-stone-200 bg-stone-100 overflow-hidden flex items-center justify-center text-[11px] font-bold text-stone-400 shrink-0">${img ? `<img src="${escapeHtml(previewSrc(img))}" alt="" class="w-full h-full object-cover">` : "無照片"}</div>
+      <label class="block flex-1 min-w-0"><span class="text-xs font-black text-stone-500 block mb-1">照片（選填）</span><input data-block-field="image" class="${PAGE_INPUT} font-mono text-sm" value="${escapeHtml(img)}" placeholder="images/檔名.jpg" onchange="renderPagesEditor()"><span class="flex items-center gap-2 mt-1.5"><label class="inline-flex items-center justify-center h-9 px-3 rounded-lg bg-[#5B7290] text-white text-xs font-black cursor-pointer shrink-0">上傳照片<input type="file" accept="image/*" class="hidden" onchange="uploadBlockImage(this, '${id}')"></label><span class="text-[11px] font-bold text-stone-400">或填 images/檔名.jpg</span></span></label>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <label class="block"><span class="text-xs font-black text-stone-500 block mb-1">按鈕文字（留空＝不顯示按鈕）</span><input data-block-field="button_text" class="${PAGE_INPUT}" value="${escapeHtml(b.button_text)}" placeholder="例：LINE 洽詢"></label>
@@ -2339,21 +2338,6 @@ function deleteBlock(id) {
     pagesDraft.blocks = pagesDraft.blocks.filter(b => b.block_id !== id);
     markUnsaved("pages"); renderPagesEditor();
   }, "刪除區塊");
-}
-async function uploadBlockImage(fileInput, id) {
-  const file = fileInput.files && fileInput.files[0];
-  if (!file) return;
-  const t = showAdminToast("照片壓縮上傳中...", "loading", 0);
-  try {
-    const url = await uploadImageToDrive(file, "page.jpg", 1600);
-    setBlockField(id, "image", url);
-    removeAdminToast(t);
-    showAdminToast("照片已上傳，按「儲存頁面」後生效", "success", 4200);
-    renderPagesEditor();
-  } catch (err) {
-    removeAdminToast(t);
-    showAdminToast("上傳失敗：" + err.message, "error", 4200);
-  } finally { fileInput.value = ""; }
 }
 function savePages(btn) {
   const bad = pagesDraft.pages.find(p => !(p.nav_label || "").trim());
@@ -2655,7 +2639,7 @@ function renderSettings() {
                  <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5 uppercase">圖片路徑或網址 (Image URL)</span>
                  <input id="promo_image" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white font-mono text-sm focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(promo_image)}" placeholder="例如：images/seasonal-gift-box.jpg" oninput="document.getElementById('promo_preview').src=this.value; markUnsaved('settings');">
               </label>
-              <label class="inline-flex items-center justify-center h-11 px-4 rounded-xl bg-[#5B7290] text-white text-sm font-black cursor-pointer hover:bg-[#3E4F66]">上傳大圖<input type="file" accept="image/*" class="hidden" onchange="uploadPromoImage(this)"></label>
+              <div class="flex items-center gap-2"><label class="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-[#5B7290] text-white text-sm font-black cursor-pointer hover:bg-[#3E4F66] shrink-0">上傳大圖<input type="file" accept="image/*" class="hidden" onchange="uploadPromoImage(this)"></label><span class="text-xs font-bold text-stone-400">或填 images/檔名.jpg</span></div>
            </div>
 
            <!-- 預覽圖區塊 -->
@@ -2682,10 +2666,14 @@ function renderSettings() {
       <!-- 首頁小圖輪播 -->
       <div class="border-t border-stone-100 pt-6 mt-6">
         <h3 class="text-lg font-black text-stone-800 mb-1">首頁小圖輪播</h3>
-        <p class="text-sm text-stone-500 mb-4">首頁大圖下方可左右滑的方形照片。上傳後會自動壓縮並存到雲端硬碟，可用箭頭調整順序。</p>
+        <p class="text-sm text-stone-500 mb-4">首頁大圖下方可左右滑的方形照片。可以直接「上傳照片」（可多選），或填 images/檔名.jpg 後按「加入連結」；用箭頭調整順序。</p>
         <input type="hidden" id="gallery_images" value="${escapeHtml(gallery_images)}">
         <div id="galleryManager" class="grid grid-cols-3 md:grid-cols-6 gap-3"></div>
-        <label class="mt-3 inline-flex items-center justify-center h-11 px-4 rounded-xl bg-[#5B7290] text-white text-sm font-black cursor-pointer hover:bg-[#3E4F66]">＋ 上傳照片（可多選）<input type="file" accept="image/*" multiple class="hidden" onchange="uploadGalleryImages(this)"></label>
+        <div class="mt-3 flex gap-2">
+          <input id="galleryNewUrl" class="flex-1 min-w-0 h-11 rounded-xl border border-stone-200 px-3 bg-white font-mono text-sm" placeholder="images/gift-7.jpg" onkeydown="if(event.key==='Enter'){event.preventDefault();addGalleryUrl();}">
+          <button type="button" onclick="addGalleryUrl()" class="shrink-0 h-11 px-4 rounded-xl border border-stone-200 bg-white text-stone-600 text-sm font-black hover:bg-stone-50">＋ 加入連結</button>
+          <label class="shrink-0 inline-flex items-center justify-center h-11 px-4 rounded-xl bg-[#5B7290] text-white text-sm font-black cursor-pointer hover:bg-[#3E4F66]">上傳照片<input type="file" accept="image/*" multiple class="hidden" onchange="uploadGalleryImages(this)"></label>
+        </div>
       </div>
     </div>`;
   renderGalleryManager();
@@ -3093,16 +3081,16 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false, labels = []) {
   }).join("")}<td class="px-1 py-2 align-top text-center" data-label="">${ADMIN_MOBILE_SUMMARY_KEYS[tab] ? `<button type="button" class="row-toggle-btn md:hidden" onclick="toggleAdminRowDetail(this)"><span>更多欄位</span><span class="chevron">▾</span></button>` : ""}<button type="button" onclick="deleteAdminRow(this, '${tab}')" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">✕</button></td></tr>`;
 }
 
-// ===== 第2階段：商品照片欄位（上傳前在手機上壓縮）=====
+// ===== 商品照片欄位：填 GitHub images 資料夾的路徑或完整網址 =====
 function productImageFieldHtml(val) {
   const url = (val || "").toString().trim();
   return `<div class="flex items-start gap-2" data-image-field>
     <div class="w-14 h-14 shrink-0 rounded-xl border border-stone-200 bg-stone-100 overflow-hidden flex items-center justify-center text-[10px] font-bold text-stone-400" data-image-preview>${url ? `<img src="${escapeHtml(url)}" alt="" class="w-full h-full object-cover">` : "無圖"}</div>
     <div class="flex-1 min-w-0 space-y-1.5">
-      <input data-key="image" class="w-full h-9 rounded-lg border border-stone-200 px-2 bg-stone-50 text-xs font-mono" placeholder="照片網址（選填）" value="${escapeHtml(url)}" oninput="refreshImagePreview(this)">
-      <div class="flex gap-1.5">
-        <label class="inline-flex items-center justify-center h-9 px-3 rounded-lg bg-[#5B7290] text-white text-xs font-black cursor-pointer hover:bg-[#3E4F66]">上傳照片<input type="file" accept="image/*" class="hidden" onchange="uploadProductImage(this)"></label>
-        <button type="button" onclick="clearProductImage(this)" class="h-9 px-3 rounded-lg border border-stone-200 bg-white text-xs font-black text-stone-500">移除</button>
+      <input data-key="image" class="w-full h-9 rounded-lg border border-stone-200 px-2 bg-stone-50 text-xs font-mono" placeholder="images/檔名.jpg（選填）" value="${escapeHtml(url)}" oninput="refreshImagePreview(this)">
+      <div class="flex items-center gap-1.5">
+        <label class="inline-flex items-center justify-center h-8 px-3 rounded-lg bg-[#5B7290] text-white text-xs font-black cursor-pointer hover:bg-[#3E4F66] shrink-0">上傳照片<input type="file" accept="image/*" class="hidden" onchange="uploadProductImage(this)"></label>
+        <span class="text-[10px] font-bold text-stone-400 leading-snug">或填 images/檔名.jpg</span>
       </div>
     </div>
   </div>`;
@@ -3113,7 +3101,7 @@ function refreshImagePreview(input) {
   const box = wrap?.querySelector("[data-image-preview]");
   if (!box) return;
   const url = input.value.trim();
-  box.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="" class="w-full h-full object-cover">` : "無圖";
+  box.innerHTML = url ? `<img src="${escapeHtml(previewSrc(url))}" alt="" class="w-full h-full object-cover">` : "無圖";
 }
 
 function clearProductImage(button) {
@@ -3123,7 +3111,10 @@ function clearProductImage(button) {
   markUnsaved("products");
 }
 
-function compressImageFile(file, maxSize = 1000, quality = 0.82) {
+// ===== 上傳照片到 GitHub：先在瀏覽器壓縮，再交給後端存進 repo 的 images/uploads =====
+const imagePreviewMap = {};   // 剛上傳的照片：GitHub 網站約 1 分鐘才更新，先用原始檔網址預覽
+function previewSrc(url) { return imagePreviewMap[url] || url; }
+function compressImageFile(file, maxSize = 1200, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error("讀取照片失敗"));
@@ -3146,31 +3137,67 @@ function compressImageFile(file, maxSize = 1000, quality = 0.82) {
     reader.readAsDataURL(file);
   });
 }
-
-// 共用：壓縮後上傳到雲端硬碟，回傳圖片網址
-async function uploadImageToDrive(file, fileName, maxSize) {
+async function uploadImageToGithub(file, maxSize) {
   const dataUrl = await compressImageFile(file, maxSize);
-  const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "adminUploadImage", token: getToken(), fileName, mimeType: "image/jpeg", base64: dataUrl }) });
+  const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "adminUploadImage", token: getToken(), base64: dataUrl }) });
   const data = await res.json();
   if (data.status !== "success") throw new Error(data.message || "上傳失敗");
+  imagePreviewMap[data.url] = data.preview || data.url;
   return data.url;
 }
-
-async function uploadPromoImage(fileInput) {
-  const file = fileInput.files && fileInput.files[0];
+async function withUploadToast(label, fn) {
+  const t = showAdminToast(label, "loading", 0);
+  try { const r = await fn(); removeAdminToast(t); return r; }
+  catch (err) { removeAdminToast(t); showAdminToast("上傳失敗：" + err.message, "error", 5200); return null; }
+}
+async function uploadProductImage(fileInput) {
+  const file = fileInput.files && fileInput.files[0]; fileInput.value = "";
   if (!file) return;
-  const t = showAdminToast("大圖壓縮上傳中...", "loading", 0);
-  try {
-    const url = await uploadImageToDrive(file, "promo.jpg", 1800);
-    document.getElementById("promo_image").value = url;
-    document.getElementById("promo_preview").src = url;
-    markUnsaved("settings");
-    removeAdminToast(t);
-    showAdminToast("大圖已上傳，按「儲存設定」後生效", "success", 4200);
-  } catch (err) {
-    removeAdminToast(t);
-    showAdminToast("上傳失敗：" + err.message, "error", 4200);
-  } finally { fileInput.value = ""; }
+  const url = await withUploadToast("照片上傳中...", () => uploadImageToGithub(file, 1200));
+  if (!url) return;
+  const field = fileInput.closest("[data-image-field]")?.querySelector('[data-key="image"]');
+  if (field) { field.value = url; refreshImagePreview(field); }
+  markUnsaved("products");
+  showAdminToast("照片已上傳，按「儲存 Products」後生效（前台約 1 分鐘後顯示）", "success", 4500);
+}
+async function uploadPromoImage(fileInput) {
+  const file = fileInput.files && fileInput.files[0]; fileInput.value = "";
+  if (!file) return;
+  const url = await withUploadToast("大圖上傳中...", () => uploadImageToGithub(file, 1800));
+  if (!url) return;
+  document.getElementById("promo_image").value = url;
+  document.getElementById("promo_preview").src = previewSrc(url);
+  markUnsaved("settings");
+  showAdminToast("大圖已上傳，按「儲存設定」後生效", "success", 4200);
+}
+async function uploadGalleryImages(fileInput) {
+  const files = [...(fileInput.files || [])]; fileInput.value = "";
+  if (!files.length) return;
+  const list = getGalleryList();
+  let done = 0;
+  await withUploadToast(`照片上傳中（共 ${files.length} 張）...`, async () => {
+    for (const f of files) { list.push(await uploadImageToGithub(f, 1400)); done++; }
+  });
+  if (done) { setGalleryList(list); showAdminToast(`已上傳 ${done} 張，按「儲存設定」後生效`, "success", 4200); }
+}
+async function uploadBlockImage(fileInput, id) {
+  const file = fileInput.files && fileInput.files[0]; fileInput.value = "";
+  if (!file) return;
+  const url = await withUploadToast("照片上傳中...", () => uploadImageToGithub(file, 1600));
+  if (!url) return;
+  setBlockField(id, "image", url);
+  renderPagesEditor();
+  showAdminToast("照片已上傳，按「儲存頁面」後生效", "success", 4200);
+}
+
+function addGalleryUrl() {
+  const input = document.getElementById("galleryNewUrl");
+  const url = (input?.value || "").trim();
+  if (!url) return;
+  const list = getGalleryList();
+  list.push(url);
+  input.value = "";
+  setGalleryList(list);
 }
 
 function getGalleryList() {
@@ -3187,7 +3214,7 @@ function renderGalleryManager() {
   const list = getGalleryList();
   box.innerHTML = list.length ? list.map((url, i) => `
     <div class="rounded-xl border border-stone-200 bg-white overflow-hidden">
-      <div class="aspect-square bg-stone-100"><img src="${escapeHtml(url)}" alt="" class="w-full h-full object-cover"></div>
+      <div class="aspect-square bg-stone-100"><img src="${escapeHtml(previewSrc(url))}" alt="" class="w-full h-full object-cover"></div>
       <div class="flex">
         <button type="button" onclick="moveGalleryImage(${i}, -1)" ${i === 0 ? "disabled" : ""} aria-label="往前" class="flex-1 h-9 text-stone-500 font-black hover:bg-stone-50 disabled:opacity-30">‹</button>
         <button type="button" onclick="removeGalleryImage(${i})" aria-label="移除" class="flex-1 h-9 text-red-500 font-black hover:bg-red-50">✕</button>
@@ -3207,56 +3234,6 @@ function removeGalleryImage(i) {
   list.splice(i, 1);
   setGalleryList(list);
 }
-async function uploadGalleryImages(fileInput) {
-  const files = [...(fileInput.files || [])];
-  if (!files.length) return;
-  const t = showAdminToast(`照片上傳中（0/${files.length}）...`, "loading", 0);
-  const list = getGalleryList();
-  let done = 0;
-  try {
-    for (const f of files) {
-      list.push(await uploadImageToDrive(f, "gallery.jpg", 1400));
-      done++;
-      const msg = document.querySelector("#adminToastArea [data-toast-text]") ;
-      if (msg) msg.textContent = `照片上傳中（${done}/${files.length}）...`;
-    }
-    removeAdminToast(t);
-    showAdminToast(`已上傳 ${done} 張，按「儲存設定」後生效`, "success", 4200);
-  } catch (err) {
-    removeAdminToast(t);
-    showAdminToast(`上傳到第 ${done + 1} 張時失敗：` + err.message, "error", 4200);
-  } finally {
-    if (done) setGalleryList(list);
-    fileInput.value = "";
-  }
-}
-
-async function uploadProductImage(fileInput) {
-  const file = fileInput.files && fileInput.files[0];
-  if (!file) return;
-  const wrap = fileInput.closest("[data-image-field]");
-  const urlInput = wrap.querySelector('[data-key="image"]');
-  const row = fileInput.closest("tr");
-  const productName = row?.querySelector('[data-key="name"]')?.value.trim() || "product";
-  const loadingToast = showAdminToast("照片壓縮上傳中...", "loading", 0);
-  try {
-    const dataUrl = await compressImageFile(file);
-    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "adminUploadImage", token: getToken(), fileName: productName + ".jpg", mimeType: "image/jpeg", base64: dataUrl }) });
-    const data = await res.json();
-    removeAdminToast(loadingToast);
-    if (data.status !== "success") { showAdminToast(data.message || "上傳失敗。", "error", 4200); return; }
-    urlInput.value = data.url;
-    refreshImagePreview(urlInput);
-    markUnsaved("products");
-    showAdminToast("照片已上傳，按「儲存」後生效", "success", 4200);
-  } catch (err) {
-    removeAdminToast(loadingToast);
-    showAdminToast("上傳失敗：" + err.message, "error", 4200);
-  } finally {
-    fileInput.value = "";
-  }
-}
-
 function isDisplayOn(value) {
   const v = (value ?? "").toString().trim().toUpperCase();
   return v !== "FALSE" && v !== "0" && v !== "下架";
