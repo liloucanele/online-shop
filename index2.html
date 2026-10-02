@@ -505,6 +505,44 @@
             color: #ef4444;
             font-weight: 700;
         }
+        /* 第2階段：英文小字、商品縮圖 */
+        .lilou-name-en {
+            display: block;
+            margin-top: 1px;
+            color: #a8a29e;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .02em;
+            line-height: 1.35;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .lilou-product-thumb {
+            width: 56px;
+            height: 56px;
+            flex-shrink: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e7e5e4;
+            background: #f5f5f4;
+            padding: 0;
+            cursor: zoom-in;
+        }
+        .lilou-product-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        /* 分類頁籤：中文一行、英文小字第二行（僅電腦版）；電腦版自動換行全部看得到，手機左右滑並有漸層提示 */
+        .product-tab-text { display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+        .product-tab-en { display: none; font-size: 11px; font-weight: 600; opacity: .65; letter-spacing: .03em; margin-top: 3px; }
+        .product-tab-list.has-more-right { -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); mask-image: linear-gradient(to right, #000 85%, transparent); }
+        .product-tab-list.has-more-left { -webkit-mask-image: linear-gradient(to left, #000 85%, transparent); mask-image: linear-gradient(to left, #000 85%, transparent); }
+        .product-tab-list.has-more-left.has-more-right { -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent); }
+        @media (min-width: 768px) {
+            .lilou-name-en { font-size: 12px; }
+            .lilou-product-thumb { width: 64px; height: 64px; }
+            .product-tab-en { display: block; }
+            .product-tab-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); overflow-x: visible; -webkit-mask-image: none !important; mask-image: none !important; }
+            .product-tab-button { min-width: 0; }
+        }
         .limited-product-description {
             margin-top: 5px;
             color: #78716c;
@@ -828,7 +866,6 @@
                             </div>
 
                             <div id="midAutumnNotice" class="hidden bg-orange-50 border border-orange-200 rounded-xl p-4 text-xs md:text-sm text-orange-900 font-bold leading-relaxed">
-                                <span class="font-black mb-1 block">⚠️ 中秋節期間為宅配旺季，物流配送量較大，實際到貨時間將依物流公司配送狀況為準。</span>
                             </div>
 
                             <div>
@@ -1113,6 +1150,14 @@
             normalized.nutrition = (normalized.nutrition || "").toString().trim();
             normalized.description = (normalized.description || normalized.product_description || normalized.desc || normalized.content || "").toString().trim();
             normalized.origin_manufacturer = (normalized.origin_manufacturer || normalized.originManufacturer || normalized.origin || normalized.manufacturer || "").toString().trim();
+            // 第2階段：英文名稱、圖片、限購
+            normalized.name_en = (normalized.name_en || "").toString().trim();
+            normalized.image = (normalized.image || "").toString().trim();
+            normalized.min_per_order = Number(normalized.min_per_order) || 0;
+            normalized.max_per_order = Number(normalized.max_per_order) || 0;
+            normalized.real_stock = normalized.stock;
+            // 每筆限購：把「可購買上限」壓在限購數量，沿用原本所有庫存檢查
+            if (normalized.max_per_order > 0) normalized.stock = Math.min(normalized.stock, normalized.max_per_order);
             return normalized;
         }
 
@@ -1124,7 +1169,29 @@
             normalized.packaging_type = (normalized.packaging_type || normalized.type || "combo").toString().trim().toLowerCase();
             normalized.display = normalized.display === undefined || normalized.display === "" ? true : lilouIsTruthy(normalized.display);
             normalized.sort = Number(normalized.sort) || 9999;
+            normalized.name_en = (normalized.name_en || "").toString().trim();
             return normalized;
+        }
+
+        // 第2階段：商品顯示輔助
+        function lilouNameEnHtml(nameEn) {
+            return nameEn ? `<span class="lilou-name-en">${lilouEscapeHtml(nameEn)}</span>` : '';
+        }
+        function lilouThumbHtml(p) {
+            if (!p || !p.image) return '';
+            const url = lilouEscapeHtml(p.image);
+            return `<button type="button" class="lilou-product-thumb" onclick="openProductImage('${encodeURIComponent(p.image)}')" aria-label="放大 ${lilouEscapeHtml(p.name)} 的照片"><img src="${url}" alt="${lilouEscapeHtml(p.name)}" loading="lazy" decoding="async"></button>`;
+        }
+        function lilouStockText(p, available) {
+            const limited = p.max_per_order > 0 && Number(p.real_stock || 0) > p.max_per_order;
+            if (available <= 0) return limited && Number(p.real_stock || 0) > 0 ? '已達限購' : '已售完';
+            return limited ? `每筆限購 ${p.max_per_order}` : `剩 ${available}`;
+        }
+        function lilouOutOfStockMessage(p, available) {
+            const limited = p.max_per_order > 0 && Number(p.real_stock || 0) > p.max_per_order;
+            return limited
+                ? `⚠️「${p.name}」每筆訂單限購 ${p.max_per_order} 個，目前最多可再購買 ${available} 個。`
+                : `⚠️ 庫存不足！「${p.name}」目前最多可再購買 ${available} 個。`;
         }
 
         function lilouIsDeliveryMethod(method) {
@@ -1190,14 +1257,14 @@
             return candidates[0] || "";
         }
         
-        function hasMidAutumnProductInCart() {
-            return cart.some(box => {
-                if ((box.boxName || "").includes("中秋")) return true;
-                return (box.flavors || []).some(f => {
-                    const p = localProducts.find(x => x.name === f.name);
-                    return p && (p.type === 'giftbox' || (p.name || "").includes("中秋"));
-                });
-            });
+        // 第2階段：購物車內商品所屬的分類（用來套用分類日期規則與提醒）
+        function getCartCategories() {
+            const ids = {};
+            cart.forEach(box => (box.flavors || []).forEach(f => {
+                const p = localProducts.find(x => x.name === f.name);
+                if (p) ids[p.type] = true;
+            }));
+            return localCategories.filter(c => ids[c.id]);
         }
 
         function showToastNotification(message) {
@@ -1335,7 +1402,6 @@
             const mapLink = document.getElementById('mapLink');
             const addressLabel = document.getElementById('addressLabel');
             const deliveryNotice = document.getElementById('deliveryPaymentNotice');
-            const midAutumnNotice = document.getElementById('midAutumnNotice');
             
             if(lilouIsDeliveryMethod(method)) {
                 addressLabel.innerText = "7-11 取貨門市名稱 *";
@@ -1351,7 +1417,7 @@
                 shipFeeDisplay.classList.remove('hidden');
                 dateLabel.innerText = "希望到貨日期 *";
                 if (deliveryNotice) deliveryNotice.classList.toggle("hidden", !lilouIsPrepaidDeliveryMethod(method));
-                if (midAutumnNotice) midAutumnNotice.classList.remove("hidden");
+
             } else {
                 addressLabel.innerText = "自取門市地址";
                 mapLink.style.display = 'none'; 
@@ -1362,7 +1428,7 @@
                 shipFeeDisplay.classList.add('hidden');
                 dateLabel.innerText = "門市自取日期 *";
                 if (deliveryNotice) deliveryNotice.classList.add("hidden");
-                if (midAutumnNotice) midAutumnNotice.classList.add("hidden");
+
             }
             renderAvailableDates(method);
             calculateTotal();
@@ -1390,11 +1456,78 @@
             return "";
         }
 
-        function lilouDateThresholdString(daysAfterToday) {
-            const base = new Date();
-            base.setHours(0, 0, 0, 0);
-            base.setDate(base.getDate() + daysAfterToday);
-            return `${base.getFullYear()}/${String(base.getMonth() + 1).padStart(2, '0')}/${String(base.getDate()).padStart(2, '0')}`;
+        // ===== 第2階段：日期規則（與後端 code.gs 的 lilouAllowedDates_ 邏輯相同）=====
+        const LILOU_RULE_DEFAULTS = { pickup_min_days: 3, pickup_max_days: 30, delivery_min_days: 7, delivery_max_days: 30, order_cutoff_time: "18:00" };
+        let localDateSettings = Object.assign({}, LILOU_RULE_DEFAULTS);
+
+        function lilouTaipeiNowParts() {
+            try {
+                const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+                const get = t => (parts.find(x => x.type === t) || {}).value || '';
+                return { date: `${get('year')}/${get('month')}/${get('day')}`, time: `${get('hour')}:${get('minute')}` };
+            } catch (e) {
+                const d = new Date();
+                return { date: `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`, time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` };
+            }
+        }
+        function lilouAddDays(dateStr, days) {
+            const p = dateStr.split('/').map(Number);
+            const d = new Date(Date.UTC(p[0], p[1] - 1, p[2] + days));
+            return `${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${String(d.getUTCDate()).padStart(2, '0')}`;
+        }
+        function lilouRuleNum(v) {
+            if (v === undefined || v === null || v.toString().trim() === '') return null;
+            const n = Number(v.toString().replace(/[^0-9.]/g, ''));
+            return isNaN(n) ? null : n;
+        }
+        // 下單基準日：台灣時間超過截止時間，算隔天下單
+        function lilouOrderBaseDate() {
+            const now = lilouTaipeiNowParts();
+            const cutoff = (localDateSettings.order_cutoff_time || '').toString().trim();
+            if (/^\d{1,2}:\d{2}$/.test(cutoff) && now.time >= cutoff.padStart(5, '0')) return lilouAddDays(now.date, 1);
+            return now.date;
+        }
+        function lilouParseDateRule(rule) {
+            const text = (rule || '').toString().trim();
+            if (!text) return null;
+            const ranges = [];
+            text.split(/[,，、\n]+/).map(t => t.trim()).filter(Boolean).forEach(part => {
+                const m = part.split(/\s*(?:~|～|至)\s*/);
+                if (m.length === 2) ranges.push([lilouNormalizeDateForCompare(m[0]) || '0000/00/00', lilouNormalizeDateForCompare(m[1]) || '9999/99/99']);
+                else { const d = lilouNormalizeDateForCompare(part); if (d) ranges.push([d, d]); }
+            });
+            return ranges.length ? ranges : null;
+        }
+        // 回傳 { dates, blockedBy }：blockedBy = 造成沒有日期可選的分類名稱
+        function lilouAllowedDates(kind, openDates, cats) {
+            const g = k => { const v = lilouRuleNum(localDateSettings[k]); return v === null ? (LILOU_RULE_DEFAULTS[k] || 0) : v; };
+            let minDays = g(kind + '_min_days');
+            let maxDays = g(kind + '_max_days');
+            cats.forEach(c => {
+                const cmin = lilouRuleNum(c[kind + '_min_days']);
+                const cmax = lilouRuleNum(c[kind + '_max_days']);
+                if (cmin !== null) minDays = Math.max(minDays, cmin);
+                if (cmax !== null && cmax > 0) maxDays = maxDays > 0 ? Math.min(maxDays, cmax) : cmax;
+            });
+            const base = lilouOrderBaseDate();
+            const from = lilouAddDays(base, minDays);
+            const to = maxDays > 0 ? lilouAddDays(base, maxDays) : '9999/99/99';
+            const open = (openDates || []).map(lilouNormalizeDateForCompare).filter(Boolean);
+            const withRules = cats.map(c => ({ c, r: lilouParseDateRule(c[kind + '_date_rule']) }));
+            const inRange = open.filter(d => d >= from && d <= to);
+            const dates = inRange.filter(d => withRules.every(x => !x.r || x.r.some(r => d >= r[0] && d <= r[1])));
+            const blockedBy = dates.length ? [] : cats.filter(c => lilouParseDateRule(c[kind + '_date_rule']) || lilouRuleNum(c[kind + '_min_days']) !== null || lilouRuleNum(c[kind + '_max_days']) !== null).map(c => c.name);
+            return { dates, blockedBy };
+        }
+
+        // 購物車內分類的提醒文字（後台「分類 → date_notice」）
+        function renderCategoryDateNotices() {
+            const box = document.getElementById('midAutumnNotice');
+            if (!box) return;
+            const notices = cart.length ? getCartCategories().map(c => (c.date_notice || '').trim()).filter(Boolean) : [];
+            if (!notices.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+            box.innerHTML = notices.map(n => `<div class="whitespace-pre-line">${lilouEscapeHtml(n)}</div>`).join('');
+            box.classList.remove('hidden');
         }
 
         function lilouNormalizeDateForCompare(dateStr) {
@@ -1413,35 +1546,23 @@
             const dateSelect = document.getElementById('shipDate');
             const isDelivery = lilouIsDeliveryMethod(method);
             const textPrompt = isDelivery ? '希望到貨日期' : '自取日期';
-            const targetDates = isDelivery ? localDeliveryDates : localPickupDates;
-            const minDate = lilouDateThresholdString(isDelivery ? 7 : 3);
-            const isMidAutumn = hasMidAutumnProductInCart();
+            const targetDates = (isDelivery ? localDeliveryDates : localPickupDates).filter(d => d && d !== "目前無可選擇日期");
+            const cats = getCartCategories();
+            const previous = dateSelect.value;
+            const result = lilouAllowedDates(isDelivery ? 'delivery' : 'pickup', targetDates, cats);
 
             let optionsHtml = "";
-            let hasValidDate = false;
-
-            if(targetDates && targetDates.length > 0 && targetDates[0] !== "目前無可選擇日期" && targetDates[0] !== "") {
-                targetDates.forEach(dateStr => {
-                    const cleanDate = lilouNormalizeDateForCompare(dateStr);
-                    if(cleanDate !== "" && cleanDate >= minDate) {
-                        if (isMidAutumn) {
-                            const md = cleanDate.substring(5);
-                            if (md < "09/11" || md > "09/27") return;
-                        }
-
-                        let wStr = getWeekdayStr(cleanDate);
-                        optionsHtml += `<option value="${cleanDate}">${cleanDate}${wStr}</option>`;
-                        hasValidDate = true;
-                    }
-                });
-            }
-
-            if (!hasValidDate) {
-                optionsHtml = `<option value="" disabled selected>-- 目前無可選擇日期 --</option>`;
+            if (!result.dates.length) {
+                let msg = '目前無可選擇日期';
+                if (result.blockedBy.length > 1) msg = `「${result.blockedBy.join('」「')}」的可選日期沒有重疊，請分開下單`;
+                else if (result.blockedBy.length === 1) msg = `「${result.blockedBy[0]}」目前沒有可選的${isDelivery ? '到貨' : '自取'}日期`;
+                optionsHtml = `<option value="" disabled selected>-- ${lilouEscapeHtml(msg)} --</option>`;
             } else {
-                optionsHtml = `<option value="" disabled selected>-- 請選擇${textPrompt} --</option>` + optionsHtml;
+                optionsHtml = `<option value="" disabled ${result.dates.includes(previous) ? '' : 'selected'}>-- 請選擇${textPrompt} --</option>` +
+                    result.dates.map(d => `<option value="${d}" ${d === previous ? 'selected' : ''}>${d}${getWeekdayStr(d)}</option>`).join('');
             }
             dateSelect.innerHTML = optionsHtml;
+            renderCategoryDateNotices();
         }
 
         function getLilouDraftPayload() {
@@ -1742,6 +1863,12 @@
                     }
                 });
 
+                localDateSettings = Object.assign({}, LILOU_RULE_DEFAULTS);
+                Object.keys(LILOU_RULE_DEFAULTS).forEach(k => {
+                    const v = data.settings[k];
+                    if (v !== undefined && v !== null && v.toString().trim() !== '') localDateSettings[k] = v.toString().trim();
+                });
+
                 const promoEnabled = lilouIsTruthy(data.settings.promo_enabled || 'false');
                 const promoSection = document.getElementById('seasonalGiftSection');
                 if (promoSection) {
@@ -1783,20 +1910,47 @@
             return getCategoryBehavior(product?.type) === 'single';
         }
 
+        // 分類名稱拆成中文＋英文：有填 name_en 就用；沒填時自動把「中文 English」拆開（例：迷你可麗露 Mini Canelé）
+        function lilouSplitCategoryName(cat) {
+            const name = (cat.name || '').toString().trim();
+            if (cat.name_en) return { zh: name, en: cat.name_en };
+            const m = name.match(/^(.*?[\u3400-\u9fff\uff00-\uffef])\s*([A-Za-z][\s\S]*)$/);
+            return m ? { zh: m[1].trim(), en: m[2].trim() } : { zh: name, en: '' };
+        }
+        function updateTabScrollHints() {
+            const list = document.querySelector('.product-tab-list');
+            if (!list) return;
+            const max = list.scrollWidth - list.clientWidth;
+            list.classList.toggle('has-more-left', list.scrollLeft > 4);
+            list.classList.toggle('has-more-right', max - list.scrollLeft > 4);
+        }
+
         function renderTabs() {
             const tabList = document.querySelector('.product-tab-list');
             if (!tabList) return;
             tabList.innerHTML = localCategories.map(cat => {
                 const isActive = cat.id === currentCategoryId;
                 const prodCount = localProducts.filter(p => p.type === cat.id).length;
+                const label = lilouSplitCategoryName(cat);
                 return `
                 <button type="button" class="product-tab-button ${isActive ? 'is-active' : ''} whitespace-nowrap px-4" role="tab" aria-selected="${isActive}" onclick="switchProductTab('${cat.id}')">
                     <span class="product-tab-heading">
-                        <span class="product-tab-title">${lilouEscapeHtml(cat.name)}</span>
+                        <span class="product-tab-text"><span class="product-tab-title">${lilouEscapeHtml(label.zh)}</span>${label.en ? `<span class="product-tab-en">${lilouEscapeHtml(label.en)}</span>` : ''}</span>
                         <span class="product-tab-count ${prodCount === 0 ? 'hidden' : ''}">${prodCount} 款</span>
                     </span>
                 </button>`;
             }).join('');
+            if (!tabList.dataset.hintBound) {
+                tabList.addEventListener('scroll', updateTabScrollHints, { passive: true });
+                window.addEventListener('resize', updateTabScrollHints);
+                tabList.dataset.hintBound = '1';
+            }
+            const active = tabList.querySelector('.product-tab-button.is-active');
+            if (active && tabList.scrollWidth > tabList.clientWidth) {
+                const left = active.offsetLeft - (tabList.clientWidth - active.offsetWidth) / 2;
+                tabList.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+            }
+            setTimeout(updateTabScrollHints, 350);
         }
 
         window.switchProductTab = function(categoryId, options = {}) {
@@ -1869,7 +2023,7 @@
                 comboWrap.innerHTML = comboItems.length ? comboItems.map((p) => `
                     <button type="button" data-package-name="${lilouEscapeHtml(p.name)}" onclick="selectPackageCard('${encodeURIComponent(p.name)}')" class="lilou-package-card text-left border border-stone-200 rounded-2xl bg-white px-4 py-4 min-h-[72px]">
                         <div class="flex items-center gap-3">
-                            <span class="minw-0 flex-1 font-black text-stone-900 text-sm md:text-base leading-snug">${lilouEscapeHtml(p.name)}</span>
+                            <span class="minw-0 flex-1 font-black text-stone-900 text-sm md:text-base leading-snug">${lilouEscapeHtml(p.name)}${lilouNameEnHtml(p.name_en)}</span>
                             ${p.extra_price > 0 ? `<span class="lilou-item-price">+NT$${Number(p.extra_price).toLocaleString('zh-TW')}</span>` : ''}
                             <span class="lilou-package-check w-5 h-5 rounded-full border border-stone-300 text-transparent flex items-center justify-center text-[10px] shrink-0">✓</span>
                         </div>
@@ -1882,15 +2036,16 @@
                     const qty = Number(limitedAddonQty[idx] || 0);
                     const used = getCartProductUsedQty(p.name);
                     const available = Math.max(0, Number(p.stock || 0) - used);
-                    const stockText = available > 0 ? `剩 ${available}` : '已售完';
+                    const stockText = lilouStockText(p, available);
                     const shippingBadge = p.shipping_rule === 'pickup'
                         ? `<span class="text-[10px] md:text-xs text-amber-600 font-black ml-1">僅自取</span>`
                         : p.shipping_rule === 'delivery'
                             ? `<span class="text-[10px] md:text-xs text-sky-600 font-black ml-1">僅宅配</span>`
                             : '';
-                    return `<div class="flex items-center justify-between py-3 gap-2">
+                    return `<div class="flex items-center justify-between py-3 gap-3">
+                        ${lilouThumbHtml(p)}
                         <div class="flex-1 min-w-0">
-                            <span class="font-bold text-stone-900 text-sm md:text-base break-words block">${lilouEscapeHtml(p.name)}</span>
+                            <span class="font-bold text-stone-900 text-sm md:text-base break-words block">${lilouEscapeHtml(p.name)}</span>${lilouNameEnHtml(p.name_en)}
                             <span class="text-[#5B7290] font-black text-sm md:text-base">$${Number(p.price || 0).toLocaleString('zh-TW')}</span>
                             <span class="text-[10px] md:text-xs ${available <= 0 ? 'text-red-500 font-bold' : 'text-stone-400'} ml-0.5">${stockText}</span>${shippingBadge}
                             ${p.description ? `<span class="limited-product-description block">${lilouEscapeHtml(p.description)}</span>` : ''}
@@ -1953,7 +2108,7 @@
             for (const { product, qty } of selected) {
                 const available = Math.max(0, Number(product.stock || 0) - getCartProductUsedQty(product.name));
                 if (qty > available) {
-                    showToastNotification(`⚠️ 庫存不足！「${product.name}」目前最多可再購買 ${available} 個。`);
+                    showToastNotification(lilouOutOfStockMessage(product, available));
                     renderPackageCards();
                     return;
                 }
@@ -2004,7 +2159,7 @@
             if (!product || qty <= 0) return;
             const available = Math.max(0, Number(product.stock || 0) - getCartProductUsedQty(product.name));
             if (qty > available) {
-                showToastNotification(`⚠️ 庫存不足！「${product.name}」目前最多可再購買 ${available} 個。`);
+                showToastNotification(lilouOutOfStockMessage(product, available));
                 renderPackageCards();
                 return;
             }
@@ -2065,13 +2220,14 @@
                 cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === p.name); if (matchFlavor) occupiedInCart += (Number(matchFlavor.quantity) || 0) * (Number(savedBox.repeatQty) || 1); }); 
                 const virtualStock = p.stock - occupiedInCart; 
                 const shouldDisable = virtualStock <= 0 || isBoxNotSelected; 
-                let statusText = virtualStock <= 0 ? '已售完' : '剩 ' + virtualStock;
+                let statusText = lilouStockText(p, virtualStock);
                 const shippingBadge = p.shipping_rule === 'pickup' ? `<span class="text-[10px] md:text-xs text-amber-600 font-black ml-1">僅自取</span>` : p.shipping_rule === 'delivery' ? `<span class="text-[10px] md:text-xs text-sky-600 font-black ml-1">僅宅配</span>` : '';
                 
                 return `
-                <div class="flex items-center justify-between py-3 gap-2">
+                <div class="flex items-center justify-between py-3 gap-3">
+                    ${lilouThumbHtml(p)}
                     <div class="flex-1 min-w-0">
-                        <span class="font-bold text-stone-900 text-sm md:text-base break-words block">${lilouEscapeHtml(p.name)}</span>
+                        <span class="font-bold text-stone-900 text-sm md:text-base break-words block">${lilouEscapeHtml(p.name)}</span>${lilouNameEnHtml(p.name_en)}
                         <span class="text-[#5B7290] font-black text-sm md:text-base">$${p.price}</span>
                         <span class="text-[10px] md:text-xs ${virtualStock <= 0 ? 'text-red-500 font-bold' : 'text-stone-400'} ml-0.5">${statusText}</span>${shippingBadge}
                     </div>
@@ -2116,7 +2272,7 @@
             }
 
             if (parsedVal > maxAllowed) {
-                showToastNotification(`⚠️ 數量超過目前剩餘可用庫存上限！`);
+                showToastNotification(`⚠️ 數量超過可購買上限（剩餘庫存或每筆限購）！`);
                 parsedVal = maxAllowed;
             }
 
@@ -2322,7 +2478,7 @@
                     let occupiedInCart = 0; 
                     cart.forEach(savedBox => { const matchFlavor = savedBox.flavors.find(f => f.name === product.name); if (matchFlavor) occupiedInCart += (Number(matchFlavor.quantity) || 0) * (Number(savedBox.repeatQty) || 1); }); 
                     const virtualStock = product.stock - occupiedInCart; 
-                    if ((qty * repeatQty) > virtualStock) { showToastNotification(`⚠️ 庫存不足！「${product.name}」目前最多只能再裝入 ${virtualStock >= 0 ? virtualStock : 0} 個。`); hasError = true; break; } 
+                    if ((qty * repeatQty) > virtualStock) { showToastNotification(lilouOutOfStockMessage(product, Math.max(0, virtualStock))); hasError = true; break; } 
                     boxFlavors.push({ name: product.name, price: product.price, quantity: qty, shipping_rule: normalizeShippingRuleForFrontend(product.shipping_rule || "all") }); 
                     totalFlavorsCountInBox += qty; 
                     boxFlavorsCost += (product.price * qty); 
@@ -2503,6 +2659,7 @@
             enforcePickupOnlyShipping(false);
             updateShippingSelectAvailability();
             updateFloatingCartButton();
+            renderAvailableDates(document.getElementById('shipMethod').value);
 
             container.innerHTML = cart.map((box, i) => {
                 const singleItem = isSingleCartItem(box);
@@ -2811,6 +2968,13 @@
                 document.getElementById('shipMethod').value = 'delivery';
                 handleShippingMethodChange();
                 return;
+            }
+            // 第2階段：每筆最少數量
+            const qtyByName = {};
+            cart.forEach(box => (box.flavors || []).forEach(f => { qtyByName[f.name] = (qtyByName[f.name] || 0) + (Number(f.quantity) || 0) * (Number(box.repeatQty) || 1); }));
+            for (const name in qtyByName) {
+                const p = localProducts.find(x => x.name === name);
+                if (p && p.min_per_order > 0 && qtyByName[name] < p.min_per_order) { showToastNotification(`⚠️「${name}」每筆訂單最少 ${p.min_per_order} 個，目前 ${qtyByName[name]} 個。`); return; }
             }
             const rawShipDate = document.getElementById('shipDate').value;
             if (!custEmail) { showToastNotification("⚠️ 請輸入 Email，方便接收訂單通知。"); return; }
@@ -3578,7 +3742,8 @@
         }
 
         let currentLightboxIndex = 0;
-        const lightboxImages = [
+        let lightboxImages = [];
+        const galleryLightboxImages = [
             'images/gift-1.jpg',
             'images/gift-2.jpg',
             'images/gift-3.jpg',
@@ -3586,8 +3751,21 @@
             'images/gift-5.jpg',
             'images/gift-6.jpg'
         ];
+        lightboxImages = galleryLightboxImages;
 
-        window.openLightbox = function(index) {
+        function setLightboxArrows(show) {
+            document.querySelectorAll('#imageLightboxOverlay button[onclick*="LightboxImage"]').forEach(btn => { btn.style.display = show ? '' : 'none'; });
+        }
+
+        // 第2階段：點商品縮圖放大單張照片
+        window.openProductImage = function(encodedUrl) {
+            lightboxImages = [decodeURIComponent(encodedUrl)];
+            setLightboxArrows(false);
+            window.openLightbox(0, true);
+        }
+
+        window.openLightbox = function(index, keepImages) {
+            if (!keepImages) { lightboxImages = galleryLightboxImages; setLightboxArrows(true); }
             currentLightboxIndex = index;
             const overlay = document.getElementById('imageLightboxOverlay');
             const lightboxImg = document.getElementById('lightboxImage');
