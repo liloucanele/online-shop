@@ -464,7 +464,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.8.0</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.8.1</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -2214,7 +2214,7 @@ function productRowHtml(p, idx, total, searching) {
   const nameAttr = escapeHtml(p.name || "");
   return `<div class="prod-row ${on ? "" : "is-off"}" data-prod-name="${nameAttr}" data-prod-idx="${p.__i}">
     <button type="button" class="prod-main" onclick="openProductEditor(Number(this.closest('.prod-row').dataset.prodIdx))">
-      <span class="prod-thumb">${img ? `<img src="${escapeHtml(previewSrc(img))}" alt="" loading="lazy">` : `<span>無圖</span>`}</span>
+      <span class="prod-thumb">${img ? thumbImgHtml(img) : `<span>無圖</span>`}</span>
       <span class="min-w-0 flex-1">
         <span class="block font-black text-stone-900 leading-snug prod-name">${escapeHtml(p.name || "（未命名）")}${on ? "" : `<span class="ml-1.5 align-middle text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500 border border-red-200">已下架</span>`}</span>
         ${p.name_en ? `<span class="block text-xs font-bold text-stone-400 truncate">${escapeHtml(p.name_en)}</span>` : ""}
@@ -2426,7 +2426,7 @@ function peSetImage(url) {
 async function peUploadImage(fileInput) {
   const file = fileInput.files && fileInput.files[0]; fileInput.value = "";
   if (!file) return;
-  const url = await withUploadToast("照片上傳中...", () => uploadImageToGithub(file, 1200));
+  const url = await withUploadToast("照片上傳中...", () => uploadImageToGithub(file, 1200, true));
   if (!url) return;
   peSetImage(url);
   showAdminToast("照片已上傳，按「儲存」後生效", "success", 3200);
@@ -3552,32 +3552,54 @@ function clearProductImage(button) {
 // ===== 上傳照片到 GitHub：先在瀏覽器壓縮，再交給後端存進 repo 的 images/uploads =====
 const imagePreviewMap = {};   // 剛上傳的照片：GitHub 網站約 1 分鐘才更新，先用原始檔網址預覽
 function previewSrc(url) { return imagePreviewMap[url] || url; }
-function compressImageFile(file, maxSize = 1200, quality = 0.82) {
+function thumbSrc(url) { return imagePreviewMap[url] || (/^images\/uploads\/[^/]+\.jpg$/.test(url) && !/-s\.jpg$/.test(url) ? url.replace(/\.jpg$/, "-s.jpg") : url); }
+function thumbImgHtml(url) { return `<img src="${escapeHtml(thumbSrc(url))}" data-full="${escapeHtml(previewSrc(url))}" onerror="if(this.dataset.full&&this.src.indexOf(this.dataset.full)<0){this.src=this.dataset.full}" alt="" loading="lazy">`; }
+// 讀照片 → 依需要縮小並壓縮；maxBytes 會自動降畫質／尺寸，讓檔案不超過上限
+function loadImageFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error("讀取照片失敗"));
     reader.onload = () => {
       const img = new Image();
       img.onerror = () => reject(new Error("無法讀取這張照片，請換一張"));
-      img.onload = () => {
-        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        const ctx = canvas.getContext("2d");
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      };
+      img.onload = () => resolve(img);
       img.src = reader.result;
     };
     reader.readAsDataURL(file);
   });
 }
-async function uploadImageToGithub(file, maxSize) {
-  const dataUrl = await compressImageFile(file, maxSize);
-  const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "adminUploadImage", token: getToken(), base64: dataUrl }) });
+function imageToJpeg(img, maxSize, quality, square) {
+  const canvas = document.createElement("canvas");
+  let sx = 0, sy = 0, sw = img.width, sh = img.height;
+  if (square) { const side = Math.min(img.width, img.height); sx = (img.width - side) / 2; sy = (img.height - side) / 2; sw = sh = side; }
+  const scale = Math.min(1, maxSize / Math.max(sw, sh));
+  canvas.width = Math.round(sw * scale);
+  canvas.height = Math.round(sh * scale);
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", quality);
+}
+function dataUrlBytes(dataUrl) { return Math.round((dataUrl.length - dataUrl.indexOf(",") - 1) * 0.75); }
+function compressToLimit(img, maxSize, maxBytes) {
+  const tries = [[maxSize, 0.82], [maxSize, 0.74], [maxSize, 0.66], [Math.round(maxSize * 0.85), 0.66], [Math.round(maxSize * 0.7), 0.62]];
+  let out = "";
+  for (const [size, q] of tries) { out = imageToJpeg(img, size, q); if (dataUrlBytes(out) <= maxBytes) break; }
+  return out;
+}
+async function compressImageFile(file, maxSize = 1200) {
+  const img = await loadImageFile(file);
+  return compressToLimit(img, maxSize, maxSize >= 1600 ? 400 * 1024 : 250 * 1024);
+}
+// withThumb：商品照片另外產生 240px 正方形小圖（前台縮圖用，約 10～25KB）
+async function uploadImageToGithub(file, maxSize, withThumb) {
+  const img = await loadImageFile(file);
+  const dataUrl = compressToLimit(img, maxSize, maxSize >= 1600 ? 400 * 1024 : 250 * 1024);
+  const payload = { action: "adminUploadImage", token: getToken(), base64: dataUrl };
+  if (withThumb) payload.thumbBase64 = imageToJpeg(img, 240, 0.78, true);
+  const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
   const data = await res.json();
   if (data.status !== "success") throw new Error(data.message || "上傳失敗");
   imagePreviewMap[data.url] = data.preview || data.url;
@@ -3591,7 +3613,7 @@ async function withUploadToast(label, fn) {
 async function uploadProductImage(fileInput) {
   const file = fileInput.files && fileInput.files[0]; fileInput.value = "";
   if (!file) return;
-  const url = await withUploadToast("照片上傳中...", () => uploadImageToGithub(file, 1200));
+  const url = await withUploadToast("照片上傳中...", () => uploadImageToGithub(file, 1200, true));
   if (!url) return;
   const field = fileInput.closest("[data-image-field]")?.querySelector('[data-key="image"]');
   if (field) { field.value = url; refreshImagePreview(field); }
