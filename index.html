@@ -143,6 +143,9 @@
             transform: none;
             box-shadow: none;
         }
+        .lilou-skeleton { background: linear-gradient(100deg, #efeeec 30%, #f7f6f4 50%, #efeeec 70%); background-size: 200% 100%; animation: lilouShimmer 1.4s ease-in-out infinite; }
+        @keyframes lilouShimmer { from { background-position: 120% 0; } to { background-position: -80% 0; } }
+        @media (prefers-reduced-motion: reduce) { .lilou-skeleton { animation: none; } }
         .lilou-product-thumb {
             background: linear-gradient(145deg, #F4F6F9, #E6EBF2);
         }
@@ -746,7 +749,7 @@
                 <!-- 1. 活動卡片 (Seasonal Promo) -->
                 <section id="seasonalGiftSection" class="hidden relative overflow-hidden rounded-[2rem] shadow-md group cursor-pointer border border-stone-200/50" onclick="document.getElementById('seasonalGiftButton').click()">
                     <div class="absolute inset-0 bg-stone-100">
-                        <img id="seasonalGiftImage" src="images/seasonal-gift-box.jpg" alt="" class="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-105">
+                        <img id="seasonalGiftImage" alt="" decoding="async" class="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-105">
                     </div>
                     <div class="absolute inset-0 bg-gradient-to-t from-stone-950/90 via-stone-900/40 to-transparent"></div>
                     <div class="relative z-10 p-6 md:p-10 min-h-[320px] md:min-h-[420px] flex flex-col justify-end h-full">
@@ -772,24 +775,10 @@
                 <section id="heroGallerySection" aria-label="Lilou 粒露主打商品" class="space-y-3">
                     <div id="galleryScroll" class="flex overflow-x-auto gap-3 md:gap-4 snap-x snap-mandatory pb-2 -mx-4 px-4 md:mx-0 md:px-0" style="-ms-overflow-style: none; scrollbar-width: none;">
                         <style>#galleryScroll::-webkit-scrollbar { display: none; }</style>
-                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox(0)">
-                            <img src="images/gift-1.jpg" alt="Lilou 實拍 1" class="w-full h-full object-cover transition-transform duration-[0.8s] ease-out group-hover:scale-110" fetchpriority="high">
-                        </div>
-                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox(1)">
-                            <img src="images/gift-2.jpg" alt="Lilou 實拍 2" class="w-full h-full object-cover transition-transform duration-[0.8s] ease-out group-hover:scale-110">
-                        </div>
-                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox(2)">
-                            <img src="images/gift-3.jpg" alt="Lilou 實拍 3" class="w-full h-full object-cover transition-transform duration-[0.8s] ease-out group-hover:scale-110">
-                        </div>
-                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox(3)">
-                            <img src="images/gift-4.jpg" alt="Lilou 實拍 4" class="w-full h-full object-cover transition-transform duration-[0.8s] ease-out group-hover:scale-110">
-                        </div>
-                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox(4)">
-                            <img src="images/gift-5.jpg" alt="Lilou 實拍 5" class="w-full h-full object-cover transition-transform duration-[0.8s] ease-out group-hover:scale-110">
-                        </div>
-                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox(5)">
-                            <img src="images/gift-6.jpg" alt="Lilou 實拍 6" class="w-full h-full object-cover transition-transform duration-[0.8s] ease-out group-hover:scale-110">
-                        </div>
+                        <!-- 圖片清單由後台設定載入；載入前先顯示灰色佔位，避免下載用不到的舊圖 -->
+                        <div class="lilou-skeleton shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] flex flex-col items-center justify-center gap-3"><img src="images/lilou-logo.svg" alt="" class="h-9 w-auto opacity-40" onerror="this.remove()"><span class="text-xs font-black tracking-[0.2em] text-stone-400">LOADING</span></div>
+                        <div class="lilou-skeleton shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem]"></div>
+                        <div class="lilou-skeleton shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem]"></div>
                     </div>
 
                     <div class="px-2 flex items-end justify-between">
@@ -2010,16 +1999,38 @@
                 if (cachedText && cachedTime && (now - cachedTime) < CACHE_MAX_AGE) {
                     renderUIWithData(JSON.parse(cachedText));
                     hasRenderedCache = true;
+                } else if (cachedText) {
+                    // 快取過期：商品資料等最新的，但首頁圖片先用上次的設定，不必等試算表回應
+                    const old = JSON.parse(cachedText);
+                    if (old && old.settings) { renderHeroGallery(old.settings.gallery_images); renderPromoSection(old.settings); }
                 }
             } catch (err) {
                 console.warn("讀取快取失敗", err);
             }
 
-            // 2. 背景向 Google 試算表拉取最新設定
+            // 2. 向 Google 試算表拉取最新資料（第一次造訪約需 2～5 秒）
+            const slowTimer = setTimeout(() => { if (!hasRenderedCache && !liveArrived) showToastNotification("網路較慢，資料載入中，請稍候…"); }, 8000);
+            const livePromise = fetch(`${API_URL}?action=getFormOptions&_=${now}`).then(r => r.json());
+            let liveArrived = false;
+            livePromise.then(() => { liveArrived = true; clearTimeout(slowTimer); }, () => { clearTimeout(slowTimer); });
+
+            // 2-1. 沒有新鮮快取時，同時讀網站上的靜態快照（後台每次存檔自動更新），通常 1 秒內就能先顯示
+            if (!hasRenderedCache) {
+                try {
+                    const snapRes = await fetch(`data/site.json?t=${Math.floor(now / 60000)}`, { cache: "no-cache" });
+                    if (snapRes.ok && !liveArrived) {
+                        const snap = await snapRes.json();
+                        if (!liveArrived && snap && Array.isArray(snap.categories) && snap.categories.length) {
+                            renderUIWithData(snap);
+                            hasRenderedCache = true;
+                        }
+                    }
+                } catch (err) { /* 沒有快照就等正式資料 */ }
+            }
+
             try {
-                const cacheBuster = `&_=${now}`;
-                const res = await fetch(`${API_URL}?action=getFormOptions${cacheBuster}`);
-                const data = await res.json();
+                const data = await livePromise;
+                if (!data || data.status === "error") throw new Error((data && data.message) || "資料錯誤");
                 
                 // 儲存最新快取
                 localStorage.setItem(CACHE_KEY, JSON.stringify(data));
@@ -2030,6 +2041,7 @@
             } catch (err) {
                 console.error("同步最新資料失敗", err);
                 if (!hasRenderedCache) {
+                    renderHeroGallery('');
                     showToastNotification("網路連線不穩，請重新整理頁面。");
                 }
             }
@@ -2104,22 +2116,7 @@
 
                 renderHeroGallery(data.settings.gallery_images);
 
-                const promoEnabled = lilouIsTruthy(data.settings.promo_enabled || 'false');
-                const promoSection = document.getElementById('seasonalGiftSection');
-                if (promoSection) {
-                    if (promoEnabled) {
-                        promoSection.classList.remove('hidden');
-                        document.getElementById('seasonalGiftEyebrow').textContent = data.settings.promo_eyebrow || '期間限定';
-                        document.getElementById('seasonalGiftTitle').textContent = data.settings.promo_title || '活動宣傳';
-                        document.getElementById('seasonalGiftDescription').textContent = data.settings.promo_desc || '';
-                        document.getElementById('seasonalGiftButton').textContent = data.settings.promo_btn_text || '立即查看';
-                        const link = data.settings.promo_btn_link || localCategories[0]?.id;
-                        document.getElementById('seasonalGiftButton').setAttribute('onclick', `switchProductTab('${link}', {scroll:true})`);
-                        document.getElementById('seasonalGiftImage').src = data.settings.promo_image || 'images/seasonal-gift-box.jpg';
-                    } else {
-                        promoSection.classList.add('hidden');
-                    }
-                }
+                renderPromoSection(data.settings, localCategories[0]?.id);
             }
 
             // 即時重新繪製上方頁籤與下方面板，確保試算表改名後自動替換
@@ -2131,11 +2128,29 @@
             renderCart();
         }
 
+        // 首頁活動大圖：只有開啟活動時才下載圖片
+        function renderPromoSection(settings, fallbackLink) {
+            const promoSection = document.getElementById('seasonalGiftSection');
+            if (!promoSection || !settings) return;
+            if (!lilouIsTruthy(settings.promo_enabled || 'false')) { promoSection.classList.add('hidden'); return; }
+            promoSection.classList.remove('hidden');
+            document.getElementById('seasonalGiftEyebrow').textContent = settings.promo_eyebrow || '期間限定';
+            document.getElementById('seasonalGiftTitle').textContent = settings.promo_title || '活動宣傳';
+            document.getElementById('seasonalGiftDescription').textContent = settings.promo_desc || '';
+            document.getElementById('seasonalGiftButton').textContent = settings.promo_btn_text || '立即查看';
+            const link = settings.promo_btn_link || fallbackLink;
+            if (link) document.getElementById('seasonalGiftButton').setAttribute('onclick', `switchProductTab('${link}', {scroll:true})`);
+            const img = document.getElementById('seasonalGiftImage');
+            const src = settings.promo_image || 'images/seasonal-gift-box.jpg';
+            if (img.getAttribute('src') !== src) { img.setAttribute('fetchpriority', 'high'); img.src = src; }
+        }
+
         // 首頁小圖輪播：後台「設定 → 首頁小圖輪播」的圖片清單；沒設定就保留網頁內建的圖片
         function renderHeroGallery(value) {
-            const list = (value || '').toString().split(/[,\n]+/).map(u => u.trim()).filter(Boolean);
+            let list = (value || '').toString().split(/[,\n]+/).map(u => u.trim()).filter(Boolean);
+            if (!list.length) list = [1, 2, 3, 4, 5, 6].map(n => `images/gift-${n}.jpg`);
             const wrap = document.getElementById('galleryScroll');
-            if (!list.length || !wrap) return;
+            if (!wrap) return;
             if (wrap.dataset.rendered === list.join('|')) return;
             wrap.dataset.rendered = list.join('|');
             galleryLightboxImages = list;
