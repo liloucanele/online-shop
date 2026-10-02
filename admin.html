@@ -3636,7 +3636,7 @@ async function uploadGalleryImages(fileInput) {
   const list = getGalleryList();
   let done = 0;
   await withUploadToast(`照片上傳中（共 ${files.length} 張）...`, async () => {
-    for (const f of files) { list.push(await uploadImageToGithub(f, 1400)); done++; }
+    for (const f of files) { list.push(await uploadImageToGithub(f, 1080)); done++; }
   });
   if (done) { setGalleryList(list); showAdminToast(`已上傳 ${done} 張，按「儲存設定」後生效`, "success", 4200); }
 }
