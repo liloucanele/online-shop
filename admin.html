@@ -415,12 +415,56 @@
       pointer-events: none; 
     }
     
+    /* ===== 產品頁（分類分組＋單項編輯）===== */
+    .prod-group-head { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: #fbfaf9; border: 0; cursor: pointer; text-align: left; min-height: 0 !important; }
+    .prod-group-head:hover { background: #f5f4f2; }
+    .prod-chevron { display: inline-block; color: #a8a29e; font-weight: 900; transition: transform .2s; transform: rotate(-90deg); }
+    .prod-chevron.is-open, details[open] > summary .prod-chevron { transform: rotate(0deg); }
+    .prod-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 10px; transition: background .3s; }
+    .prod-row.is-off .prod-thumb, .prod-row.is-off .prod-name { opacity: .5; }
+    .prod-row.is-moved { background: #eef2f7; }
+    .prod-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; background: transparent; border: 0; padding: 4px; border-radius: 14px; text-align: left; cursor: pointer; min-height: 0 !important; }
+    .prod-main:hover { background: #f7f6f4; }
+    .prod-thumb { width: 56px; height: 56px; flex-shrink: 0; border-radius: 14px; overflow: hidden; background: #f5f5f4; border: 1px solid #e7e5e4; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #a8a29e; }
+    .prod-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .prod-row > .admin-switch { flex-shrink: 0; }
+    .prod-sort { display: flex; gap: 4px; flex-shrink: 0; }
+    .prod-sort button { width: 38px; height: 38px; min-height: 38px !important; border-radius: 10px; border: 1px solid #e7e5e4; background: #fff; color: #57534e; font-weight: 900; font-size: 16px; display: inline-flex; align-items: center; justify-content: center; }
+    .prod-sort button:hover:not(:disabled) { background: #eef2f7; border-color: #5B7290; color: #5B7290; }
+    .prod-sort button:disabled { opacity: .3; cursor: default; }
+    .prod-order-bar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 60; width: min(560px, calc(100% - 24px)); display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 18px; border-radius: 18px; background: #3E4F66; color: #fff; box-shadow: 0 14px 30px -12px rgba(28,25,23,.45); }
+    .prod-order-bar.hidden { display: none; }
+    .prod-order-bar button { min-height: 40px !important; }
+    #tab-products { padding-bottom: 72px; }
+    @media (max-width: 640px) {
+      .prod-row { gap: 8px; padding: 8px 10px 8px 6px; }
+      .prod-main { gap: 10px; }
+      .prod-thumb { width: 48px; height: 48px; border-radius: 12px; }
+      .prod-sort { flex-direction: column; gap: 3px; }
+      .prod-sort .prod-sort-top { display: none; }
+      .prod-sort button { width: 38px; height: 32px; min-height: 32px !important; font-size: 14px; border-radius: 8px; }
+      .prod-group-head { padding: 12px 14px; }
+    }
+    .prod-editor { position: fixed; inset: 0; z-index: 9000; pointer-events: none; }
+    .prod-editor-backdrop { position: absolute; inset: 0; background: rgba(28,25,23,.4); opacity: 0; transition: opacity .25s; }
+    .prod-editor-panel { position: absolute; top: 0; right: 0; bottom: 0; width: min(560px, 100%); background: #f5f6f8; display: flex; flex-direction: column; transform: translateX(100%); transition: transform .26s ease; }
+    .prod-editor.is-open { pointer-events: auto; }
+    .prod-editor.is-open .prod-editor-backdrop { opacity: 1; }
+    .prod-editor.is-open .prod-editor-panel { transform: translateX(0); }
+    .prod-editor-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; padding-top: calc(10px + env(safe-area-inset-top)); background: #fff; border-bottom: 1px solid #e7e5e4; }
+    .prod-editor-head button { min-height: 40px !important; }
+    .prod-editor-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px 14px calc(28px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; }
+    .pe-card { background: #fff; border: 1px solid #ece9e6; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .pe-details { display: block; }
+    .pe-title { font-size: 14px; font-weight: 900; color: #1c1917; letter-spacing: .04em; }
+    .pe-details summary::-webkit-details-marker { display: none; }
+    body.prod-editor-open { overflow: hidden; }
 </style>
 </head>
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.7.1</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.8.0</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -492,7 +536,7 @@ let currentTab = "dashboard";
 
 const unsavedTabs = new Set();
 function markUnsaved(tab) {
-  if (!tab || tab === 'dashboard' || tab === 'revenue') return;
+  if (!tab || tab === 'dashboard' || tab === 'revenue' || tab === 'products') return;
   unsavedTabs.add(tab);
   const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
   if (btn) btn.classList.add('has-unsaved');
@@ -714,6 +758,7 @@ async function loadAll() {
 }
 
 function renderAll() {
+  prodState.orderDirty = false; prodState.savedOrder = null;
   renderDashboard();
   renderOrders();
   renderCategories();
@@ -2054,9 +2099,402 @@ function cancelOrderEdit(orderId) {
 function renderCategories() {
   renderEditableTable("categories", "Categories 分類管理", ["id","name","name_en","behavior","display","sort","daily_limit","pickup_min_days","pickup_max_days","delivery_min_days","delivery_max_days","pickup_date_rule","delivery_date_rule","date_notice"], ["系統ID","頁籤名稱","英文名稱","選購模式","顯示","排序","每日限量（分類共用）","自取最早 D+","自取最晚 D+","宅配最早 D+","宅配最晚 D+","自取開放期間","宅配開放期間","給客人的日期提醒"], adminData.categories || []);
 }
-function renderProducts() {
-  renderEditableTable("products", "Products", ["name","name_en","image","price","stock","min_per_order","max_per_order","type","display","shipping_rule","sort","description","ingredients","allergens","storage","weight","nutrition","origin_manufacturer"], ["商品名稱","英文名稱","商品照片","價格","庫存","每筆最少","每筆最多","類型","上架狀態","配送","排序","商品描述","成分","過敏原","保存方式","重量","營養標示","原產地與製造商"], adminData.products || []);
+// ===== 產品頁（第三階段）：依分類分組、上下排序、單項編輯 =====
+const PROD_TEXT_FIELDS = ["name","name_en","image","price","stock","min_per_order","max_per_order","type","display","shipping_rule","description","ingredients","allergens","storage","weight","nutrition","origin_manufacturer"];
+const prodState = { q: "", cat: "", status: "", collapsed: new Set(), orderDirty: false, savedOrder: null, editing: null, editorBaseline: "" };
+const SHIPPING_LABEL = { all: "", pickup: "僅自取", delivery: "僅宅配" };
+
+function prodCatKey(v) { return (v || "").toString().trim().toLowerCase(); }
+function prodSortNum(p) { const n = Number(p.sort); return isNaN(n) || p.sort === "" ? 99999 : n; }
+function prodGroups() {
+  const cats = (adminData?.categories || []).slice().sort((a, b) => (Number(a.sort) || 0) - (Number(b.sort) || 0));
+  const products = adminData?.products || [];
+  const groups = cats.map(c => ({ key: prodCatKey(c.id), name: c.name || c.id, en: c.name_en || "", catOn: isDisplayOn(c.display), items: [] }));
+  const byKey = {}; groups.forEach(g => byKey[g.key] = g);
+  products.forEach((p, i) => {
+    p.__i = i;
+    const k = prodCatKey(p.type);
+    let g = byKey[k];
+    if (!g) { g = { key: k || "__none", name: k ? `${k}（找不到分類）` : "未分類", en: "", catOn: true, items: [], orphan: true }; byKey[k] = g; groups.push(g); }
+    g.items.push(p);
+  });
+  groups.forEach(g => g.items.sort((a, b) => prodSortNum(a) - prodSortNum(b) || a.__i - b.__i));
+  return groups;
 }
+function prodMatches(p) {
+  const q = prodState.q.trim().toLowerCase();
+  if (q && !((p.name || "") + " " + (p.name_en || "")).toLowerCase().includes(q)) return false;
+  if (prodState.status === "ON" && !isDisplayOn(p.display)) return false;
+  if (prodState.status === "OFF" && isDisplayOn(p.display)) return false;
+  return true;
+}
+function prodMetaHtml(p) {
+  const bits = [];
+  if (p.price !== "" && p.price !== undefined) bits.push(`NT$${escapeHtml(p.price)}`);
+  const stock = Number(p.stock || 0);
+  const stockCls = stock <= 0 ? "text-red-500" : stock <= 5 ? "text-amber-600" : "";
+  bits.push(`<span class="${stockCls}">庫存 ${escapeHtml(p.stock === "" || p.stock === undefined ? "0" : p.stock)}</span>`);
+  const ship = SHIPPING_LABEL[(p.shipping_rule || "all").toString().trim().toLowerCase()];
+  if (ship) bits.push(ship);
+  const lim = [];
+  if (Number(p.min_per_order) > 0) lim.push(`最少 ${escapeHtml(p.min_per_order)}`);
+  if (Number(p.max_per_order) > 0) lim.push(`最多 ${escapeHtml(p.max_per_order)}`);
+  if (lim.length) bits.push("每筆" + lim.join("／"));
+  return bits.join('<span class="text-stone-300 mx-1">·</span>');
+}
+
+function renderProducts() {
+  const el = document.getElementById("tab-products");
+  if (!el || !adminData) return;
+  const groups = prodGroups();
+  const all = adminData.products || [];
+  const onCount = all.filter(p => isDisplayOn(p.display)).length;
+  const searching = !!(prodState.q.trim() || prodState.status);
+  const visibleGroups = groups.filter(g => (!prodState.cat || g.key === prodState.cat) && (g.items.length || !searching));
+  const catOptions = groups.map(g => `<option value="${escapeHtml(g.key)}" ${prodState.cat === g.key ? "selected" : ""}>${escapeHtml(g.name)}（${g.items.length}）</option>`).join("");
+
+  el.innerHTML = `
+  <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4" data-no-dirty>
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="flex-1 min-w-[160px]">
+        <h2 class="text-xl font-black text-stone-900">產品</h2>
+        <p class="text-sm font-bold text-stone-500 mt-0.5">共 ${all.length} 項｜上架 ${onCount}｜下架 ${all.length - onCount}</p>
+      </div>
+      <button type="button" onclick="openProductEditor(-1)" class="h-11 rounded-xl bg-[#5B7290] text-white px-5 font-black hover:bg-[#3E4F66]">＋ 新增商品</button>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-[minmax(0,1fr)_200px_150px] gap-2">
+      <input type="search" id="prodSearch" value="${escapeHtml(prodState.q)}" oninput="prodState.q=this.value;renderProductList()" placeholder="搜尋商品名稱…" class="col-span-2 md:col-span-1 h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold min-w-0 outline-none focus:border-[#5B7290]">
+      <select onchange="prodState.cat=this.value;renderProductList()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold min-w-0 outline-none focus:border-[#5B7290]"><option value="">全部分類</option>${catOptions}</select>
+      <select onchange="prodState.status=this.value;renderProductList()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold min-w-0 outline-none focus:border-[#5B7290]">
+        <option value="" ${!prodState.status ? "selected" : ""}>全部狀態</option><option value="ON" ${prodState.status === "ON" ? "selected" : ""}>上架中</option><option value="OFF" ${prodState.status === "OFF" ? "selected" : ""}>已下架</option>
+      </select>
+    </div>
+    <p class="text-xs font-bold text-stone-400">點商品可編輯；右側開關直接上下架（立即生效）；用 ↑ ↓ 調整同分類內的順序，調好後按下方「儲存排序」。</p>
+  </div>
+  <div id="prodList" class="space-y-4" data-no-dirty></div>
+  <div id="prodOrderBar" class="prod-order-bar ${prodState.orderDirty ? "" : "hidden"}" data-no-dirty>
+    <span class="flex-1 font-black text-sm">排序已變更，尚未儲存</span>
+    <button type="button" onclick="cancelProductOrder()" class="h-10 px-4 rounded-xl border border-white/40 text-white font-black text-sm">取消</button>
+    <button type="button" onclick="saveProductOrder(this)" class="h-10 px-4 rounded-xl bg-white text-[#3E4F66] font-black text-sm">儲存排序</button>
+  </div>`;
+  renderProductList();
+}
+
+function renderProductList() {
+  const box = document.getElementById("prodList");
+  if (!box) return;
+  const searching = !!(prodState.q.trim() || prodState.status);
+  const groups = prodGroups().filter(g => !prodState.cat || g.key === prodState.cat);
+  let html = "";
+  groups.forEach(g => {
+    const items = g.items.filter(prodMatches);
+    if (searching && !items.length) return;
+    const collapsed = !searching && prodState.collapsed.has(g.key);
+    const onN = g.items.filter(p => isDisplayOn(p.display)).length;
+    html += `<section class="prod-group bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden">
+      <button type="button" class="prod-group-head" onclick="toggleProductGroup('${escapeHtml(g.key)}')" aria-expanded="${!collapsed}">
+        <span class="flex-1 min-w-0 text-left">
+          <span class="block text-base font-black text-stone-900 truncate">${escapeHtml(g.name)}${g.catOn ? "" : `<span class="ml-2 align-middle text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-500">分類未顯示</span>`}</span>
+          ${g.en ? `<span class="block text-xs font-bold text-stone-400 truncate">${escapeHtml(g.en)}</span>` : ""}
+        </span>
+        <span class="text-xs font-bold text-stone-500 whitespace-nowrap">${g.items.length} 項・上架 ${onN}</span>
+        <span class="prod-chevron ${collapsed ? "" : "is-open"}">▾</span>
+      </button>
+      ${collapsed ? "" : `<div class="divide-y divide-stone-100 border-t border-stone-100">
+        ${items.map((p, idx) => productRowHtml(p, idx, items.length, searching)).join("") || `<div class="px-4 py-6 text-center text-sm font-bold text-stone-400">這個分類還沒有商品</div>`}
+      </div>`}
+    </section>`;
+  });
+  box.innerHTML = html || `<div class="bg-white rounded-3xl border border-dashed border-stone-200 py-10 text-center text-sm font-bold text-stone-400">找不到符合的商品</div>`;
+}
+
+function productRowHtml(p, idx, total, searching) {
+  const on = isDisplayOn(p.display);
+  const img = (p.image || "").toString().trim();
+  const nameAttr = escapeHtml(p.name || "");
+  return `<div class="prod-row ${on ? "" : "is-off"}" data-prod-name="${nameAttr}" data-prod-idx="${p.__i}">
+    <button type="button" class="prod-main" onclick="openProductEditor(Number(this.closest('.prod-row').dataset.prodIdx))">
+      <span class="prod-thumb">${img ? `<img src="${escapeHtml(previewSrc(img))}" alt="" loading="lazy">` : `<span>無圖</span>`}</span>
+      <span class="min-w-0 flex-1">
+        <span class="block font-black text-stone-900 leading-snug prod-name">${escapeHtml(p.name || "（未命名）")}${on ? "" : `<span class="ml-1.5 align-middle text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500 border border-red-200">已下架</span>`}</span>
+        ${p.name_en ? `<span class="block text-xs font-bold text-stone-400 truncate">${escapeHtml(p.name_en)}</span>` : ""}
+        <span class="block text-xs font-bold text-stone-500 mt-0.5">${prodMetaHtml(p)}</span>
+      </span>
+    </button>
+    <button type="button" class="admin-switch ${on ? "is-on" : ""}" onclick="toggleProductDisplay(this)" aria-label="${on ? "上架中，點一下下架" : "已下架，點一下上架"}" title="${on ? "上架中" : "已下架"}"><span></span></button>
+    ${searching ? "" : `<div class="prod-sort">
+      <button type="button" class="prod-sort-top hidden md:inline-flex" onclick="moveProduct(this,'top')" ${idx === 0 ? "disabled" : ""} title="置頂" aria-label="置頂">⤒</button>
+      <button type="button" onclick="moveProduct(this,-1)" ${idx === 0 ? "disabled" : ""} title="往上" aria-label="往上">↑</button>
+      <button type="button" onclick="moveProduct(this,1)" ${idx === total - 1 ? "disabled" : ""} title="往下" aria-label="往下">↓</button>
+    </div>`}
+  </div>`;
+}
+
+function findProduct(name) { return (adminData?.products || []).find(p => (p.name || "") === name); }
+function productByRow(el) { return (adminData?.products || [])[Number(el.closest(".prod-row").dataset.prodIdx)]; }
+function toggleProductGroup(key) {
+  if (prodState.collapsed.has(key)) prodState.collapsed.delete(key); else prodState.collapsed.add(key);
+  renderProductList();
+}
+
+async function prodPost(payload) {
+  const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(Object.assign({ token: getToken() }, payload)) });
+  const data = await res.json();
+  if (data.status !== "success") throw new Error(data.message || "操作失敗");
+  return data;
+}
+
+async function toggleProductDisplay(btn) {
+  const p = productByRow(btn);
+  if (!p) return;
+  const name = p.name || "";
+  if (!name) { showAdminToast("請先幫這項商品取名稱", "error"); return; }
+  const prev = p.display;
+  const next = isDisplayOn(prev) ? "FALSE" : "TRUE";
+  p.display = next;
+  renderProducts();
+  try {
+    await prodPost({ action: "adminSaveProduct", originalName: name, product: { display: next } });
+    showAdminToast(`「${name}」已${next === "TRUE" ? "上架" : "下架"}`, "success", 1800);
+  } catch (err) {
+    p.display = prev;
+    renderProducts();
+    showAdminToast("切換失敗：" + err.message, "error", 4200);
+  }
+}
+
+function moveProduct(btn, dir) {
+  const p = productByRow(btn);
+  if (!p) return;
+  const idxKey = p.__i;
+  if (!prodState.savedOrder) prodState.savedOrder = (adminData.products || []).map(x => [x, x.sort]);
+  const group = prodGroups().find(g => g.items.includes(p));
+  const items = group.items;
+  const i = items.indexOf(p);
+  if (dir === "top") { items.splice(i, 1); items.unshift(p); }
+  else {
+    const j = i + dir;
+    if (j < 0 || j >= items.length) return;
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  items.forEach((x, k) => { x.sort = String((k + 1) * 10); });
+  prodState.orderDirty = true;
+  document.getElementById("prodOrderBar")?.classList.remove("hidden");
+  renderProductList();
+  const row = document.querySelector(`.prod-row[data-prod-idx="${idxKey}"]`);
+  if (row) { row.classList.add("is-moved"); setTimeout(() => row.classList.remove("is-moved"), 600); }
+}
+
+function cancelProductOrder() {
+  (prodState.savedOrder || []).forEach(([p, s]) => { p.sort = s; });
+  prodState.savedOrder = null;
+  prodState.orderDirty = false;
+  renderProducts();
+}
+
+async function saveProductOrder(btn) {
+  const restore = setButtonLoading(btn, "儲存中...");
+  try {
+    const order = (adminData.products || []).map(p => ({ name: p.name, sort: p.sort }));
+    await prodPost({ action: "adminSaveProductOrder", order });
+    prodState.savedOrder = null;
+    prodState.orderDirty = false;
+    renderProducts();
+    showAdminToast("排序已儲存", "success");
+  } catch (err) {
+    if (restore) restore();
+    showAdminToast("儲存排序失敗：" + err.message, "error", 4200);
+  }
+}
+
+// ----- 單項編輯面板 -----
+const PE_INPUT = "w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 text-[15px] focus:outline-none focus:border-[#5B7290] focus:bg-white";
+const PE_AREA = "w-full rounded-xl border border-stone-200 px-3 py-2 bg-stone-50 text-[15px] leading-relaxed focus:outline-none focus:border-[#5B7290] focus:bg-white";
+function peField(label, inner, hint) {
+  return `<label class="block min-w-0"><span class="block text-xs font-black text-stone-500 mb-1">${label}</span>${inner}${hint ? `<span class="block text-[11px] font-bold text-stone-400 mt-1">${hint}</span>` : ""}</label>`;
+}
+function peInput(key, val, extra = "") { return `<input data-pe="${key}" class="${PE_INPUT}" value="${escapeHtml(val ?? "")}" ${extra}>`; }
+function peNum(key, val, ph = "") { return peInput(key, val, `type="number" inputmode="numeric" min="0" placeholder="${ph}"`); }
+function peArea(key, val, rows = 3) { return `<textarea data-pe="${key}" rows="${rows}" class="${PE_AREA}">${escapeHtml(val ?? "")}</textarea>`; }
+
+function openProductEditor(index) {
+  if (prodState.orderDirty) { showAdminToast("請先儲存或取消排序變更", "info", 2600); return; }
+  const isNew = !(index >= 0);
+  const src = isNew ? { type: prodState.cat && prodState.cat !== "__none" ? prodState.cat : ((adminData.categories || [])[0]?.id || "combo"), display: "TRUE", shipping_rule: "all" } : (adminData.products || [])[index];
+  if (!src) return;
+  prodState.editing = isNew ? null : src;
+  const p = Object.assign({}, src);
+  const ship = (p.shipping_rule || "all").toString().trim().toLowerCase();
+  const on = isDisplayOn(p.display === undefined || p.display === "" ? "TRUE" : p.display);
+  const labelKeys = ["ingredients","allergens","storage","weight","nutrition","origin_manufacturer"];
+  const hasLabel = labelKeys.some(k => (p[k] || "").toString().trim());
+
+  let wrap = document.getElementById("prodEditor");
+  if (!wrap) { wrap = document.createElement("div"); wrap.id = "prodEditor"; document.body.appendChild(wrap); }
+  wrap.className = "prod-editor";
+  wrap.innerHTML = `
+  <div class="prod-editor-backdrop" onclick="closeProductEditor()"></div>
+  <div class="prod-editor-panel" role="dialog" aria-modal="true" aria-label="${isNew ? "新增商品" : "編輯商品"}">
+    <header class="prod-editor-head">
+      <button type="button" onclick="closeProductEditor()" class="h-10 px-3 -ml-2 rounded-xl font-black text-stone-500 hover:bg-stone-100" aria-label="關閉">✕</button>
+      <h3 class="flex-1 text-base font-black text-stone-900 truncate">${isNew ? "新增商品" : "編輯商品"}</h3>
+      <button type="button" onclick="saveProductEditor(this)" class="h-10 px-5 rounded-xl bg-[#5B7290] text-white font-black hover:bg-[#3E4F66]">儲存</button>
+    </header>
+    <div class="prod-editor-body">
+      <section class="pe-card">
+        <h4 class="pe-title">基本資料</h4>
+        ${peField("商品名稱", peInput("name", p.name, 'placeholder="例：原味迷你露"'), isNew ? "" : "改名後，歷史訂單仍保留舊名稱")}
+        ${peField("英文名稱（選填）", peInput("name_en", p.name_en, 'placeholder="例：Classic Mini Canelé"'))}
+        <div class="grid grid-cols-2 gap-3">
+          ${peField("價格", peNum("price", p.price, "0"))}
+          ${peField("分類", `<select data-pe="type" class="${PE_INPUT}">${getCategoryOptionsHtml(p.type)}</select>`)}
+        </div>
+        <div class="flex items-center gap-3 rounded-xl bg-stone-50 border border-stone-200 px-3 py-2.5">
+          <span class="flex-1"><span class="block text-sm font-black text-stone-800">上架</span><span class="block text-xs font-bold text-stone-400" data-pe-display-text>${on ? "前台看得到" : "前台不顯示"}</span></span>
+          <button type="button" class="admin-switch ${on ? "is-on" : ""}" onclick="peToggleDisplay(this)" aria-label="上架"><span></span></button>
+          <input type="hidden" data-pe="display" value="${on ? "TRUE" : "FALSE"}">
+        </div>
+      </section>
+
+      <section class="pe-card">
+        <h4 class="pe-title">照片</h4>
+        <div class="flex items-center gap-4" data-pe-image>
+          <div class="w-24 h-24 shrink-0 rounded-2xl border border-stone-200 bg-stone-100 overflow-hidden flex items-center justify-center text-xs font-bold text-stone-400" data-pe-preview>${p.image ? `<img src="${escapeHtml(previewSrc(p.image))}" alt="" class="w-full h-full object-cover">` : "無圖"}</div>
+          <input type="hidden" data-pe="image" value="${escapeHtml(p.image || "")}">
+          <div class="flex flex-col gap-2">
+            <label class="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-[#5B7290] text-white text-sm font-black cursor-pointer hover:bg-[#3E4F66]"><span data-pe-img-text>${p.image ? "更換照片" : "上傳照片"}</span><input type="file" accept="image/*" class="hidden" onchange="peUploadImage(this)"></label>
+            <button type="button" onclick="peSetImage('')" data-pe-img-remove class="${p.image ? "" : "hidden "}h-10 px-4 rounded-xl border border-stone-200 bg-white text-sm font-black text-stone-500">移除</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="pe-card">
+        <h4 class="pe-title">庫存與限購</h4>
+        <div class="grid grid-cols-3 gap-3">
+          ${peField("庫存", peNum("stock", p.stock, "0"))}
+          ${peField("每筆最少", peNum("min_per_order", p.min_per_order, "不限"))}
+          ${peField("每筆最多", peNum("max_per_order", p.max_per_order, "不限"))}
+        </div>
+        ${peField("配送方式", `<select data-pe="shipping_rule" class="${PE_INPUT}"><option value="all" ${ship === "all" ? "selected" : ""}>自取與宅配</option><option value="pickup" ${ship === "pickup" ? "selected" : ""}>僅自取</option><option value="delivery" ${ship === "delivery" ? "selected" : ""}>僅宅配</option></select>`)}
+      </section>
+
+      <section class="pe-card">
+        <h4 class="pe-title">商品描述</h4>
+        ${peArea("description", p.description, 4)}
+      </section>
+
+      <details class="pe-card pe-details" ${hasLabel ? "" : ""}>
+        <summary class="pe-title flex items-center cursor-pointer list-none"><span class="flex-1">食品標示${hasLabel ? "" : `<span class="ml-2 text-xs font-bold text-stone-400">尚未填寫</span>`}</span><span class="prod-chevron">▾</span></summary>
+        <div class="space-y-3 pt-3">
+          ${peField("成分", peArea("ingredients", p.ingredients, 2))}
+          ${peField("過敏原", peArea("allergens", p.allergens, 2))}
+          ${peField("保存方式", peArea("storage", p.storage, 2))}
+          ${peField("重量", peInput("weight", p.weight, 'placeholder="例：15公克(顆)"'))}
+          ${peField("營養標示", peArea("nutrition", p.nutrition, 4))}
+          ${peField("原產地與製造商", peArea("origin_manufacturer", p.origin_manufacturer, 2))}
+        </div>
+      </details>
+
+      ${isNew ? "" : `<button type="button" onclick="deleteProductFromEditor()" class="w-full h-12 rounded-xl border border-red-200 bg-red-50 text-red-500 font-black hover:bg-red-100">刪除這項商品</button>`}
+    </div>
+  </div>`;
+  document.body.classList.add("prod-editor-open");
+  requestAnimationFrame(() => wrap.classList.add("is-open"));
+  prodState.editorBaseline = JSON.stringify(collectProductEditor());
+  if (isNew) setTimeout(() => wrap.querySelector('[data-pe="name"]')?.focus(), 250);
+}
+
+function collectProductEditor() {
+  const out = {};
+  document.querySelectorAll("#prodEditor [data-pe]").forEach(el => { out[el.dataset.pe] = el.value.toString().trim(); });
+  return out;
+}
+function peToggleDisplay(btn) {
+  const on = !btn.classList.contains("is-on");
+  btn.classList.toggle("is-on", on);
+  document.querySelector('#prodEditor [data-pe="display"]').value = on ? "TRUE" : "FALSE";
+  document.querySelector("#prodEditor [data-pe-display-text]").textContent = on ? "前台看得到" : "前台不顯示";
+}
+function peSetImage(url) {
+  const box = document.querySelector("#prodEditor [data-pe-image]");
+  if (!box) return;
+  box.querySelector('[data-pe="image"]').value = url;
+  box.querySelector("[data-pe-preview]").innerHTML = url ? `<img src="${escapeHtml(previewSrc(url))}" alt="" class="w-full h-full object-cover">` : "無圖";
+  box.querySelector("[data-pe-img-text]").textContent = url ? "更換照片" : "上傳照片";
+  box.querySelector("[data-pe-img-remove]").classList.toggle("hidden", !url);
+}
+async function peUploadImage(fileInput) {
+  const file = fileInput.files && fileInput.files[0]; fileInput.value = "";
+  if (!file) return;
+  const url = await withUploadToast("照片上傳中...", () => uploadImageToGithub(file, 1200));
+  if (!url) return;
+  peSetImage(url);
+  showAdminToast("照片已上傳，按「儲存」後生效", "success", 3200);
+}
+
+function closeProductEditor(force) {
+  const wrap = document.getElementById("prodEditor");
+  if (!wrap || !wrap.classList.contains("is-open")) return;
+  if (!force && JSON.stringify(collectProductEditor()) !== prodState.editorBaseline) {
+    showAdminConfirm("這項商品有修改還沒儲存，確定要離開嗎？", () => closeProductEditor(true), "放棄修改？");
+    return;
+  }
+  wrap.classList.remove("is-open");
+  document.body.classList.remove("prod-editor-open");
+  prodState.editing = null;
+  setTimeout(() => { if (!wrap.classList.contains("is-open")) wrap.innerHTML = ""; }, 260);
+}
+
+async function saveProductEditor(btn) {
+  const data = collectProductEditor();
+  if (!data.name) { showAdminToast("請填寫商品名稱", "error"); document.querySelector('#prodEditor [data-pe="name"]')?.focus(); return; }
+  const min = Number(data.min_per_order), max = Number(data.max_per_order);
+  if (min > 0 && max > 0 && min > max) { showAdminToast("每筆最少不能大於每筆最多", "error"); return; }
+  const target = prodState.editing;
+  const originalName = target ? (target.name || "") : "";
+  const products = adminData.products || (adminData.products = []);
+  if (products.some(p => p.name === data.name && p !== target)) { showAdminToast(`已經有同名的商品「${data.name}」`, "error", 3600); return; }
+  if (!target) {
+    const same = products.filter(p => prodCatKey(p.type) === prodCatKey(data.type));
+    data.sort = String((same.reduce((m, p) => Math.max(m, prodSortNum(p) === 99999 ? 0 : prodSortNum(p)), 0)) + 10);
+  }
+  const restore = setButtonLoading(btn, "儲存中...");
+  try {
+    await prodPost({ action: "adminSaveProduct", originalName, fillBlank: !!target && !originalName, product: data });
+    if (target) Object.assign(target, data);
+    else products.push(data);
+    if (prodState.collapsed.has(prodCatKey(data.type))) prodState.collapsed.delete(prodCatKey(data.type));
+    closeProductEditor(true);
+    renderProducts();
+    showAdminToast(`已儲存「${data.name}」`, "success");
+    const row = document.querySelector(`.prod-row[data-prod-idx="${(target || data).__i}"]`);
+    if (row) { row.scrollIntoView({ block: "center", behavior: "smooth" }); row.classList.add("is-moved"); setTimeout(() => row.classList.remove("is-moved"), 900); }
+  } catch (err) {
+    if (restore) restore();
+    showAdminToast("儲存失敗：" + err.message, "error", 4800);
+  }
+}
+
+function deleteProductFromEditor() {
+  const target = prodState.editing;
+  if (!target) return;
+  const name = target.name || "";
+  showAdminConfirm(`確定要刪除「${name || "未命名商品"}」嗎？刪除後無法復原（只想暫時不賣，可以改成下架）。`, async () => {
+    const t = showAdminToast("刪除中...", "loading", 0);
+    try {
+      await prodPost({ action: "adminDeleteProduct", name });
+      adminData.products = (adminData.products || []).filter(p => p !== target);
+      removeAdminToast(t);
+      closeProductEditor(true);
+      renderProducts();
+      showAdminToast(`已刪除「${name || "未命名商品"}」`, "success");
+    } catch (err) {
+      removeAdminToast(t);
+      showAdminToast("刪除失敗：" + err.message, "error", 4800);
+    }
+  }, "刪除商品");
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape" && document.getElementById("adminConfirmModal")?.classList.contains("hidden")) closeProductEditor(); });
 function renderPackaging() {
   renderEditableTable("packaging", "Packaging", ["name","name_en","extra_price","box_size","type","display","sort"], ["包裝名稱","英文名稱","加價","容量","類型","上架狀態","排序"], adminData.packaging || []);
 }
