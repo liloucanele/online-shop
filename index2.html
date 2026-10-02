@@ -594,6 +594,25 @@
             .product-category-heading { margin-top: 22px; }
             .product-category-heading .zh { font-size: 19px; }
         }
+        /* ===== 生日蛋糕客製選單 ===== */
+        .cake-step-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
+        .cake-step-title .no { font-size: 13px; font-weight: 900; color: #5B7290; letter-spacing: .06em; }
+        .cake-step-title .zh { font-size: 16px; font-weight: 900; color: #1c1917; }
+        .cake-step-title .en { font-size: 12px; font-weight: 600; color: #a8a29e; letter-spacing: .04em; }
+        .cake-step-title .rule { font-size: 12px; font-weight: 700; color: #78716c; width: 100%; }
+        .cake-choice { width: 100%; text-align: left; border: 1.5px solid #e7e5e4; background: #fff; border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; transition: border-color .15s, background .15s; cursor: pointer; }
+        .cake-choice:hover { border-color: #d6d3d1; }
+        .cake-choice.is-on { border-color: #5B7290; background: #f3f6fa; box-shadow: 0 0 0 1px #5B7290 inset; }
+        .cake-choice .dot { width: 20px; height: 20px; border-radius: 999px; border: 1.5px solid #d6d3d1; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .cake-choice.is-on .dot { border-color: #5B7290; background: #5B7290; box-shadow: inset 0 0 0 4px #fff; }
+        .cake-choice .check { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid #d6d3d1; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 900; }
+        .cake-choice.is-on .check { background: #5B7290; border-color: #5B7290; }
+        .cake-price { font-size: 13px; font-weight: 900; color: #5B7290; white-space: nowrap; }
+        .cake-select { width: 100%; height: 48px; border: 1.5px solid #e7e5e4; border-radius: 14px; background: #fff; padding: 0 12px; font-size: 15px; font-weight: 700; color: #1c1917; }
+        .cake-qty { display: flex; align-items: center; gap: 4px; background: #f5f5f4; border: 1px solid #e7e5e4; border-radius: 12px; padding: 3px; }
+        .cake-qty button { width: 34px; height: 34px; border-radius: 9px; background: #fff; border: 1px solid #e7e5e4; font-weight: 900; color: #57534e; }
+        .cake-qty input { width: 44px; height: 34px; text-align: center; font-size: 16px; font-weight: 900; background: transparent; border: 0; }
+
         /* ===== 分類選單 G 樣式：電腦版左側直式選單、手機版上方白色橫滑帶 ===== */
         .product-tab-button { border: 0; background: transparent; }
         .product-tab-button:hover { background: #f5f5f4; }
@@ -870,6 +889,8 @@
                             </button>
                         </div>
                     </section>
+
+                    <section id="cakeSection" class="product-tab-panel space-y-5" role="tabpanel" hidden></section>
 
                     <form id="orderForm" class="hidden bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-6 md:space-y-8" onsubmit="handleOrderSubmit(event)" onkeypress="return preventEnterSubmit(event)">
                         <div id="cartSectionAnchor" class="space-y-4 scroll-mt-20">
@@ -1673,9 +1694,20 @@
             const open = (openDates || []).map(lilouNormalizeDateForCompare).filter(Boolean);
             const withRules = cats.map(c => ({ c, r: lilouParseDateRule(c[kind + '_date_rule']) }));
             const inRange = open.filter(d => d >= from && d <= to);
-            const dates = inRange.filter(d => withRules.every(x => !x.r || x.r.some(r => d >= r[0] && d <= r[1])));
-            const blockedBy = dates.length ? [] : cats.filter(c => lilouParseDateRule(c[kind + '_date_rule']) || lilouRuleNum(c[kind + '_min_days']) !== null || lilouRuleNum(c[kind + '_max_days']) !== null).map(c => c.name);
-            return { dates, blockedBy };
+            const ruled = inRange.filter(d => withRules.every(x => !x.r || x.r.some(r => d >= r[0] && d <= r[1])));
+            // 每日限量（分類共用）：已被訂走 + 購物車內數量 超過上限 → 額滿
+            const limited = cats.filter(c => Number(c.daily_limit) > 0).map(c => {
+                let inCart = 0;
+                cart.forEach(box => (box.flavors || []).forEach(f => { const p = localProducts.find(x => x.name === f.name); if (p && p.type === c.id) inCart += (Number(f.quantity) || 0) * (Number(box.repeatQty) || 1); }));
+                return { c, inCart, limit: Number(c.daily_limit) };
+            });
+            const fullDates = ruled.filter(d => limited.some(x => ((x.c.booked && x.c.booked[d]) || 0) + x.inCart > x.limit));
+            const dates = ruled.filter(d => !fullDates.includes(d));
+            let blockedBy = [];
+            if (!dates.length) {
+                blockedBy = cats.filter(c => lilouParseDateRule(c[kind + '_date_rule']) || lilouRuleNum(c[kind + '_min_days']) !== null || lilouRuleNum(c[kind + '_max_days']) !== null || Number(c.daily_limit) > 0).map(c => lilouSplitCategoryName(c).zh);
+            }
+            return { dates, fullDates, blockedBy };
         }
 
         // 購物車內分類的提醒文字（後台「分類 → date_notice」）
@@ -1716,8 +1748,11 @@
                 else if (result.blockedBy.length === 1) msg = `「${result.blockedBy[0]}」目前沒有可選的${isDelivery ? '到貨' : '自取'}日期`;
                 optionsHtml = `<option value="" disabled selected>-- ${lilouEscapeHtml(msg)} --</option>`;
             } else {
+                const all = result.dates.concat(result.fullDates || []).sort();
                 optionsHtml = `<option value="" disabled ${result.dates.includes(previous) ? '' : 'selected'}>-- 請選擇${textPrompt} --</option>` +
-                    result.dates.map(d => `<option value="${d}" ${d === previous ? 'selected' : ''}>${d}${getWeekdayStr(d)}</option>`).join('');
+                    all.map(d => (result.fullDates || []).includes(d)
+                        ? `<option value="" disabled>${d}${getWeekdayStr(d)}（已額滿）</option>`
+                        : `<option value="${d}" ${d === previous ? 'selected' : ''}>${d}${getWeekdayStr(d)}</option>`).join('');
             }
             dateSelect.innerHTML = optionsHtml;
             renderCategoryDateNotices();
@@ -2012,6 +2047,7 @@
                 .map(normalizePackagingForFrontend)
                 .filter(p => p.name);
             localCoupons = data.coupons || []; 
+            localCakeOptions = Array.isArray(data.cake_options) ? data.cake_options : [];
             
             if(data.settings) {
                 localPickupDates = [];
@@ -2031,6 +2067,7 @@
                     }
                 });
 
+                localSettingsRaw = data.settings || {};
                 localDateSettings = Object.assign({}, LILOU_RULE_DEFAULTS);
                 Object.keys(LILOU_RULE_DEFAULTS).forEach(k => {
                     const v = data.settings[k];
@@ -2081,6 +2118,184 @@
                         <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox(${i})">
                             <img src="${lilouEscapeHtml(url)}" alt="Lilou 實拍 ${i + 1}" class="w-full h-full object-cover transition-transform duration-[0.8s] ease-out group-hover:scale-110" ${i === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">
                         </div>`).join(''));
+        }
+
+        // ===== 生日蛋糕客製選單 =====
+        let localCakeOptions = [];
+        let localSettingsRaw = {};
+        let cakeState = { cake: '', base: '', fill1: '', fill2: '', addons: {}, celebrate: false, slot: '', people: '' };
+
+        function cakeOpts(group) { return localCakeOptions.filter(o => o.group === group); }
+        function cakeOpt(group, name) { return localCakeOptions.find(o => o.group === group && o.name === name); }
+        function resetCakeAddons() {
+            cakeState.addons = {};
+            cakeOpts('addon').forEach(o => { cakeState.addons[o.name] = o.input === 'qty' ? (o.included_qty || 0) : 0; });
+        }
+        function cakeAddonCost(o, qty) {
+            if (o.input === 'qty') return Math.max(0, qty - (o.included_qty || 0)) * o.price;
+            return qty > 0 ? o.price : 0;
+        }
+        function cakeCalc() {
+            const product = localProducts.find(p => p.name === cakeState.cake);
+            const base = cakeOpt('base', cakeState.base), f1 = cakeOpt('filling', cakeState.fill1), f2 = cakeOpt('filling', cakeState.fill2);
+            let extra = (base?.price || 0) + (f1?.price || 0) + (f2?.price || 0);
+            cakeOpts('addon').forEach(o => { extra += cakeAddonCost(o, Number(cakeState.addons[o.name]) || 0); });
+            return { product, base, f1, f2, cakePrice: product ? Number(product.price) || 0 : 0, extra, unit: (product ? Number(product.price) || 0 : 0) + extra };
+        }
+        function cakeOptionText() {
+            const c = cakeCalc();
+            const plus = v => v > 0 ? `＋$${v}` : '';
+            const parts = [];
+            if (c.base) parts.push(`蛋糕體：${c.base.name}${plus(c.base.price)}`);
+            if (c.f1 && c.f2) parts.push(`夾餡：${c.f1.name}${plus(c.f1.price)}＋${c.f2.name}${plus(c.f2.price)}`);
+            const add = cakeOpts('addon').map(o => {
+                const q = Number(cakeState.addons[o.name]) || 0;
+                if (!q) return '';
+                if (o.input === 'qty') {
+                    const over = Math.max(0, q - (o.included_qty || 0));
+                    return `${o.name}×${q}${over ? `（加購 ${over} 組＋$${over * o.price}）` : ''}`;
+                }
+                return `${o.name}${o.max_qty === 1 && /蠟燭/.test(o.name) ? '×1' : ''}${plus(o.price)}`;
+            }).filter(Boolean);
+            if (add.length) parts.push(`配件：${add.join('、')}`);
+            if (cakeState.celebrate) parts.push(`店內慶生：${cakeState.slot}・${cakeState.people} 人`);
+            return parts.join('／');
+        }
+        function cakeStepTitle(no, zh, en, rule) {
+            return `<div class="cake-step-title"><span class="no">${no}</span><span class="zh">${zh}</span><span class="en">${en}</span>${rule ? `<span class="rule">${rule}</span>` : ''}</div>`;
+        }
+        function renderCakeSection() {
+            const sec = document.getElementById('cakeSection');
+            if (!sec) return;
+            const cakes = localProducts.filter(p => p.type === currentCategoryId);
+            if (!cakes.some(p => p.name === cakeState.cake)) cakeState.cake = '';
+            if (!Object.keys(cakeState.addons).length) resetCakeAddons();
+            const c = cakeCalc();
+            const esc = lilouEscapeHtml;
+            const enc = v => encodeURIComponent(v).replace(/'/g, '%27');
+            const priceTag = v => v > 0 ? `<span class="cake-price">+$${v}</span>` : `<span class="cake-price" style="color:#a8a29e">+$0</span>`;
+            const slots = (localSettingsRaw.celebration_time_slots || '14:00,15:00,16:00,17:00').split(/[,，\n]+/).map(x => x.trim()).filter(Boolean);
+            const intro = (localSettingsRaw.cake_intro || '').trim();
+            const notice = (localSettingsRaw.cake_notice || '').trim();
+            const outro = (localSettingsRaw.cake_outro || '').trim();
+            const fillingOptions = sel => `<option value="" ${!sel ? 'selected' : ''} disabled>請選擇夾餡</option>` + cakeOpts('filling').map(o => `<option value="${esc(o.name)}" ${o.name === sel ? 'selected' : ''}>${esc(o.name)} ${esc(o.name_en)}${o.price ? `（+$${o.price}）` : ''}</option>`).join('');
+
+            sec.innerHTML = `
+                ${intro ? `<p class="text-sm md:text-base text-stone-600 font-bold leading-relaxed">${esc(intro)}</p>` : ''}
+                <div class="space-y-3">
+                    ${cakeStepTitle('', '選擇蛋糕', 'Cakes', '')}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        ${cakes.map(p => `<button type="button" class="cake-choice ${p.name === cakeState.cake ? 'is-on' : ''}" onclick="cakePick('cake', '${enc(p.name)}')">
+                            ${p.image ? `<img src="${esc(p.image)}" alt="" class="w-14 h-14 rounded-xl object-cover shrink-0" loading="lazy">` : '<span class="dot"></span>'}
+                            <span class="flex-1 min-w-0"><span class="block font-black text-stone-900 text-[15px]">${esc(p.name)}</span>${p.name_en ? `<span class="block text-xs font-semibold text-stone-400">${esc(p.name_en)}</span>` : ''}</span>
+                            <span class="font-black text-[#5B7290]">$${Number(p.price || 0).toLocaleString('zh-TW')}</span>
+                        </button>`).join('') || '<div class="text-sm text-stone-400 font-bold py-4">目前沒有可預訂的蛋糕。</div>'}
+                    </div>
+                </div>
+
+                <div class="space-y-3 ${cakeState.cake ? '' : 'opacity-40 pointer-events-none'}">
+                    ${cakeStepTitle('01', '蛋糕體', 'Cake Base', '請選擇 1 款')}
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        ${cakeOpts('base').map(o => `<button type="button" class="cake-choice ${o.name === cakeState.base ? 'is-on' : ''}" onclick="cakePick('base', '${enc(o.name)}')"><span class="dot"></span><span class="flex-1 min-w-0"><span class="block font-black text-[15px]">${esc(o.name)}</span><span class="block text-xs font-semibold text-stone-400">${esc(o.name_en)}</span></span>${priceTag(o.price)}</button>`).join('')}
+                    </div>
+                </div>
+
+                <div class="space-y-3 ${cakeState.cake ? '' : 'opacity-40 pointer-events-none'}">
+                    ${cakeStepTitle('02', '夾餡', 'Filling', '請選擇 2 款（可重複）')}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <label class="block"><span class="block text-xs font-black text-stone-500 mb-1">第 1 款</span><select class="cake-select" onchange="cakePick('fill1', encodeURIComponent(this.value))">${fillingOptions(cakeState.fill1)}</select></label>
+                        <label class="block"><span class="block text-xs font-black text-stone-500 mb-1">第 2 款</span><select class="cake-select" onchange="cakePick('fill2', encodeURIComponent(this.value))">${fillingOptions(cakeState.fill2)}</select></label>
+                    </div>
+                </div>
+
+                <div class="space-y-3 ${cakeState.cake ? '' : 'opacity-40 pointer-events-none'}">
+                    ${cakeStepTitle('03', '生日配件與加購', 'Add-ons', '')}
+                    <div class="space-y-2.5">
+                        ${cakeOpts('addon').map(o => {
+                            const q = Number(cakeState.addons[o.name]) || 0;
+                            if (o.input === 'qty') {
+                                const over = Math.max(0, q - (o.included_qty || 0));
+                                return `<div class="cake-choice is-static" style="cursor:default">
+                                    <span class="flex-1 min-w-0"><span class="block font-black text-[15px]">${esc(o.name)}</span><span class="block text-xs font-semibold text-stone-400">${esc(o.name_en)}</span>
+                                    <span class="block text-xs font-bold text-stone-500 mt-1">已附 ${o.included_qty} 組，超過每組 +$${o.price}${over ? `　<span class="text-[#5B7290]">目前加購 ${over} 組 +$${over * o.price}</span>` : ''}</span></span>
+                                    <span class="cake-qty no-zoom-area"><button type="button" onclick="cakeSetQty('${enc(o.name)}', ${q - 1})" aria-label="減少">—</button><input type="number" min="0" ${o.max_qty ? `max="${o.max_qty}"` : ''} value="${q}" inputmode="numeric" onchange="cakeSetQty('${enc(o.name)}', this.value)" aria-label="${esc(o.name)}數量"><button type="button" onclick="cakeSetQty('${enc(o.name)}', ${q + 1})" aria-label="增加">＋</button></span>
+                                </div>`;
+                            }
+                            const limitTxt = o.max_qty === 1 && /蠟燭/.test(o.name) ? '（單支）' : '';
+                            return `<button type="button" class="cake-choice ${q ? 'is-on' : ''}" onclick="cakeToggleAddon('${enc(o.name)}')"><span class="check">✓</span><span class="flex-1 min-w-0"><span class="block font-black text-[15px]">${esc(o.name)}${limitTxt}</span><span class="block text-xs font-semibold text-stone-400">${esc(o.name_en)}</span></span>${priceTag(o.price)}</button>`;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <div class="space-y-3 ${cakeState.cake ? '' : 'opacity-40 pointer-events-none'}">
+                    <button type="button" class="cake-choice ${cakeState.celebrate ? 'is-on' : ''}" onclick="cakeToggleCelebrate()"><span class="check">✓</span><span class="flex-1 min-w-0"><span class="block font-black text-[15px]">預約店內慶生</span><span class="block text-xs font-semibold text-stone-500">招待當月壽星飲品 1 杯・限門市自取</span></span></button>
+                    ${cakeState.celebrate ? `<div class="grid grid-cols-2 gap-2.5">
+                        <label class="block"><span class="block text-xs font-black text-stone-500 mb-1">預計到店時段</span><select class="cake-select" onchange="cakePick('slot', encodeURIComponent(this.value))"><option value="" disabled ${cakeState.slot ? '' : 'selected'}>請選擇</option>${slots.map(t => `<option ${t === cakeState.slot ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
+                        <label class="block"><span class="block text-xs font-black text-stone-500 mb-1">人數</span><input type="number" min="1" max="50" inputmode="numeric" class="cake-select" value="${esc(cakeState.people)}" oninput="cakeState.people = this.value" placeholder="例：4"></label>
+                    </div>` : ''}
+                </div>
+
+                ${notice ? `<div class="rounded-2xl bg-stone-50 border border-stone-200 p-4 space-y-2">
+                    <div class="text-sm font-black text-stone-800">訂購須知 <span class="text-xs font-semibold text-stone-400 ml-1">Please Note</span></div>
+                    <ul class="space-y-1.5 text-xs md:text-sm text-stone-600 leading-relaxed">${notice.split(/\n+/).filter(Boolean).map(l => `<li class="flex gap-2"><span class="mt-[0.55em] w-1.5 h-1.5 rounded-full bg-[#5B7290] shrink-0"></span><span>${esc(l)}</span></li>`).join('')}</ul>
+                    ${outro ? `<p class="text-xs md:text-sm text-stone-500 pt-1">${esc(outro)}</p>` : ''}
+                </div>` : ''}
+
+                <div class="rounded-2xl bg-white border border-stone-200 p-4 flex items-center gap-3">
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-stone-500">${c.product ? `蛋糕 $${c.cakePrice}${c.extra ? `＋選項 $${c.extra}` : ''}` : '請先選擇蛋糕'}</div>
+                        <div class="text-2xl font-black text-stone-900">$${c.unit.toLocaleString('zh-TW')}</div>
+                    </div>
+                    <button type="button" onclick="cakeAddToCart()" class="h-12 px-6 rounded-xl bg-[#5B7290] hover:bg-[#3E4F66] text-white font-black tracking-widest text-sm md:text-base">加入購物車</button>
+                </div>`;
+        }
+        window.cakePick = function(field, value) {
+            cakeState[field] = decodeURIComponent(value);
+            if (field === 'cake' && !Object.keys(cakeState.addons).length) resetCakeAddons();
+            renderCakeSection();
+        }
+        window.cakeToggleAddon = function(name) {
+            name = decodeURIComponent(name);
+            cakeState.addons[name] = cakeState.addons[name] ? 0 : 1;
+            renderCakeSection();
+        }
+        window.cakeSetQty = function(name, value) {
+            name = decodeURIComponent(name);
+            const o = cakeOpt('addon', name);
+            let q = Math.max(0, parseInt(value, 10) || 0);
+            if (o && o.max_qty) q = Math.min(q, o.max_qty);
+            cakeState.addons[name] = q;
+            renderCakeSection();
+        }
+        window.cakeToggleCelebrate = function() {
+            cakeState.celebrate = !cakeState.celebrate;
+            renderCakeSection();
+        }
+        window.cakeAddToCart = function() {
+            const c = cakeCalc();
+            if (!c.product) { showToastNotification('⚠️ 請先選擇蛋糕'); return; }
+            if (!c.base) { showToastNotification('⚠️ 請選擇 1 款蛋糕體'); return; }
+            if (!c.f1 || !c.f2) { showToastNotification('⚠️ 請選擇 2 款夾餡'); return; }
+            if (cakeState.celebrate && (!cakeState.slot || !(Number(cakeState.people) > 0))) { showToastNotification('⚠️ 預約店內慶生請選擇到店時段並填寫人數'); return; }
+            const flags = getCartShippingFlags();
+            const rule = normalizeShippingRuleForFrontend(c.product.shipping_rule || 'all');
+            if ((flags.hasPickupOnly && rule === 'delivery') || (flags.hasDeliveryOnly && rule === 'pickup')) { showToastNotification('⚠️ 購物車同時包含僅門市自取與僅宅配商品，請分開下單。'); return; }
+            const cat = localCategories.find(x => x.id === c.product.type);
+            cart.push({
+                itemType: 'cake',
+                boxName: cat ? lilouSplitCategoryName(cat).zh : '生日蛋糕',
+                boxExtra: 0, repeatQty: 1,
+                flavors: [{ name: c.product.name, price: c.unit, quantity: 1, shipping_rule: rule }],
+                flavorsCost: c.unit, totalQty: 1, singleBoxQty: 1, boxTotalCost: c.unit, singleBoxCost: c.unit,
+                optionText: cakeOptionText(),
+                cakeOptions: JSON.parse(JSON.stringify(cakeState))
+            });
+            cakeState = { cake: '', base: '', fill1: '', fill2: '', addons: {}, celebrate: false, slot: '', people: '' };
+            resetCakeAddons();
+            renderCakeSection();
+            renderCart();
+            scheduleLilouDraftSave();
+            showToastNotification(`已加入購物車：${c.product.name}`);
         }
 
         function getCategoryBehavior(categoryId) {
@@ -2156,8 +2371,14 @@
 
             const canelePanel = document.getElementById('customBoxSection');
             const limitedPanel = document.getElementById('limitedProductSection');
+            const cakePanel = document.getElementById('cakeSection');
+            if (cakePanel) cakePanel.hidden = cat.behavior !== 'cake';
 
-            if (cat.behavior === 'combo') {
+            if (cat.behavior === 'cake') {
+                if (canelePanel) canelePanel.hidden = true;
+                if (limitedPanel) limitedPanel.hidden = true;
+                renderCakeSection();
+            } else if (cat.behavior === 'combo') {
                 if (canelePanel) canelePanel.hidden = false;
                 if (limitedPanel) limitedPanel.hidden = true;
                 
@@ -2905,6 +3126,7 @@
                         <div class="flex-1 min-w-0 space-y-0.5">
                             <div class="font-extrabold text-sm md:text-base text-stone-900 tracking-wide">${lilouEscapeHtml(box.boxName)}</div>
                             <div class="text-xs md:text-sm text-[#5B7290] font-bold leading-relaxed break-words">${flavorDetailHtml}</div>
+                            ${box.optionText ? `<div class="text-xs md:text-sm text-stone-500 font-semibold leading-relaxed break-words space-y-0.5 pt-1">${box.optionText.split('／').map(t => `<div>${lilouEscapeHtml(t)}</div>`).join('')}</div>` : ''}
                         </div>
                         <button type="button" onclick="removeFromCart(${i})" aria-label="刪除 ${lilouEscapeHtml(box.boxName)}" class="bg-stone-100 text-stone-400 p-1.5 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center font-bold text-xs md:text-sm cursor-pointer shrink-0">✕</button>
                     </div>
@@ -2993,6 +3215,7 @@
                     group: `第${index + 1}組｜${box.boxName}${repeatLabel}`,
                     packageName: box.boxName,
                     repeatQty: repeatQty,
+                    options: box.optionText || "",
                     items: (box.flavors || []).map(f => {
                         const qty = (Number(f.quantity) || 0) * repeatQty;
                         const price = Number(f.price) || 0;
@@ -3268,7 +3491,7 @@
                     const displayQty = f.quantity * repeatQty;
                     return repeatQty > 1 ? `${f.name}(${displayQty}個：${f.quantity}個×${repeatQty}組)` : `${f.name}(${f.quantity}個)`;
                 }).join('、'); 
-                return `【第${i+1}組: ${box.boxName}${repeatLabel}】${flavorsStr}`; 
+                return `【第${i+1}組: ${box.boxName}${repeatLabel}】${flavorsStr}${box.optionText ? `［${box.optionText}］` : ''}`; 
             }).join(' ｜ ');
             const orderPackSummary = cart.map((box, i) => {
                 const repeatQty = box.repeatQty || 1;
@@ -3317,7 +3540,7 @@
                             const displayQty = f.quantity * repeatQty;
                             return repeatQty > 1 ? `${f.name} x ${displayQty}個（${f.quantity}個 × ${repeatQty}組）` : `${f.name} x ${f.quantity}個`;
                         }).join('、');
-                        return `<div>組合 ${idx + 1} [${box.boxName}${repeatLabel}]：${flavorText}</div>`;
+                        return `<div>組合 ${idx + 1} [${box.boxName}${repeatLabel}]：${flavorText}${box.optionText ? `<div class="text-xs text-stone-500 pl-2">${lilouEscapeHtml(box.optionText)}</div>` : ''}</div>`;
                     }).join('');
                     
                     document.getElementById('receiptContent').innerHTML = `
