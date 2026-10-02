@@ -420,7 +420,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.4.0</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.6.0</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -452,6 +452,7 @@
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="coupons" onclick="switchTab('coupons')">優惠券<span class="unsaved-dot"></span></button>
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="settings" onclick="switchTab('settings')">設定<span class="unsaved-dot"></span></button>
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="pages" onclick="switchTab('pages')">頁面<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="cakeoptions" onclick="switchTab('cakeoptions')">蛋糕選項<span class="unsaved-dot"></span></button>
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="revenue" onclick="switchTab('revenue')">分潤統計<span class="unsaved-dot"></span></button>
     </div>
   </div>
@@ -466,6 +467,7 @@
 <section class="tab-page hidden space-y-5" id="tab-settings"></section>
 <section class="tab-page hidden space-y-5" id="tab-revenue"></section>
 <section class="tab-page hidden space-y-5" id="tab-pages"></section>
+<section class="tab-page hidden space-y-5" id="tab-cakeoptions"></section>
 </section>
 </main>
 
@@ -721,6 +723,7 @@ function renderAll() {
   renderSettings();
   renderRevenueShare();
   renderPagesEditor(true);
+  renderCakeOptions();
   switchTab(currentTab);
 }
 
@@ -2049,13 +2052,16 @@ function cancelOrderEdit(orderId) {
 }
 
 function renderCategories() {
-  renderEditableTable("categories", "Categories 分類管理", ["id","name","name_en","behavior","display","sort","pickup_min_days","pickup_max_days","delivery_min_days","delivery_max_days","pickup_date_rule","delivery_date_rule","date_notice"], ["系統ID","頁籤名稱","英文名稱","選購模式(combo包裝/single單品)","顯示","排序","自取最早 D+","自取最晚 D+","宅配最早 D+","宅配最晚 D+","自取開放期間","宅配開放期間","給客人的日期提醒"], adminData.categories || []);
+  renderEditableTable("categories", "Categories 分類管理", ["id","name","name_en","behavior","display","sort","daily_limit","pickup_min_days","pickup_max_days","delivery_min_days","delivery_max_days","pickup_date_rule","delivery_date_rule","date_notice"], ["系統ID","頁籤名稱","英文名稱","選購模式","顯示","排序","每日限量（分類共用）","自取最早 D+","自取最晚 D+","宅配最早 D+","宅配最晚 D+","自取開放期間","宅配開放期間","給客人的日期提醒"], adminData.categories || []);
 }
 function renderProducts() {
   renderEditableTable("products", "Products", ["name","name_en","image","price","stock","min_per_order","max_per_order","type","display","shipping_rule","sort","description","ingredients","allergens","storage","weight","nutrition","origin_manufacturer"], ["商品名稱","英文名稱","商品照片","價格","庫存","每筆最少","每筆最多","類型","上架狀態","配送","排序","商品描述","成分","過敏原","保存方式","重量","營養標示","原產地與製造商"], adminData.products || []);
 }
 function renderPackaging() {
   renderEditableTable("packaging", "Packaging", ["name","name_en","extra_price","box_size","type","display","sort"], ["包裝名稱","英文名稱","加價","容量","類型","上架狀態","排序"], adminData.packaging || []);
+}
+function renderCakeOptions() {
+  renderEditableTable("cakeoptions", "Cake_Options", ["group","name","name_en","price","input","included_qty","max_qty","display","sort"], ["項目","名稱","英文名稱","加價","選法","附贈數量","數量上限","顯示","排序"], adminData.cakeOptions || []);
 }
 function renderCoupons() {
   renderEditableTable("coupons", "Coupons", ["code","type","value","min_spend","start_date","end_date"], ["折扣碼","類型","折扣值","低消","開始日","結束日"], adminData.coupons || []);
@@ -2661,6 +2667,18 @@ function renderSettings() {
            </div>
         </div>
       </div>
+      <!-- 生日蛋糕文字 -->
+      <div class="border-t border-stone-100 pt-6 mt-6">
+        <h3 class="text-lg font-black text-stone-800 mb-1">生日蛋糕頁文字</h3>
+        <p class="text-sm text-stone-500 mb-4">蛋糕、夾餡、配件的品項與加價，在「蛋糕選項」分頁設定；每日限量在「分類」的生日蛋糕那一列設定。</p>
+        <div class="grid grid-cols-1 gap-3 bg-stone-50 rounded-2xl p-4 border border-stone-200">
+          <label class="block"><span class="text-[11px] font-black text-stone-500 block mb-1.5">開頭一句話</span><input id="cake_intro" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white" value="${escapeHtml(getSettingsVal("cake_intro", ""))}" oninput="markUnsaved('settings');"></label>
+          <label class="block"><span class="text-[11px] font-black text-stone-500 block mb-1.5">訂購須知（一行一點）</span><textarea id="cake_notice" rows="4" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-white leading-relaxed" oninput="markUnsaved('settings');">${escapeHtml(getSettingsVal("cake_notice", ""))}</textarea></label>
+          <label class="block"><span class="text-[11px] font-black text-stone-500 block mb-1.5">結尾一句話</span><input id="cake_outro" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white" value="${escapeHtml(getSettingsVal("cake_outro", ""))}" oninput="markUnsaved('settings');"></label>
+          <label class="block"><span class="text-[11px] font-black text-stone-500 block mb-1.5">店內慶生可選時段（逗號分隔）</span><input id="celebration_time_slots" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white" value="${escapeHtml(getSettingsVal("celebration_time_slots", "14:00,15:00,16:00,17:00"))}" oninput="markUnsaved('settings');"></label>
+        </div>
+      </div>
+
       <!-- 首頁小圖輪播 -->
       <div class="border-t border-stone-100 pt-6 mt-6">
         <h3 class="text-lg font-black text-stone-800 mb-1">首頁小圖輪播</h3>
@@ -2707,7 +2725,7 @@ function saveSettingsTab(btn) {
     });
 
     // 3. 覆寫活動宣傳設定
-    const promoKeys = ["promo_enabled", "promo_eyebrow", "promo_title", "promo_desc", "promo_btn_text", "promo_btn_link", "promo_image", "gallery_images"];
+    const promoKeys = ["promo_enabled", "promo_eyebrow", "promo_title", "promo_desc", "promo_btn_text", "promo_btn_link", "promo_image", "gallery_images", "cake_intro", "cake_notice", "cake_outro", "celebration_time_slots"];
     promoKeys.forEach(k => {
        const el = document.getElementById(k);
        if (el) currentSettingsMap[k] = el.value.trim();
@@ -2937,6 +2955,7 @@ function getEditableTableMinWidth(tab) {
   if (tab === "products") return "min-w-[3280px]";
   if (tab === "packaging") return "min-w-[1020px]";
   if (tab === "coupons") return "min-w-[980px]";
+  if (tab === "cakeoptions") return "min-w-[1180px]";
   return "min-w-[720px]";
 }
 
@@ -2945,6 +2964,7 @@ function getEditableTableColgroup(tab, keys) {
     categories: { id: "120px", name: "180px", name_en: "170px", behavior: "210px", display: "82px", sort: "70px", pickup_min_days: "90px", pickup_max_days: "90px", delivery_min_days: "90px", delivery_max_days: "90px", pickup_date_rule: "230px", delivery_date_rule: "230px", date_notice: "260px" },
     products: { name: "190px", name_en: "180px", image: "250px", min_per_order: "80px", max_per_order: "80px", price: "70px", stock: "70px", type: "105px", display: "82px", shipping_rule: "112px", sort: "60px", description: "300px", ingredients: "330px", allergens: "300px", storage: "300px", weight: "80px", nutrition: "380px", origin_manufacturer: "320px" },
     packaging: { name: "280px", name_en: "180px", extra_price: "85px", box_size: "80px", type: "115px", display: "82px", sort: "70px" },
+    cakeoptions: { group: "200px", name: "170px", name_en: "170px", price: "90px", input: "220px", included_qty: "90px", max_qty: "90px", display: "82px", sort: "70px" },
     coupons: { code: "34%", type: "160px", value: "110px", min_spend: "110px", start_date: "150px", end_date: "150px" }
   };
   return `<colgroup>${keys.map(key => `<col style="width:${widthMap[tab]?.[key] || '160px'}">`).join("")}<col style="width:56px"></colgroup>`;
@@ -2984,7 +3004,8 @@ const ADMIN_MOBILE_SUMMARY_KEYS = {
   categories: ["id", "name", "behavior"],
   products: ["name", "price", "stock"],
   packaging: ["name"],
-  coupons: ["code", "type", "value"]
+  coupons: ["code", "type", "value"],
+  cakeoptions: ["name", "group", "price"]
 };
 
 function editRowHtml(tab, keys, row = {}, textareaLong = false, labels = []) {
@@ -3000,13 +3021,19 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false, labels = []) {
       field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50">${getCategoryOptionsHtml(val)}</select>`;
     } else if (tab === "categories" && key === "behavior") {
       const cleanVal = (val || "combo").toString().trim().toLowerCase();
-      field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50"><option value="combo" ${cleanVal === "combo" ? "selected" : ""}>需選包裝與口味 (combo)</option><option value="single" ${cleanVal === "single" ? "selected" : ""}>直接加入購物車 (single)</option></select>`;
-    } else if ((tab === "products" || tab === "packaging" || tab === "categories") && key === "display") {
+      field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50"><option value="combo" ${cleanVal === "combo" ? "selected" : ""}>需選包裝與口味 (combo)</option><option value="single" ${cleanVal === "single" ? "selected" : ""}>直接加入購物車 (single)</option><option value="cake" ${cleanVal === "cake" ? "selected" : ""}>生日蛋糕客製 (cake)</option></select>`;
+    } else if (tab === "cakeoptions" && key === "group") {
+      const v = (val || "addon").toString().trim().toLowerCase();
+      field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50"><option value="base" ${v === "base" ? "selected" : ""}>01 蛋糕體（選 1）</option><option value="filling" ${v === "filling" ? "selected" : ""}>02 夾餡（選 2）</option><option value="addon" ${v === "addon" ? "selected" : ""}>03 配件與加購</option></select>`;
+    } else if (tab === "cakeoptions" && key === "input") {
+      const v = (val || "check").toString().trim().toLowerCase();
+      field = `<select data-key="${key}" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50"><option value="check" ${v !== "qty" ? "selected" : ""}>勾選（配件用）</option><option value="qty" ${v === "qty" ? "selected" : ""}>填數量（超過附贈才加價）</option></select>`;
+    } else if ((tab === "products" || tab === "packaging" || tab === "categories" || tab === "cakeoptions") && key === "display") {
       const on = isDisplayOn(val === undefined || val === "" ? "TRUE" : val);
       field = `${renderDisplaySwitch(on)}<input type="hidden" data-key="${key}" value="${on ? "TRUE" : "FALSE"}">`;
     } else if (tab === "products" && key === "image") {
       field = productImageFieldHtml(val);
-    } else if ((tab === "products" && (key === "min_per_order" || key === "max_per_order")) || (tab === "categories" && /_(min|max)_days$/.test(key))) {
+    } else if ((tab === "products" && (key === "min_per_order" || key === "max_per_order")) || (tab === "categories" && (/_(min|max)_days$/.test(key) || key === "daily_limit")) || (tab === "cakeoptions" && ["price","included_qty","max_qty"].includes(key))) {
       field = `<input data-key="${key}" type="number" min="0" inputmode="numeric" placeholder="不限" class="w-full h-10 rounded-xl border border-stone-200 px-3 bg-stone-50" value="${escapeHtml(val)}">`;
     } else if (tab === "categories" && (key === "pickup_date_rule" || key === "delivery_date_rule" || key === "date_notice")) {
       const ph = key === "date_notice" ? "例：中秋禮盒自取至 9/27、宅配至 9/20" : "例：2026/09/11~2026/09/27（留空＝不限）";
