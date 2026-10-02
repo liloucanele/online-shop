@@ -269,6 +269,18 @@
     table[data-edit-table="categories"] .admin-switch { margin-left: auto; margin-right: auto; }
 
     /* 日期設定專用 Scrollbar */
+    /* 電腦版表格：一定看得到的橫向捲軸、表頭與第一欄固定 */
+    @media (min-width: 768px) {
+      .admin-table-scroll { overflow: auto; scrollbar-width: auto; scrollbar-color: #a8a29e #f5f5f4; }
+      .admin-table-scroll::-webkit-scrollbar { height: 14px; width: 10px; }
+      .admin-table-scroll::-webkit-scrollbar-track { background: #f5f5f4; border-radius: 8px; }
+      .admin-table-scroll::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 8px; border: 3px solid #f5f5f4; }
+      .admin-table-scroll::-webkit-scrollbar-thumb:hover { background: #78716c; }
+      .admin-table-scroll table[data-edit-table] thead th { position: sticky; top: 0; z-index: 3; background: #fff; }
+      .admin-table-scroll table[data-edit-table] tbody td:first-child { position: sticky; left: 0; z-index: 2; background: #fff; box-shadow: 6px 0 8px -6px rgba(0,0,0,0.12); }
+      .admin-table-scroll table[data-edit-table] thead th:first-child { left: 0; z-index: 4; box-shadow: 6px 0 8px -6px rgba(0,0,0,0.12); }
+      .admin-table-scroll table[data-edit-table] tbody tr.is-inactive td:first-child { background: #fafaf9; }
+    }
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #d6d3d1; border-radius: 10px; }
@@ -2125,7 +2137,12 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
           </div>
         </div>
       </div>
-      <div class="overflow-x-auto max-h-[70vh]">
+      <div class="hidden md:flex items-center justify-end gap-2 -mb-1 text-xs font-bold text-stone-400">
+        <span>欄位很多，可用下方捲軸、按住 Shift 滾動滑鼠，或按右側按鈕左右移動</span>
+        <button type="button" onclick="scrollAdminTable('${tab}', -1)" aria-label="向左" class="w-9 h-9 rounded-lg border border-stone-200 bg-white text-stone-600 font-black hover:bg-stone-50">‹</button>
+        <button type="button" onclick="scrollAdminTable('${tab}', 1)" aria-label="向右" class="w-9 h-9 rounded-lg border border-stone-200 bg-white text-stone-600 font-black hover:bg-stone-50">›</button>
+      </div>
+      <div class="overflow-x-auto max-h-[70vh] admin-table-scroll" data-table-scroll="${tab}">
         <table class="w-full text-sm table-fixed ${getEditableTableMinWidth(tab)}" data-edit-table="${tab}" data-keys="${keys.join(",")}" data-labels="${labels.join(",")}">
           ${getEditableTableColgroup(tab, keys)}
           <thead><tr class="text-left text-xs tracking-widest text-stone-400">${labels.map(l => `<th class="px-2 py-2 whitespace-nowrap bg-white">${l}</th>`).join("")}<th class="px-1 py-2 bg-white"></th></tr></thead>
@@ -2142,6 +2159,11 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
 }
 
 const DATE_RULE_SETTING_LABELS = { pickup_min_days: "自取最早 D+", pickup_max_days: "自取最晚 D+", delivery_min_days: "宅配最早 D+", delivery_max_days: "宅配最晚 D+", order_cutoff_time: "下單截止時間" };
+function scrollAdminTable(tab, dir) {
+  const box = document.querySelector(`[data-table-scroll="${tab}"]`);
+  if (box) box.scrollBy({ left: dir * Math.max(320, box.clientWidth * 0.6), behavior: "smooth" });
+}
+
 function settingDisplayName(name) {
   const key = (name || "").toString().trim().toLowerCase();
   if (DATE_RULE_SETTING_LABELS[key]) return DATE_RULE_SETTING_LABELS[key];
@@ -2333,6 +2355,7 @@ function renderSettings() {
   const promo_image = getSettingsVal("promo_image", "images/seasonal-gift-box.jpg");
   const promo_btn_text = getSettingsVal("promo_btn_text", "立即預購");
   const promo_btn_link = getSettingsVal("promo_btn_link", "giftbox");
+  const gallery_images = getSettingsVal("gallery_images", "");
 
   // 將分類動態轉換為按鈕跳轉的下拉選單
   const categoryOptions = (adminData.categories || []).map(c =>
@@ -2416,6 +2439,7 @@ function renderSettings() {
                  <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5 uppercase">圖片路徑或網址 (Image URL)</span>
                  <input id="promo_image" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white font-mono text-sm focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(promo_image)}" placeholder="例如：images/seasonal-gift-box.jpg" oninput="document.getElementById('promo_preview').src=this.value; markUnsaved('settings');">
               </label>
+              <label class="inline-flex items-center justify-center h-11 px-4 rounded-xl bg-[#5B7290] text-white text-sm font-black cursor-pointer hover:bg-[#3E4F66]">上傳大圖<input type="file" accept="image/*" class="hidden" onchange="uploadPromoImage(this)"></label>
            </div>
 
            <!-- 預覽圖區塊 -->
@@ -2427,7 +2451,16 @@ function renderSettings() {
            </div>
         </div>
       </div>
+      <!-- 首頁小圖輪播 -->
+      <div class="border-t border-stone-100 pt-6 mt-6">
+        <h3 class="text-lg font-black text-stone-800 mb-1">首頁小圖輪播</h3>
+        <p class="text-sm text-stone-500 mb-4">首頁大圖下方可左右滑的方形照片。上傳後會自動壓縮並存到雲端硬碟，可用箭頭調整順序。</p>
+        <input type="hidden" id="gallery_images" value="${escapeHtml(gallery_images)}">
+        <div id="galleryManager" class="grid grid-cols-3 md:grid-cols-6 gap-3"></div>
+        <label class="mt-3 inline-flex items-center justify-center h-11 px-4 rounded-xl bg-[#5B7290] text-white text-sm font-black cursor-pointer hover:bg-[#3E4F66]">＋ 上傳照片（可多選）<input type="file" accept="image/*" multiple class="hidden" onchange="uploadGalleryImages(this)"></label>
+      </div>
     </div>`;
+  renderGalleryManager();
     
   document.querySelectorAll('[data-setting-row]').forEach(box => {
     updateSettingCalendarAndTags(box);
@@ -2464,7 +2497,7 @@ function saveSettingsTab(btn) {
     });
 
     // 3. 覆寫活動宣傳設定
-    const promoKeys = ["promo_enabled", "promo_eyebrow", "promo_title", "promo_desc", "promo_btn_text", "promo_btn_link", "promo_image"];
+    const promoKeys = ["promo_enabled", "promo_eyebrow", "promo_title", "promo_desc", "promo_btn_text", "promo_btn_link", "promo_image", "gallery_images"];
     promoKeys.forEach(k => {
        const el = document.getElementById(k);
        if (el) currentSettingsMap[k] = el.value.trim();
@@ -2875,6 +2908,90 @@ function compressImageFile(file, maxSize = 1000, quality = 0.82) {
     };
     reader.readAsDataURL(file);
   });
+}
+
+// 共用：壓縮後上傳到雲端硬碟，回傳圖片網址
+async function uploadImageToDrive(file, fileName, maxSize) {
+  const dataUrl = await compressImageFile(file, maxSize);
+  const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "adminUploadImage", token: getToken(), fileName, mimeType: "image/jpeg", base64: dataUrl }) });
+  const data = await res.json();
+  if (data.status !== "success") throw new Error(data.message || "上傳失敗");
+  return data.url;
+}
+
+async function uploadPromoImage(fileInput) {
+  const file = fileInput.files && fileInput.files[0];
+  if (!file) return;
+  const t = showAdminToast("大圖壓縮上傳中...", "loading", 0);
+  try {
+    const url = await uploadImageToDrive(file, "promo.jpg", 1800);
+    document.getElementById("promo_image").value = url;
+    document.getElementById("promo_preview").src = url;
+    markUnsaved("settings");
+    removeAdminToast(t);
+    showAdminToast("大圖已上傳，按「儲存設定」後生效", "success", 4200);
+  } catch (err) {
+    removeAdminToast(t);
+    showAdminToast("上傳失敗：" + err.message, "error", 4200);
+  } finally { fileInput.value = ""; }
+}
+
+function getGalleryList() {
+  return (document.getElementById("gallery_images")?.value || "").split(/[,\n]+/).map(u => u.trim()).filter(Boolean);
+}
+function setGalleryList(list) {
+  document.getElementById("gallery_images").value = list.join(",");
+  renderGalleryManager();
+  markUnsaved("settings");
+}
+function renderGalleryManager() {
+  const box = document.getElementById("galleryManager");
+  if (!box) return;
+  const list = getGalleryList();
+  box.innerHTML = list.length ? list.map((url, i) => `
+    <div class="rounded-xl border border-stone-200 bg-white overflow-hidden">
+      <div class="aspect-square bg-stone-100"><img src="${escapeHtml(url)}" alt="" class="w-full h-full object-cover"></div>
+      <div class="flex">
+        <button type="button" onclick="moveGalleryImage(${i}, -1)" ${i === 0 ? "disabled" : ""} aria-label="往前" class="flex-1 h-9 text-stone-500 font-black hover:bg-stone-50 disabled:opacity-30">‹</button>
+        <button type="button" onclick="removeGalleryImage(${i})" aria-label="移除" class="flex-1 h-9 text-red-500 font-black hover:bg-red-50">✕</button>
+        <button type="button" onclick="moveGalleryImage(${i}, 1)" ${i === list.length - 1 ? "disabled" : ""} aria-label="往後" class="flex-1 h-9 text-stone-500 font-black hover:bg-stone-50 disabled:opacity-30">›</button>
+      </div>
+    </div>`).join("") : `<div class="col-span-3 md:col-span-6 rounded-xl border border-dashed border-stone-200 py-6 text-center text-sm font-bold text-stone-400">尚未設定，前台會顯示網頁內建的照片</div>`;
+}
+function moveGalleryImage(i, dir) {
+  const list = getGalleryList();
+  const j = i + dir;
+  if (j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  setGalleryList(list);
+}
+function removeGalleryImage(i) {
+  const list = getGalleryList();
+  list.splice(i, 1);
+  setGalleryList(list);
+}
+async function uploadGalleryImages(fileInput) {
+  const files = [...(fileInput.files || [])];
+  if (!files.length) return;
+  const t = showAdminToast(`照片上傳中（0/${files.length}）...`, "loading", 0);
+  const list = getGalleryList();
+  let done = 0;
+  try {
+    for (const f of files) {
+      list.push(await uploadImageToDrive(f, "gallery.jpg", 1400));
+      done++;
+      const msg = document.querySelector("#adminToastArea [data-toast-text]") ;
+      if (msg) msg.textContent = `照片上傳中（${done}/${files.length}）...`;
+    }
+    removeAdminToast(t);
+    showAdminToast(`已上傳 ${done} 張，按「儲存設定」後生效`, "success", 4200);
+  } catch (err) {
+    removeAdminToast(t);
+    showAdminToast(`上傳到第 ${done + 1} 張時失敗：` + err.message, "error", 4200);
+  } finally {
+    if (done) setGalleryList(list);
+    fileInput.value = "";
+  }
 }
 
 async function uploadProductImage(fileInput) {
