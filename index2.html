@@ -1307,10 +1307,18 @@
         function lilouNameEnHtml(nameEn) {
             return nameEn ? `<span class="lilou-name-en">${lilouEscapeHtml(nameEn)}</span>` : '';
         }
+        // 後台上傳的商品照片會另存一張 -s.jpg 小圖給縮圖用；舊照片沒有小圖時自動改用原圖
+        function lilouThumbUrl(url) {
+            url = (url || '').toString().trim();
+            return /^images\/uploads\/[^/]+\.jpg$/.test(url) && !/-s\.jpg$/.test(url) ? url.replace(/\.jpg$/, '-s.jpg') : url;
+        }
+        function lilouThumbImg(url, alt, cls) {
+            const full = lilouEscapeHtml(url);
+            return `<img src="${lilouEscapeHtml(lilouThumbUrl(url))}" data-full="${full}" onerror="if(this.getAttribute('src')!==this.dataset.full){this.src=this.dataset.full}" alt="${lilouEscapeHtml(alt || '')}"${cls ? ` class="${cls}"` : ''} loading="lazy" decoding="async">`;
+        }
         function lilouThumbHtml(p) {
             if (!p || !p.image) return '';
-            const url = lilouEscapeHtml(p.image);
-            return `<button type="button" class="lilou-product-thumb" onclick="openProductImage('${encodeURIComponent(p.image)}')" aria-label="放大 ${lilouEscapeHtml(p.name)} 的照片"><img src="${url}" alt="${lilouEscapeHtml(p.name)}" loading="lazy" decoding="async"></button>`;
+            return `<button type="button" class="lilou-product-thumb" onclick="openProductImage('${encodeURIComponent(p.image)}')" aria-label="放大 ${lilouEscapeHtml(p.name)} 的照片">${lilouThumbImg(p.image, p.name)}</button>`;
         }
         function lilouStockText(p, available) {
             const limited = p.max_per_order > 0 && Number(p.real_stock || 0) > p.max_per_order;
@@ -2206,7 +2214,7 @@
                     ${cakeStepTitle('', '選擇蛋糕', 'Cakes', '')}
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         ${cakes.map(p => `<button type="button" class="cake-choice ${p.name === cakeState.cake ? 'is-on' : ''}" onclick="cakePick('cake', '${enc(p.name)}')">
-                            ${p.image ? `<img src="${esc(p.image)}" alt="" class="w-14 h-14 rounded-xl object-cover shrink-0" loading="lazy">` : '<span class="dot"></span>'}
+                            ${p.image ? lilouThumbImg(p.image, '', 'w-14 h-14 rounded-xl object-cover shrink-0') : '<span class="dot"></span>'}
                             <span class="flex-1 min-w-0"><span class="block font-black text-stone-900 text-[15px]">${esc(p.name)}</span>${p.name_en ? `<span class="block text-xs font-semibold text-stone-400">${esc(p.name_en)}</span>` : ''}</span>
                             <span class="font-black text-[#5B7290]">$${Number(p.price || 0).toLocaleString('zh-TW')}</span>
                         </button>`).join('') || '<div class="text-sm text-stone-400 font-bold py-4">目前沒有可預訂的蛋糕。</div>'}
