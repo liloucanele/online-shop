@@ -2482,13 +2482,8 @@
                 return sum + (Number(item.repeatQty) || 1);
             }, 0);
         
-            let totalPrice = 0;
-            cart.forEach(box => totalPrice += box.boxTotalCost);
+            // 金額標籤統一由 calculateTotal() 更新（含運費與折扣），避免兩處寫入不一致
             count.textContent = totalGroups;
-            const labelSpan = button.querySelector('span:first-child');
-            if (labelSpan) {
-                labelSpan.textContent = `$${totalPrice} · 購物車`;
-            }
         
             button.classList.toggle('is-visible', totalGroups > 0 && !document.getElementById('shopContentWrapper')?.classList.contains('hidden'));
         }
@@ -2589,7 +2584,7 @@
             document.getElementById('subtotalDisplay').innerText = `$${subtotal}`; 
             const shipMethod = document.getElementById('shipMethod').value; 
             let finalTotal = subtotal; 
-            if(lilouIsDeliveryMethod(shipMethod)) finalTotal += shippingFee; 
+            if(lilouIsDeliveryMethod(shipMethod) && cart.length > 0) finalTotal += shippingFee; 
             if (appliedCoupon) { 
                 const minSpendRequirement = Number(appliedCoupon.min_spend) || 0; 
                 if (subtotal < minSpendRequirement) { 
@@ -2998,6 +2993,16 @@
                     sharePlainText = `✨ Lilou 預購成功確認單 ✨\n\n訂單編號：${officialOrderId}\n顧客姓名：${custName}\n聯絡電話：${custPhone}\nEmail：${custEmail}\n配送方式：${lilouShippingMethodDisplayLabel(shipMethodVal)}\n預定日期：${shipDate}\n總金額：${finalTotal} 元\n\n如有調整需求，請私訊官方官方，謝謝您的支持！`;
                     cart = []; appliedCoupon = null; 
                     clearLilouDraft();
+                    // 修正：送出成功後重新整理購物車畫面，浮動按鈕金額歸零並隱藏
+                    try {
+                        const couponInputEl = document.getElementById('couponInput');
+                        if (couponInputEl) couponInputEl.value = "";
+                        const couponMsgEl = document.getElementById('couponMessage');
+                        if (couponMsgEl) couponMsgEl.innerText = "";
+                        renderCart();
+                    } catch (resetErr) {}
+                    const floatingBtnAfterOrder = document.getElementById('floatingCartButton');
+                    if (floatingBtnAfterOrder) floatingBtnAfterOrder.classList.remove('is-visible');
                 } else if (result.status === "error") { showToastNotification("⚠️ " + result.message); }
             } catch(err) { 
                 document.getElementById('countdownOverlay').classList.add('hidden');
