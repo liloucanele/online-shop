@@ -632,17 +632,14 @@
             .product-tab-shell { margin: 0; border-radius: 18px; border: 1px solid #e7e5e4; }
         }
         @media (min-width: 900px) {
-            #productTabsCard { display: grid; grid-template-columns: 200px minmax(0, 1fr); column-gap: 22px; align-items: start; }
-            #productTabsCard > .product-tab-shell { grid-column: 1; grid-row: 1 / span 20; position: sticky; top: 16px; padding: 10px; border-radius: 18px; box-shadow: none; }
-            #productTabsCard > :not(.product-tab-shell) { grid-column: 2; }
-            .product-tab-shell-label { margin: 4px 10px 8px; }
-            .product-tab-list { flex-direction: column; flex-wrap: nowrap !important; gap: 4px; }
-            .product-tab-button { width: 100%; min-height: 54px; padding: 8px 12px !important; border-radius: 12px; }
-            .product-tab-heading { width: 100%; justify-content: space-between; }
+            /* 電腦版：分類放回上方，沿用直式選單的按鈕樣式（中文＋英文＋款數，選中整顆變藍），放不下自動換行 */
+            .product-tab-shell { padding: 12px 14px 14px; border-radius: 20px; box-shadow: 0 6px 18px -12px rgba(28,25,23,.18); }
+            .product-tab-shell-label { margin: 2px 6px 10px; }
+            .product-tab-list { flex-direction: row; flex-wrap: wrap !important; gap: 6px; }
+            .product-tab-button { flex: 0 0 auto; width: auto; min-width: 150px; min-height: 56px; padding: 8px 14px !important; border-radius: 14px; }
+            .product-tab-heading { width: 100%; justify-content: space-between; gap: 14px; }
             .product-tab-text { align-items: flex-start; }
-            .product-category-heading { margin-top: 0; }
-            .product-tab-panel { padding-top: 18px; }
-            #comboPackageCards { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+            .product-category-heading { margin-top: 26px; }
         }
         .limited-product-description {
             margin-top: 5px;
@@ -2162,7 +2159,7 @@
             return parts.join('／');
         }
         function cakeStepTitle(no, zh, en, rule) {
-            return `<div class="cake-step-title"><span class="no">${no}</span><span class="zh">${zh}</span><span class="en">${en}</span>${rule ? `<span class="rule">${rule}</span>` : ''}</div>`;
+            return `<div class="cake-step-title">${no ? `<span class="no">${no}</span>` : ''}<span class="zh">${zh}</span><span class="en">${en}</span>${rule ? `<span class="rule">${rule}</span>` : ''}</div>`;
         }
         function renderCakeSection() {
             const sec = document.getElementById('cakeSection');
