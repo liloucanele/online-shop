@@ -638,7 +638,7 @@ async function adminLogin() {
   if (!password) { showMessage("loginMessage", "請輸入管理密碼。", "error"); return; }
   showMessage("loginMessage", "登入中...", "info");
   try {
-    const res = await fetch(`${API_URL}?action=adminLogin&password=${encodeURIComponent(password)}&_=${Date.now()}`);
+    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "adminLogin", password }) });
     const data = await res.json();
     if (data.status !== "success") { showMessage("loginMessage", data.message || "登入失敗。", "error"); return; }
     localStorage.setItem(TOKEN_KEY, data.token);
