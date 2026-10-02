@@ -594,6 +594,37 @@
             .product-category-heading { margin-top: 22px; }
             .product-category-heading .zh { font-size: 19px; }
         }
+        /* ===== 分類選單 G 樣式：電腦版左側直式選單、手機版上方白色橫滑帶 ===== */
+        .product-tab-button { border: 0; background: transparent; }
+        .product-tab-button:hover { background: #f5f5f4; }
+        .product-tab-button.is-active, .product-tab-button.is-active:hover { background: #5B7290; color: #fff; }
+        .product-tab-count { color: #a8a29e; }
+        @media (max-width: 899px) {
+            .product-tab-shell {
+                margin: 0 -16px; border-radius: 0; border-left: 0; border-right: 0;
+                box-shadow: none; padding: 10px 0;
+            }
+            .product-tab-shell-label { display: none; }
+            .product-tab-shell .product-tab-list { padding: 0 12px; flex-wrap: nowrap; overflow-x: auto; gap: 6px; }
+            .product-tab-button { flex: 0 0 auto; min-height: 46px; padding: 6px 12px !important; border-radius: 12px; }
+            .product-tab-heading { gap: 8px; }
+        }
+        @media (min-width: 640px) and (max-width: 899px) {
+            .product-tab-shell { margin: 0; border-radius: 18px; border: 1px solid #e7e5e4; }
+        }
+        @media (min-width: 900px) {
+            #productTabsCard { display: grid; grid-template-columns: 200px minmax(0, 1fr); column-gap: 22px; align-items: start; }
+            #productTabsCard > .product-tab-shell { grid-column: 1; grid-row: 1 / span 20; position: sticky; top: 16px; padding: 10px; border-radius: 18px; box-shadow: none; }
+            #productTabsCard > :not(.product-tab-shell) { grid-column: 2; }
+            .product-tab-shell-label { margin: 4px 10px 8px; }
+            .product-tab-list { flex-direction: column; flex-wrap: nowrap !important; gap: 4px; }
+            .product-tab-button { width: 100%; min-height: 54px; padding: 8px 12px !important; border-radius: 12px; }
+            .product-tab-heading { width: 100%; justify-content: space-between; }
+            .product-tab-text { align-items: flex-start; }
+            .product-category-heading { margin-top: 0; }
+            .product-tab-panel { padding-top: 18px; }
+            #comboPackageCards { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+        }
         .limited-product-description {
             margin-top: 5px;
             color: #78716c;
