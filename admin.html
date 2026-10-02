@@ -464,7 +464,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.8.1</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">2.9.0</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -536,7 +536,7 @@ let currentTab = "dashboard";
 
 const unsavedTabs = new Set();
 function markUnsaved(tab) {
-  if (!tab || tab === 'dashboard' || tab === 'revenue' || tab === 'products') return;
+  if (!tab || ['dashboard', 'revenue', 'products', 'categories', 'packaging', 'coupons', 'cakeoptions'].includes(tab)) return;
   unsavedTabs.add(tab);
   const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
   if (btn) btn.classList.add('has-unsaved');
@@ -759,6 +759,7 @@ async function loadAll() {
 
 function renderAll() {
   prodState.orderDirty = false; prodState.savedOrder = null;
+  Object.values(listState).forEach(st => { st.orderDirty = false; st.savedOrder = null; });
   renderDashboard();
   renderOrders();
   renderCategories();
@@ -1229,18 +1230,8 @@ function renderDashboardCoupons() {
 function openCouponFromDashboard(code) {
   const cleanCode = (code || "").toString().trim();
   switchTab("coupons");
-  requestAnimationFrame(() => {
-    const target = cleanCode ? document.querySelector(`[data-coupon-code="${(window.CSS && CSS.escape) ? CSS.escape(cleanCode) : cleanCode.replace(/"/g, '\\"')}"]`) : null;
-    if (!target) { document.getElementById("tab-coupons")?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
-    target.scrollIntoView({ behavior: "smooth", block: "center" });
-    const originalBoxShadow = target.style.boxShadow;
-    const originalBackground = target.style.backgroundColor;
-    target.style.boxShadow = "0 0 0 3px rgba(91, 114, 144, .24)";
-    target.style.backgroundColor = "#fffdf5";
-    const firstInput = target.querySelector('input[data-key="code"], select, input, textarea');
-    if (firstInput) firstInput.focus({ preventScroll: true });
-    setTimeout(() => { target.style.boxShadow = originalBoxShadow; target.style.backgroundColor = originalBackground; }, 2200);
-  });
+  const i = (adminData?.coupons || []).findIndex(c => (c.code || "").toString().trim() === cleanCode);
+  if (i >= 0) openRowEditor("coupons", i);
 }
 function formatCurrency(value) {
   const n = Number(value || 0);
@@ -2096,9 +2087,6 @@ function cancelOrderEdit(orderId) {
   showAdminToast(`${orderId} 已取消修改。`, "info", 1800);
 }
 
-function renderCategories() {
-  renderEditableTable("categories", "Categories 分類管理", ["id","name","name_en","behavior","display","sort","daily_limit","pickup_min_days","pickup_max_days","delivery_min_days","delivery_max_days","pickup_date_rule","delivery_date_rule","date_notice"], ["系統ID","頁籤名稱","英文名稱","選購模式","顯示","排序","每日限量（分類共用）","自取最早 D+","自取最晚 D+","宅配最早 D+","宅配最晚 D+","自取開放期間","宅配開放期間","給客人的日期提醒"], adminData.categories || []);
-}
 // ===== 產品頁（第三階段）：依分類分組、上下排序、單項編輯 =====
 const PROD_TEXT_FIELDS = ["name","name_en","image","price","stock","min_per_order","max_per_order","type","display","shipping_rule","description","ingredients","allergens","storage","weight","nutrition","origin_manufacturer"];
 const prodState = { q: "", cat: "", status: "", collapsed: new Set(), orderDirty: false, savedOrder: null, editing: null, editorBaseline: "" };
@@ -2412,8 +2400,9 @@ function collectProductEditor() {
 function peToggleDisplay(btn) {
   const on = !btn.classList.contains("is-on");
   btn.classList.toggle("is-on", on);
-  document.querySelector('#prodEditor [data-pe="display"]').value = on ? "TRUE" : "FALSE";
-  document.querySelector("#prodEditor [data-pe-display-text]").textContent = on ? "前台看得到" : "前台不顯示";
+  const box = btn.closest(".prod-editor");
+  box.querySelector('[data-pe="display"]').value = on ? "TRUE" : "FALSE";
+  box.querySelector("[data-pe-display-text]").textContent = on ? "前台看得到" : "前台不顯示";
 }
 function peSetImage(url) {
   const box = document.querySelector("#prodEditor [data-pe-image]");
@@ -2494,16 +2483,418 @@ function deleteProductFromEditor() {
     }
   }, "刪除商品");
 }
-document.addEventListener("keydown", e => { if (e.key === "Escape" && document.getElementById("adminConfirmModal")?.classList.contains("hidden")) closeProductEditor(); });
-function renderPackaging() {
-  renderEditableTable("packaging", "Packaging", ["name","name_en","extra_price","box_size","type","display","sort"], ["包裝名稱","英文名稱","加價","容量","類型","上架狀態","排序"], adminData.packaging || []);
+document.addEventListener("keydown", e => { if (e.key === "Escape" && document.getElementById("adminConfirmModal")?.classList.contains("hidden")) { closeProductEditor(); closeRowEditor(); } });
+// ===== 分類／包裝／優惠券／蛋糕選項：與產品頁同款的清單＋單項編輯 =====
+const BEHAVIOR_LABEL = { combo: "選包裝＋口味", single: "直接加入購物車", cake: "生日蛋糕客製" };
+const CAKE_GROUP_LABEL = { base: "01 蛋糕體（選 1）", filling: "02 夾餡（選 2）", addon: "03 配件與加購" };
+const listState = {};
+function lsState(tab) { return listState[tab] || (listState[tab] = { q: "", collapsed: new Set(), orderDirty: false, savedOrder: null, editing: null, baseline: "" }); }
+function rowSortNum(r) { const n = Number(r.sort); return r.sort === "" || r.sort === undefined || isNaN(n) ? 99999 : n; }
+function money(v) { return `$${Number(v || 0).toLocaleString("zh-TW")}`; }
+function shortDate(v) { const d = formatDateHyphenFromInput(v); return d ? d.slice(5).replace("-", "/") : ""; }
+function categoryNameOf(id) { const c = (adminData?.categories || []).find(c => prodCatKey(c.id) === prodCatKey(id)); return c ? c.name : (id || "未分類"); }
+function couponStatus(r) {
+  const today = getTodayDateInputValue();
+  const start = formatDateHyphenFromInput(r.start_date), end = formatDateHyphenFromInput(r.end_date);
+  if (start && today < start) return { rank: 1, text: "尚未開始", cls: "bg-sky-50 text-sky-600 border-sky-200" };
+  if (end && today > end) return { rank: 3, text: "已結束", cls: "bg-stone-100 text-stone-500 border-stone-200" };
+  if (end) { const diff = Math.ceil((new Date(end + "T00:00:00") - new Date(today + "T00:00:00")) / 86400000); if (diff <= 7) return { rank: 0, text: `剩 ${diff} 天`, cls: "bg-amber-50 text-amber-600 border-amber-200" }; }
+  return { rank: 0, text: "進行中", cls: "bg-emerald-50 text-emerald-600 border-emerald-200" };
 }
-function renderCakeOptions() {
-  renderEditableTable("cakeoptions", "Cake_Options", ["group","name","name_en","price","input","included_qty","max_qty","display","sort"], ["項目","名稱","英文名稱","加價","選法","附贈數量","數量上限","顯示","排序"], adminData.cakeOptions || []);
+function couponValueText(r) {
+  const v = Number(r.value || 0);
+  if (r.type === "discount") { const off = Math.round(v * 100); return off % 10 === 0 ? `${off / 10} 折` : `${off} 折`; }
+  return `現折 ${money(v)}`;
 }
-function renderCoupons() {
-  renderEditableTable("coupons", "Coupons", ["code","type","value","min_spend","start_date","end_date"], ["折扣碼","類型","折扣值","低消","開始日","結束日"], adminData.coupons || []);
+function peSelect(key, options, val) {
+  return `<select data-pe="${key}" class="${PE_INPUT}">${options.map(([v, t]) => `<option value="${escapeHtml(v)}" ${String(val ?? "") === v ? "selected" : ""}>${escapeHtml(t)}</option>`).join("")}</select>`;
 }
+function peDisplayRow(on, label = "在前台顯示") {
+  return `<div class="flex items-center gap-3 rounded-xl bg-stone-50 border border-stone-200 px-3 py-2.5">
+    <span class="flex-1"><span class="block text-sm font-black text-stone-800">${label}</span><span class="block text-xs font-bold text-stone-400" data-pe-display-text>${on ? "前台看得到" : "前台不顯示"}</span></span>
+    <button type="button" class="admin-switch ${on ? "is-on" : ""}" onclick="peToggleDisplay(this)" aria-label="${label}"><span></span></button>
+    <input type="hidden" data-pe="display" value="${on ? "TRUE" : "FALSE"}">
+  </div>`;
+}
+
+const LIST_CONFIGS = {
+  categories: {
+    title: "分類", unit: "個分類", kind: "categories", sortable: true, hasDisplay: true,
+    hint: "分類就是前台的商品頁籤。點分類可編輯日期規則與每日限量；用 ↑ ↓ 調整前台頁籤順序。",
+    rows: () => adminData.categories || (adminData.categories = []),
+    key: r => (r.id || "").toString().trim(),
+    title_: r => r.name, sub: r => r.name_en,
+    meta: r => {
+      const n = (adminData.products || []).filter(p => prodCatKey(p.type) === prodCatKey(r.id)).length;
+      const bits = [BEHAVIOR_LABEL[(r.behavior || "combo").toLowerCase()] || r.behavior, `${n} 項商品`];
+      if (Number(r.daily_limit) > 0) bits.push(`每日限量 ${escapeHtml(r.daily_limit)}`);
+      if (r.pickup_min_days || r.pickup_max_days) bits.push(`自取 D+${escapeHtml(r.pickup_min_days || "?")}～${escapeHtml(r.pickup_max_days || "?")}`);
+      if (r.delivery_min_days || r.delivery_max_days) bits.push(`宅配 D+${escapeHtml(r.delivery_min_days || "?")}～${escapeHtml(r.delivery_max_days || "?")}`);
+      if (r.pickup_date_rule || r.delivery_date_rule) bits.push("有限定期間");
+      return bits;
+    },
+    newRow: () => ({ id: "c_" + Date.now(), behavior: "combo", display: "TRUE" }),
+    form: r => `
+      <section class="pe-card"><h4 class="pe-title">基本資料</h4>
+        ${peField("頁籤名稱", peInput("name", r.name, 'placeholder="例：迷你可麗露"'))}
+        ${peField("英文名稱（選填）", peInput("name_en", r.name_en, 'placeholder="例：Mini Canelé"'))}
+        ${peField("選購模式", peSelect("behavior", [["combo", "先選包裝，再選口味"], ["single", "直接加入購物車"], ["cake", "生日蛋糕客製"]], (r.behavior || "combo").toLowerCase()))}
+        ${peDisplayRow(isDisplayOn(r.display))}
+        <input type="hidden" data-pe="id" value="${escapeHtml(r.id)}">
+      </section>
+      <section class="pe-card"><h4 class="pe-title">每日限量</h4>
+        ${peField("這個分類每天最多接幾份（分類內商品共用）", peNum("daily_limit", r.daily_limit, "不限"), "留空＝不限量；額滿的日期前台會顯示（已額滿）")}
+      </section>
+      <section class="pe-card"><h4 class="pe-title">可選日期</h4>
+        <p class="text-xs font-bold text-stone-400 -mt-1">留空就用「設定」頁的全店規則。D+3 代表下單後第 3 天起可選。</p>
+        <div class="grid grid-cols-2 gap-3">
+          ${peField("自取最早 D+", peNum("pickup_min_days", r.pickup_min_days, "全店"))}
+          ${peField("自取最晚 D+", peNum("pickup_max_days", r.pickup_max_days, "全店"))}
+          ${peField("宅配最早 D+", peNum("delivery_min_days", r.delivery_min_days, "全店"))}
+          ${peField("宅配最晚 D+", peNum("delivery_max_days", r.delivery_max_days, "全店"))}
+        </div>
+        ${peField("自取開放期間（選填）", peArea("pickup_date_rule", r.pickup_date_rule, 2), "例：2026/09/11~2026/09/27，多段用逗號分開")}
+        ${peField("宅配開放期間（選填）", peArea("delivery_date_rule", r.delivery_date_rule, 2))}
+        ${peField("給客人的日期提醒（選填）", peArea("date_notice", r.date_notice, 2), "會顯示在這個分類的商品上方")}
+      </section>`,
+    validate: d => !d.name ? "請填寫頁籤名稱" : "",
+    beforeDelete: r => { const n = (adminData.products || []).filter(p => prodCatKey(p.type) === prodCatKey(r.id)).length; return n ? `這個分類還有 ${n} 項商品，請先把商品移到其他分類或刪除。` : ""; },
+    after: () => renderProducts()
+  },
+  packaging: {
+    title: "包裝", unit: "個包裝", kind: "packaging", sortable: true, hasDisplay: true,
+    hint: "包裝依分類分組；「選包裝＋口味」的分類才會用到。容量是一盒可以放幾顆。",
+    rows: () => adminData.packaging || (adminData.packaging = []),
+    key: r => (r.name || "").toString().trim(),
+    group: r => prodCatKey(r.type),
+    groups: () => (adminData.categories || []).slice().sort((a, b) => (Number(a.sort) || 0) - (Number(b.sort) || 0)).map(c => ({ key: prodCatKey(c.id), name: c.name, en: c.name_en })),
+    title_: r => r.name, sub: r => r.name_en,
+    meta: r => [Number(r.extra_price) ? `加價 ${money(r.extra_price)}` : "不加價", r.box_size ? `可放 ${escapeHtml(r.box_size)} 顆` : "未設定容量"],
+    newRow: () => ({ type: (adminData.categories || []).find(c => (c.behavior || "") === "combo")?.id || "combo", display: "TRUE" }),
+    form: r => `
+      <section class="pe-card"><h4 class="pe-title">基本資料</h4>
+        ${peField("包裝名稱", peInput("name", r.name, 'placeholder="例：迷你露 5 入盒裝"'))}
+        ${peField("英文名稱（選填）", peInput("name_en", r.name_en, 'placeholder="例：Box of 5"'))}
+        ${peField("屬於哪個分類", `<select data-pe="type" class="${PE_INPUT}">${getCategoryOptionsHtml(r.type)}</select>`)}
+        ${peDisplayRow(isDisplayOn(r.display))}
+      </section>
+      <section class="pe-card"><h4 class="pe-title">價格與容量</h4>
+        <div class="grid grid-cols-2 gap-3">
+          ${peField("加價", peNum("extra_price", r.extra_price, "0"))}
+          ${peField("容量（顆）", peNum("box_size", r.box_size, "例：5"))}
+        </div>
+      </section>`,
+    validate: d => !d.name ? "請填寫包裝名稱" : ""
+  },
+  coupons: {
+    title: "優惠券", unit: "張優惠券", kind: "coupons", sortable: false, hasDisplay: false,
+    hint: "進行中的排最前面。到期日過了會自動失效，不必刪除。",
+    rows: () => adminData.coupons || (adminData.coupons = []),
+    key: r => (r.code || "").toString().trim(),
+    order: list => list.slice().sort((a, b) => couponStatus(a).rank - couponStatus(b).rank || (formatDateHyphenFromInput(a.end_date) || "9999").localeCompare(formatDateHyphenFromInput(b.end_date) || "9999")),
+    title_: r => r.code,
+    tag: r => couponStatus(r),
+    meta: r => {
+      const bits = [couponValueText(r)];
+      if (Number(r.min_spend) > 0) bits.push(`滿 ${money(r.min_spend)}`);
+      const s = shortDate(r.start_date), e = shortDate(r.end_date);
+      bits.push(s || e ? `${s || "即日起"}～${e || "不限"}` : "不限期間");
+      return bits;
+    },
+    newRow: () => ({ type: "minus" }),
+    form: r => `
+      <section class="pe-card"><h4 class="pe-title">折扣碼</h4>
+        ${peField("折扣碼", peInput("code", r.code, 'placeholder="例：LILOU100" autocapitalize="characters"'), "客人結帳時輸入的文字")}
+        <div class="grid grid-cols-2 gap-3">
+          ${peField("折扣方式", peSelect("type", [["minus", "現折金額"], ["discount", "打折"]], r.type || "minus"))}
+          ${peField("折扣值", peInput("value", r.value, 'inputmode="decimal" placeholder="100 或 0.9"'), "現折填金額；打折填 0.9＝9 折")}
+        </div>
+        ${peField("最低消費（選填）", peNum("min_spend", r.min_spend, "不限"))}
+      </section>
+      <section class="pe-card"><h4 class="pe-title">使用期間</h4>
+        <div class="grid grid-cols-2 gap-3">
+          ${peField("開始日", `<input type="date" data-pe="start_date" class="${PE_INPUT}" value="${escapeHtml(formatDateHyphenFromInput(r.start_date))}">`)}
+          ${peField("結束日", `<input type="date" data-pe="end_date" class="${PE_INPUT}" value="${escapeHtml(formatDateHyphenFromInput(r.end_date))}">`)}
+        </div>
+        <p class="text-xs font-bold text-stone-400">留空＝不限。</p>
+      </section>`,
+    validate: d => {
+      if (!d.code) return "請填寫折扣碼";
+      const v = Number(d.value);
+      if (!d.value || isNaN(v) || v <= 0) return "請填寫折扣值";
+      if (d.type === "discount" && v >= 1) return "打折請填 0～1 之間，例如 0.9＝9 折";
+      if (d.start_date && d.end_date && d.start_date > d.end_date) return "結束日不能早於開始日";
+      return "";
+    }
+  },
+  cakeoptions: {
+    title: "蛋糕選項", unit: "個選項", kind: "cakeoptions", sortable: true, hasDisplay: true,
+    hint: "生日蛋糕的客製選項。蛋糕體選 1 種、夾餡選 2 種；配件可設定附贈數量，超過才加價。",
+    rows: () => adminData.cakeOptions || (adminData.cakeOptions = []),
+    key: r => `${(r.group || "").toString().trim().toLowerCase()}|${(r.name || "").toString().trim()}`,
+    group: r => (r.group || "addon").toString().trim().toLowerCase(),
+    groups: () => Object.entries(CAKE_GROUP_LABEL).map(([key, name]) => ({ key, name })),
+    title_: r => r.name, sub: r => r.name_en,
+    meta: r => {
+      const bits = [Number(r.price) ? `+${money(r.price)}` : "不加價"];
+      if ((r.input || "") === "qty") { if (Number(r.included_qty) > 0) bits.push(`附贈 ${escapeHtml(r.included_qty)}`); if (Number(r.max_qty) > 0) bits.push(`最多 ${escapeHtml(r.max_qty)}`); }
+      return bits;
+    },
+    newRow: () => ({ group: lsState("cakeoptions").newGroup || "addon", input: "check", display: "TRUE" }),
+    form: r => `
+      <section class="pe-card"><h4 class="pe-title">基本資料</h4>
+        ${peField("項目", peSelect("group", Object.entries(CAKE_GROUP_LABEL), (r.group || "addon").toLowerCase()))}
+        ${peField("名稱", peInput("name", r.name, 'placeholder="例：香草卡士達"'))}
+        ${peField("英文名稱（選填）", peInput("name_en", r.name_en))}
+        ${peField("加價", peNum("price", r.price, "0"))}
+        ${peDisplayRow(isDisplayOn(r.display))}
+      </section>
+      <section class="pe-card"><h4 class="pe-title">選法（配件用）</h4>
+        ${peField("客人怎麼選", peSelect("input", [["check", "勾選（要或不要）"], ["qty", "填數量（超過附贈才加價）"]], (r.input || "check").toLowerCase()))}
+        <div class="grid grid-cols-2 gap-3">
+          ${peField("附贈數量", peNum("included_qty", r.included_qty, "0"))}
+          ${peField("數量上限", peNum("max_qty", r.max_qty, "不限"))}
+        </div>
+        <p class="text-xs font-bold text-stone-400">例：餐盤附贈 5 個、每多 1 個加價。蛋糕體和夾餡不用填。</p>
+      </section>`,
+    validate: d => !d.name ? "請填寫名稱" : ""
+  }
+};
+
+function listGroups(cfg) {
+  const rows = cfg.rows();
+  rows.forEach((r, i) => { r.__i = i; });
+  if (!cfg.group) {
+    const items = cfg.order ? cfg.order(rows) : rows.slice().sort((a, b) => rowSortNum(a) - rowSortNum(b) || a.__i - b.__i);
+    return [{ key: "__all", name: "", items }];
+  }
+  const groups = cfg.groups().map(g => Object.assign({ items: [] }, g));
+  const byKey = {}; groups.forEach(g => byKey[g.key] = g);
+  rows.forEach(r => {
+    const k = cfg.group(r);
+    if (!byKey[k]) { byKey[k] = { key: k, name: `${k || "未分類"}（找不到分類）`, items: [] }; groups.push(byKey[k]); }
+    byKey[k].items.push(r);
+  });
+  groups.forEach(g => g.items.sort((a, b) => rowSortNum(a) - rowSortNum(b) || a.__i - b.__i));
+  return groups.filter(g => g.items.length || cfg.kind === "cakeoptions");
+}
+
+function renderListPage(tab) {
+  const cfg = LIST_CONFIGS[tab], st = lsState(tab);
+  const el = document.getElementById("tab-" + tab);
+  if (!el || !adminData) return;
+  const rows = cfg.rows();
+  const stat = cfg.hasDisplay ? `共 ${rows.length} ${cfg.unit.replace(/^個|^張/, m => m)}｜顯示 ${rows.filter(r => isDisplayOn(r.display)).length}｜隱藏 ${rows.filter(r => !isDisplayOn(r.display)).length}` : `共 ${rows.length} ${cfg.unit}｜進行中 ${rows.filter(r => couponStatus(r).rank === 0).length}`;
+  el.innerHTML = `
+  <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4" data-no-dirty>
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="flex-1 min-w-[160px]">
+        <h2 class="text-xl font-black text-stone-900">${cfg.title}</h2>
+        <p class="text-sm font-bold text-stone-500 mt-0.5">${stat}</p>
+      </div>
+      <button type="button" onclick="openRowEditor('${tab}', -1)" class="h-11 rounded-xl bg-[#5B7290] text-white px-5 font-black hover:bg-[#3E4F66]">＋ 新增${cfg.title}</button>
+    </div>
+    ${rows.length > 6 ? `<input type="search" value="${escapeHtml(st.q)}" oninput="lsState('${tab}').q=this.value;renderListBody('${tab}')" placeholder="搜尋…" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold outline-none focus:border-[#5B7290]">` : ""}
+    <p class="text-xs font-bold text-stone-400">${cfg.hint}</p>
+  </div>
+  <div id="list-${tab}" class="space-y-4" data-no-dirty></div>
+  ${cfg.sortable ? `<div id="order-${tab}" class="prod-order-bar ${st.orderDirty ? "" : "hidden"}" data-no-dirty>
+    <span class="flex-1 font-black text-sm">排序已變更，尚未儲存</span>
+    <button type="button" onclick="cancelRowOrder('${tab}')" class="h-10 px-4 rounded-xl border border-white/40 text-white font-black text-sm">取消</button>
+    <button type="button" onclick="saveRowOrder('${tab}', this)" class="h-10 px-4 rounded-xl bg-white text-[#3E4F66] font-black text-sm">儲存排序</button>
+  </div>` : ""}`;
+  renderListBody(tab);
+}
+
+function renderListBody(tab) {
+  const cfg = LIST_CONFIGS[tab], st = lsState(tab);
+  const box = document.getElementById("list-" + tab);
+  if (!box) return;
+  const q = st.q.trim().toLowerCase();
+  const match = r => !q || [cfg.title_(r), cfg.sub ? cfg.sub(r) : ""].join(" ").toLowerCase().includes(q);
+  let html = "";
+  listGroups(cfg).forEach(g => {
+    const items = g.items.filter(match);
+    if (q && !items.length) return;
+    const collapsed = !q && st.collapsed.has(g.key);
+    const body = items.map((r, i) => listRowHtml(tab, cfg, r, i, items.length, !!q)).join("") || `<div class="px-4 py-6 text-center text-sm font-bold text-stone-400">${g.name ? "這一組還沒有項目" : `還沒有${cfg.title}，按右上角「新增」開始`}</div>`;
+    const addBtn = cfg.kind === "cakeoptions" ? `<button type="button" onclick="lsState('cakeoptions').newGroup='${g.key}';openRowEditor('cakeoptions',-1)" class="w-full py-3 text-sm font-black text-[#5B7290] border-t border-stone-100 hover:bg-stone-50">＋ 新增到這一組</button>` : "";
+    html += `<section class="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden">
+      ${g.name ? `<button type="button" class="prod-group-head" onclick="toggleListGroup('${tab}','${escapeHtml(g.key)}')">
+        <span class="flex-1 min-w-0 text-left"><span class="block text-base font-black text-stone-900 truncate">${escapeHtml(g.name)}</span>${g.en ? `<span class="block text-xs font-bold text-stone-400 truncate">${escapeHtml(g.en)}</span>` : ""}</span>
+        <span class="text-xs font-bold text-stone-500 whitespace-nowrap">${g.items.length} 項</span>
+        <span class="prod-chevron ${collapsed ? "" : "is-open"}">▾</span>
+      </button>` : ""}
+      ${collapsed ? "" : `<div class="divide-y divide-stone-100 ${g.name ? "border-t border-stone-100" : ""}">${body}</div>${addBtn}`}
+    </section>`;
+  });
+  box.innerHTML = html || `<div class="bg-white rounded-3xl border border-dashed border-stone-200 py-10 text-center text-sm font-bold text-stone-400">找不到符合的項目</div>`;
+}
+
+function listRowHtml(tab, cfg, r, idx, total, searching) {
+  const on = cfg.hasDisplay ? isDisplayOn(r.display) : true;
+  const tag = cfg.tag ? cfg.tag(r) : null;
+  const sub = cfg.sub ? cfg.sub(r) : "";
+  return `<div class="prod-row ${on && !(tag && tag.rank === 3) ? "" : "is-off"}" data-row-idx="${r.__i}">
+    <button type="button" class="prod-main" style="padding-left:8px" onclick="openRowEditor('${tab}', ${r.__i})">
+      <span class="min-w-0 flex-1">
+        <span class="block font-black text-stone-900 leading-snug prod-name">${escapeHtml(cfg.title_(r) || "（未命名）")}${tag ? `<span class="ml-1.5 align-middle text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${tag.cls}">${tag.text}</span>` : ""}${cfg.hasDisplay && !on ? `<span class="ml-1.5 align-middle text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500 border border-red-200">${tab === "categories" ? "未顯示" : "已下架"}</span>` : ""}</span>
+        ${sub ? `<span class="block text-xs font-bold text-stone-400 truncate">${escapeHtml(sub)}</span>` : ""}
+        <span class="block text-xs font-bold text-stone-500 mt-0.5">${cfg.meta(r).join('<span class="text-stone-300 mx-1">·</span>')}</span>
+      </span>
+      ${cfg.hasDisplay ? "" : `<span class="text-stone-300 font-black pr-1">›</span>`}
+    </button>
+    ${cfg.hasDisplay ? `<button type="button" class="admin-switch ${on ? "is-on" : ""}" onclick="toggleRowDisplay('${tab}', ${r.__i})" aria-label="${on ? "顯示中，點一下隱藏" : "隱藏中，點一下顯示"}"><span></span></button>` : ""}
+    ${cfg.sortable && !searching ? `<div class="prod-sort">
+      <button type="button" class="prod-sort-top hidden md:inline-flex" onclick="moveRow('${tab}', ${r.__i}, 'top')" ${idx === 0 ? "disabled" : ""} title="置頂" aria-label="置頂">⤒</button>
+      <button type="button" onclick="moveRow('${tab}', ${r.__i}, -1)" ${idx === 0 ? "disabled" : ""} title="往上" aria-label="往上">↑</button>
+      <button type="button" onclick="moveRow('${tab}', ${r.__i}, 1)" ${idx === total - 1 ? "disabled" : ""} title="往下" aria-label="往下">↓</button>
+    </div>` : ""}
+  </div>`;
+}
+
+function toggleListGroup(tab, key) { const st = lsState(tab); st.collapsed.has(key) ? st.collapsed.delete(key) : st.collapsed.add(key); renderListBody(tab); }
+
+async function toggleRowDisplay(tab, i) {
+  const cfg = LIST_CONFIGS[tab], r = cfg.rows()[i];
+  if (!r) return;
+  const prev = r.display, next = isDisplayOn(prev) ? "FALSE" : "TRUE";
+  r.display = next;
+  renderListPage(tab);
+  try {
+    await prodPost({ action: "adminSaveRow", kind: cfg.kind, originalKey: cfg.key(r), row: { display: next } });
+    showAdminToast(`「${cfg.title_(r)}」已${next === "TRUE" ? "顯示" : "隱藏"}`, "success", 1800);
+    if (cfg.after) cfg.after();
+  } catch (err) {
+    r.display = prev; renderListPage(tab);
+    showAdminToast("切換失敗：" + err.message, "error", 4200);
+  }
+}
+
+function moveRow(tab, i, dir) {
+  const cfg = LIST_CONFIGS[tab], st = lsState(tab), r = cfg.rows()[i];
+  if (!r) return;
+  if (!st.savedOrder) st.savedOrder = cfg.rows().map(x => [x, x.sort]);
+  const items = listGroups(cfg).find(g => g.items.includes(r)).items;
+  const at = items.indexOf(r);
+  if (dir === "top") { items.splice(at, 1); items.unshift(r); }
+  else { const j = at + dir; if (j < 0 || j >= items.length) return; [items[at], items[j]] = [items[j], items[at]]; }
+  items.forEach((x, k) => { x.sort = String((k + 1) * 10); });
+  st.orderDirty = true;
+  document.getElementById("order-" + tab)?.classList.remove("hidden");
+  renderListBody(tab);
+  const row = document.querySelector(`#list-${tab} .prod-row[data-row-idx="${i}"]`);
+  if (row) { row.classList.add("is-moved"); setTimeout(() => row.classList.remove("is-moved"), 600); }
+}
+function cancelRowOrder(tab) { const st = lsState(tab); (st.savedOrder || []).forEach(([r, s]) => { r.sort = s; }); st.savedOrder = null; st.orderDirty = false; renderListPage(tab); }
+async function saveRowOrder(tab, btn) {
+  const cfg = LIST_CONFIGS[tab], st = lsState(tab);
+  const restore = setButtonLoading(btn, "儲存中...");
+  try {
+    await prodPost({ action: "adminSaveRowOrder", kind: cfg.kind, order: cfg.rows().map(r => ({ key: cfg.key(r), sort: r.sort })) });
+    st.savedOrder = null; st.orderDirty = false;
+    renderListPage(tab);
+    if (cfg.after) cfg.after();
+    showAdminToast("排序已儲存", "success");
+  } catch (err) { if (restore) restore(); showAdminToast("儲存排序失敗：" + err.message, "error", 4200); }
+}
+
+function openRowEditor(tab, i) {
+  const cfg = LIST_CONFIGS[tab], st = lsState(tab);
+  if (st.orderDirty) { showAdminToast("請先儲存或取消排序變更", "info", 2600); return; }
+  const isNew = !(i >= 0);
+  const src = isNew ? cfg.newRow() : cfg.rows()[i];
+  if (!src) return;
+  st.editing = isNew ? null : src;
+  let wrap = document.getElementById("rowEditor");
+  if (!wrap) { wrap = document.createElement("div"); wrap.id = "rowEditor"; document.body.appendChild(wrap); }
+  wrap.className = "prod-editor";
+  wrap.dataset.tab = tab;
+  wrap.innerHTML = `
+  <div class="prod-editor-backdrop" onclick="closeRowEditor()"></div>
+  <div class="prod-editor-panel" role="dialog" aria-modal="true" aria-label="${isNew ? "新增" : "編輯"}${cfg.title}">
+    <header class="prod-editor-head">
+      <button type="button" onclick="closeRowEditor()" class="h-10 px-3 -ml-2 rounded-xl font-black text-stone-500 hover:bg-stone-100" aria-label="關閉">✕</button>
+      <h3 class="flex-1 text-base font-black text-stone-900 truncate">${isNew ? "新增" : "編輯"}${cfg.title}</h3>
+      <button type="button" onclick="saveRowEditor(this)" class="h-10 px-5 rounded-xl bg-[#5B7290] text-white font-black hover:bg-[#3E4F66]">儲存</button>
+    </header>
+    <div class="prod-editor-body">
+      ${cfg.form(src)}
+      ${isNew ? "" : `<button type="button" onclick="deleteRowFromEditor()" class="w-full h-12 rounded-xl border border-red-200 bg-red-50 text-red-500 font-black hover:bg-red-100">刪除這個${cfg.title}</button>`}
+    </div>
+  </div>`;
+  document.body.classList.add("prod-editor-open");
+  requestAnimationFrame(() => wrap.classList.add("is-open"));
+  st.baseline = JSON.stringify(collectRowEditor());
+  if (isNew) setTimeout(() => wrap.querySelector('[data-pe="name"], [data-pe="code"]')?.focus(), 250);
+}
+function collectRowEditor() {
+  const out = {};
+  document.querySelectorAll("#rowEditor [data-pe]").forEach(el => { out[el.dataset.pe] = el.value.toString().trim(); });
+  return out;
+}
+function closeRowEditor(force) {
+  const wrap = document.getElementById("rowEditor");
+  if (!wrap || !wrap.classList.contains("is-open")) return;
+  const st = lsState(wrap.dataset.tab);
+  if (!force && JSON.stringify(collectRowEditor()) !== st.baseline) {
+    showAdminConfirm("有修改還沒儲存，確定要離開嗎？", () => closeRowEditor(true), "放棄修改？");
+    return;
+  }
+  wrap.classList.remove("is-open");
+  document.body.classList.remove("prod-editor-open");
+  st.editing = null;
+  setTimeout(() => { if (!wrap.classList.contains("is-open")) wrap.innerHTML = ""; }, 260);
+}
+async function saveRowEditor(btn) {
+  const tab = document.getElementById("rowEditor").dataset.tab;
+  const cfg = LIST_CONFIGS[tab], st = lsState(tab);
+  const d = collectRowEditor();
+  if (d.code !== undefined) d.code = d.code.replace(/\s+/g, "");
+  if (d.group) d.group = d.group.toLowerCase();
+  const err = cfg.validate(d);
+  if (err) { showAdminToast(err, "error", 3200); return; }
+  const target = st.editing;
+  const rows = cfg.rows();
+  const newKey = cfg.key(Object.assign({}, target || {}, d));
+  if (rows.some(r => r !== target && cfg.key(r) === newKey)) { showAdminToast(`已經有同名的${cfg.title}`, "error", 3600); return; }
+  if (!target && cfg.sortable) {
+    const peers = cfg.group ? rows.filter(r => cfg.group(r) === cfg.group(d)) : rows;
+    d.sort = String(peers.reduce((m, r) => Math.max(m, rowSortNum(r) === 99999 ? 0 : rowSortNum(r)), 0) + 10);
+  }
+  const restore = setButtonLoading(btn, "儲存中...");
+  try {
+    await prodPost({ action: "adminSaveRow", kind: cfg.kind, originalKey: target ? cfg.key(target) : "", row: d });
+    if (target) Object.assign(target, d); else rows.push(d);
+    closeRowEditor(true);
+    renderListPage(tab);
+    if (cfg.after) cfg.after();
+    showAdminToast(`已儲存「${cfg.title_(d)}」`, "success");
+  } catch (e) { if (restore) restore(); showAdminToast("儲存失敗：" + e.message, "error", 4800); }
+}
+function deleteRowFromEditor() {
+  const tab = document.getElementById("rowEditor").dataset.tab;
+  const cfg = LIST_CONFIGS[tab], st = lsState(tab), target = st.editing;
+  if (!target) return;
+  const block = cfg.beforeDelete ? cfg.beforeDelete(target) : "";
+  if (block) { showAdminToast(block, "error", 4800); return; }
+  showAdminConfirm(`確定要刪除「${cfg.title_(target)}」嗎？刪除後無法復原。`, async () => {
+    const t = showAdminToast("刪除中...", "loading", 0);
+    try {
+      await prodPost({ action: "adminDeleteRow", kind: cfg.kind, key: cfg.key(target) });
+      const rows = cfg.rows(); rows.splice(rows.indexOf(target), 1);
+      removeAdminToast(t); closeRowEditor(true); renderListPage(tab);
+      if (cfg.after) cfg.after();
+      showAdminToast(`已刪除「${cfg.title_(target)}」`, "success");
+    } catch (e) { removeAdminToast(t); showAdminToast("刪除失敗：" + e.message, "error", 4800); }
+  }, `刪除${cfg.title}`);
+}
+
+function renderCategories() { renderListPage("categories"); }
+function renderPackaging() { renderListPage("packaging"); }
+function renderCakeOptions() { renderListPage("cakeoptions"); }
+function renderCoupons() { renderListPage("coupons"); }
+
 
 function getCategoryOptionsHtml(selectedValue) {
   const categories = adminData?.categories || [
