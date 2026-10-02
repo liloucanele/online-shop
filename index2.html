@@ -540,8 +540,33 @@
             .lilou-name-en { font-size: 12px; }
             .lilou-product-thumb { width: 64px; height: 64px; }
             .product-tab-en { display: block; }
-            .product-tab-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); overflow-x: visible; -webkit-mask-image: none !important; mask-image: none !important; }
-            .product-tab-button { min-width: 0; }
+        }
+        /* 分類選單 B 樣式：膠囊按鈕（只放中文＋款數；英文移到下方分類標題列） */
+        .product-tab-list { background: transparent; padding: 0; border-radius: 0; gap: 8px; }
+        .product-tab-button {
+            flex: 0 0 auto; min-width: 0; height: 44px; padding: 0 18px !important;
+            border-radius: 999px; background: #fff; border: 1px solid #e7e5e4; color: #57534e;
+            box-shadow: none;
+        }
+        .product-tab-button:hover { color: #292524; border-color: #d6d3d1; }
+        .product-tab-button.is-active { background: #5B7290; border-color: #5B7290; color: #fff; box-shadow: none; }
+        .product-tab-heading { gap: 6px; }
+        .product-tab-title { font-size: 16px; font-weight: 900; }
+        .product-tab-count { background: transparent; color: #a8a29e; min-width: 0; height: auto; padding: 0; font-size: 12px; font-weight: 700; }
+        .product-tab-button.is-active .product-tab-count { background: transparent; color: rgba(255,255,255,.8); }
+        .product-category-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin-top: 18px; }
+        .product-category-heading .zh { font-size: 20px; font-weight: 900; color: #1c1917; }
+        .product-category-heading .en { font-size: 13px; font-weight: 500; color: #78716c; letter-spacing: .04em; }
+        .product-category-heading .cnt { font-size: 12px; font-weight: 700; color: #a8a29e; }
+        @media (max-width: 640px) {
+            .product-tab-button { flex: 0 0 auto; height: 40px; padding: 0 14px !important; }
+            .product-tab-title { font-size: 14px; }
+            .product-category-heading { gap: 2px 8px; margin-top: 14px; }
+            .product-category-heading .zh { font-size: 18px; flex-basis: 100%; }
+            .product-category-heading .en { font-size: 12px; }
+        }
+        @media (min-width: 768px) {
+            .product-tab-list { flex-wrap: wrap; overflow-x: visible; -webkit-mask-image: none !important; mask-image: none !important; }
         }
         .limited-product-description {
             margin-top: 5px;
@@ -688,6 +713,7 @@
                         <div class="h-10 lilou-shimmer rounded-xl flex-1"></div>
                         <div class="h-10 lilou-shimmer rounded-xl flex-1"></div>
                     </div>
+                    <div id="productCategoryHeading" class="product-category-heading" aria-live="polite"></div>
 
                     <div id="customBoxSection" class="product-tab-panel space-y-5" role="tabpanel">
                         <div class="space-y-3">
@@ -1869,6 +1895,8 @@
                     if (v !== undefined && v !== null && v.toString().trim() !== '') localDateSettings[k] = v.toString().trim();
                 });
 
+                renderHeroGallery(data.settings.gallery_images);
+
                 const promoEnabled = lilouIsTruthy(data.settings.promo_enabled || 'false');
                 const promoSection = document.getElementById('seasonalGiftSection');
                 if (promoSection) {
@@ -1894,6 +1922,23 @@
             const restoredDraft = restoreLilouDraftIfNeeded();
             if (!restoredDraft) handleShippingMethodChange(); 
             renderCart();
+        }
+
+        // 首頁小圖輪播：後台「設定 → 首頁小圖輪播」的圖片清單；沒設定就保留網頁內建的圖片
+        function renderHeroGallery(value) {
+            const list = (value || '').toString().split(/[,\n]+/).map(u => u.trim()).filter(Boolean);
+            const wrap = document.getElementById('galleryScroll');
+            if (!list.length || !wrap) return;
+            if (wrap.dataset.rendered === list.join('|')) return;
+            wrap.dataset.rendered = list.join('|');
+            galleryLightboxImages = list;
+            const style = wrap.querySelector('style');
+            wrap.innerHTML = '';
+            if (style) wrap.appendChild(style);
+            wrap.insertAdjacentHTML('beforeend', list.map((url, i) => `
+                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox(${i})">
+                            <img src="${lilouEscapeHtml(url)}" alt="Lilou 實拍 ${i + 1}" class="w-full h-full object-cover transition-transform duration-[0.8s] ease-out group-hover:scale-110" ${i === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">
+                        </div>`).join(''));
         }
 
         function getCategoryBehavior(categoryId) {
@@ -1935,11 +1980,18 @@
                 return `
                 <button type="button" class="product-tab-button ${isActive ? 'is-active' : ''} whitespace-nowrap px-4" role="tab" aria-selected="${isActive}" onclick="switchProductTab('${cat.id}')">
                     <span class="product-tab-heading">
-                        <span class="product-tab-text"><span class="product-tab-title">${lilouEscapeHtml(label.zh)}</span>${label.en ? `<span class="product-tab-en">${lilouEscapeHtml(label.en)}</span>` : ''}</span>
-                        <span class="product-tab-count ${prodCount === 0 ? 'hidden' : ''}">${prodCount} 款</span>
+                        <span class="product-tab-title">${lilouEscapeHtml(label.zh)}</span>
+                        <span class="product-tab-count ${prodCount === 0 ? 'hidden' : ''}">${prodCount}</span>
                     </span>
                 </button>`;
             }).join('');
+            const heading = document.getElementById('productCategoryHeading');
+            const curCat = localCategories.find(c => c.id === currentCategoryId);
+            if (heading && curCat) {
+                const lb = lilouSplitCategoryName(curCat);
+                const n = localProducts.filter(p => p.type === curCat.id).length;
+                heading.innerHTML = `<span class="zh">${lilouEscapeHtml(lb.zh)}</span>${lb.en ? `<span class="en">${lilouEscapeHtml(lb.en)}</span>` : ''}${n ? `<span class="cnt">${n} 款</span>` : ''}`;
+            }
             if (!tabList.dataset.hintBound) {
                 tabList.addEventListener('scroll', updateTabScrollHints, { passive: true });
                 window.addEventListener('resize', updateTabScrollHints);
@@ -2000,8 +2052,9 @@
             const promptToComboText = document.getElementById('promptToComboText');
             const promptToLimitedText = document.getElementById('promptToLimitedText');
 
-            if (promptToComboText) promptToComboText.textContent = `選購${nextCat.name}`;
-            if (promptToLimitedText) promptToLimitedText.textContent = `選購${nextCat.name}`;
+            const nextLabel = lilouSplitCategoryName(nextCat).zh;
+            if (promptToComboText) promptToComboText.textContent = `選購${nextLabel}`;
+            if (promptToLimitedText) promptToLimitedText.textContent = `選購${nextLabel}`;
 
             const limitedBtn = document.querySelector('#flavorSection .group');
             if (limitedBtn) limitedBtn.setAttribute('onclick', `switchProductTab('${nextCat.id}', {scroll: true})`);
@@ -2023,7 +2076,7 @@
                 comboWrap.innerHTML = comboItems.length ? comboItems.map((p) => `
                     <button type="button" data-package-name="${lilouEscapeHtml(p.name)}" onclick="selectPackageCard('${encodeURIComponent(p.name)}')" class="lilou-package-card text-left border border-stone-200 rounded-2xl bg-white px-4 py-4 min-h-[72px]">
                         <div class="flex items-center gap-3">
-                            <span class="minw-0 flex-1 font-black text-stone-900 text-sm md:text-base leading-snug">${lilouEscapeHtml(p.name)}${lilouNameEnHtml(p.name_en)}</span>
+                            <span class="minw-0 flex-1 font-black text-stone-900 text-sm md:text-base leading-snug">${lilouEscapeHtml(lilouSplitCategoryName(p).zh)}${lilouNameEnHtml(lilouSplitCategoryName(p).en)}</span>
                             ${p.extra_price > 0 ? `<span class="lilou-item-price">+NT$${Number(p.extra_price).toLocaleString('zh-TW')}</span>` : ''}
                             <span class="lilou-package-check w-5 h-5 rounded-full border border-stone-300 text-transparent flex items-center justify-center text-[10px] shrink-0">✓</span>
                         </div>
@@ -3743,7 +3796,7 @@
 
         let currentLightboxIndex = 0;
         let lightboxImages = [];
-        const galleryLightboxImages = [
+        let galleryLightboxImages = [
             'images/gift-1.jpg',
             'images/gift-2.jpg',
             'images/gift-3.jpg',
