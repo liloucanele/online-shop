@@ -471,7 +471,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.1.1</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.1.2</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -1134,7 +1134,7 @@ function renderFutureSevenDayPreview() {
 
   return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-1.5 mb-3">
-      <h3 class="font-semibold text-[#5B7290] tracking-wide">📦 未來 7 天訂單預覽</h3>
+      <h3 class="font-black text-stone-900 text-base md:text-lg">🚚 未來 7 天訂單預覽</h3>
       <div class="text-xs text-stone-400 font-medium">依客人選擇日期統計｜${escapeHtml(today)}～${escapeHtml(endDate)}｜點擊日期查看訂單</div>
     </div>
     <div class="md:hidden overflow-x-auto -mx-1 px-1 pb-1">
@@ -1605,7 +1605,7 @@ function syncDashboardFilterDetails() {
 let dashMonth = "";
 const DASH_CARD = "bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5";
 function dashTitle(icon, text, right = "") {
-  return `<div class="flex items-center justify-between gap-3 mb-3"><h3 class="font-black text-stone-900 text-base md:text-lg">${icon} ${text}</h3>${right}</div>`;
+  return `<div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-3"><h3 class="font-black text-stone-900 text-base md:text-lg whitespace-nowrap">${icon} ${text}</h3>${right}</div>`;
 }
 function orderDay(o) { return normalizeOrderDateForCompare(o.date) || ""; }
 function isLive(o) { return o.orderStatus !== "已取消"; }
@@ -1623,7 +1623,7 @@ function renderDashboard() {
 function renderDashboardContent() {
   const area = document.getElementById("dashboardStatsArea");
   if (!area || !adminData) return;
-  area.innerHTML = [dashTodaySection(), dashProductionSection(), `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">${dashStockSection()}${dashLimitSection()}</div>`, dashRevenueSection(), dashCouponSection()].join("");
+  area.innerHTML = [dashTodaySection(), renderFutureSevenDayPreview(), dashProductionSection(), `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">${dashStockSection()}${dashLimitSection()}</div>`, dashRevenueSection(), dashCouponSection()].join("");
 }
 
 // 1. 今天要做的事
@@ -1710,7 +1710,7 @@ function dashProductionSection() {
     </table>
   </div>`;
   return `<section class="${DASH_CARD}">
-    ${dashTitle("🧁", "未來 7 天要做幾顆", `<span class="text-xs font-bold text-stone-400">依取貨／到貨日・不含已取消${grand ? `・共 ${grand} 件` : ""}</span>`)}
+    ${dashTitle("📋", "未來 7 天備料清單", `<span class="text-xs font-bold text-stone-400">依取貨／到貨日・不含已取消${grand ? `・共 ${grand} 件` : ""}</span>`)}
     ${names.length ? mobile + desktop : empty}
   </section>`;
 }
