@@ -688,10 +688,11 @@
                     alt="Lilou"
                     class="h-9 md:h-11 w-auto object-contain block">
             </a>
-            <div class="flex items-center gap-6 font-bold tracking-widest text-xs md:text-sm">
+            <div id="navLinks" class="flex items-center gap-4 md:gap-6 font-bold tracking-widest text-xs md:text-sm">
                 <button type="button" id="navShopBtn" onclick="switchMode('shop')" class="cursor-pointer transition-all duration-200 border-b-2 border-white pb-0.5 text-white">
                     我要購物
                 </button>
+                <span id="navPageLinks" class="contents"></span>
                 <button type="button" id="navQueryBtn" onclick="switchMode('query')" class="cursor-pointer transition-all duration-200 pb-0.5 text-white/70">
                     查詢訂單
                 </button>
@@ -982,6 +983,8 @@
                     </form>
                 </section>
             </div>
+
+            <div id="pageContentWrapper" class="hidden space-y-5 md:space-y-6"></div>
 
             <div id="queryContentWrapper" class="hidden space-y-6 md:space-y-8">
                 <div class="query-page-heading space-y-1.5">
@@ -1371,25 +1374,94 @@
             const formContainer = document.getElementById('formContainer');
             const shopWrapper = document.getElementById('shopContentWrapper');
             const queryWrapper = document.getElementById('queryContentWrapper');
+            const pageWrapper = document.getElementById('pageContentWrapper');
             const receiptContainer = document.getElementById('receiptContainer');
-            const shopBtn = document.getElementById('navShopBtn');
-            const queryBtn = document.getElementById('navQueryBtn');
+            const ACTIVE = "cursor-pointer transition-all duration-200 border-b-2 border-white pb-0.5 text-white whitespace-nowrap";
+            const IDLE = "cursor-pointer transition-all duration-200 pb-0.5 text-white/70 whitespace-nowrap";
 
             formContainer.classList.remove('hidden');
             receiptContainer.classList.add('hidden');
 
-            if (targetMode === 'shop') {
-                shopWrapper.classList.remove('hidden');
-                queryWrapper.classList.add('hidden');
-                shopBtn.className = "cursor-pointer transition-all duration-200 border-b-2 border-white pb-0.5 text-white";
-                queryBtn.className = "cursor-pointer transition-all duration-200 pb-0.5 text-white/70";
-            } else if (targetMode === 'query') {
-                shopWrapper.classList.add('hidden');
-                queryWrapper.classList.remove('hidden');
-                shopBtn.className = "cursor-pointer transition-all duration-200 pb-0.5 text-white/70";
-                queryBtn.className = "cursor-pointer transition-all duration-200 border-b-2 border-white pb-0.5 text-white";
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+            const pageId = targetMode.indexOf('page:') === 0 ? decodeURIComponent(targetMode.slice(5)) : '';
+            if (pageId && !renderCustomPage(pageId)) targetMode = 'shop';
+            currentPageId = (pageId && targetMode !== 'shop') ? pageId : '';
+
+            shopWrapper.classList.toggle('hidden', targetMode !== 'shop');
+            queryWrapper.classList.toggle('hidden', targetMode !== 'query');
+            if (pageWrapper) pageWrapper.classList.toggle('hidden', !pageId || targetMode === 'shop');
+
+            document.querySelectorAll('#navLinks [data-nav-mode]').forEach(btn => { btn.className = IDLE; });
+            const shopBtn = document.getElementById('navShopBtn');
+            const queryBtn = document.getElementById('navQueryBtn');
+            shopBtn.className = targetMode === 'shop' ? ACTIVE : IDLE;
+            queryBtn.className = targetMode === 'query' ? ACTIVE : IDLE;
+            if (pageId && targetMode !== 'shop') {
+                const btn = document.querySelector(`#navLinks [data-nav-mode="page:${CSS.escape(pageId)}"]`);
+                if (btn) btn.className = ACTIVE;
             }
+            if (typeof updateFloatingCartButton === 'function') updateFloatingCartButton();
+            if (targetMode !== 'shop') window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ===== 自訂內容頁（後台「頁面」）=====
+        let localPages = [];
+        let currentPageId = '';
+        function lilouFormatRichText(text) {
+            const lines = lilouEscapeHtml(text || '').split(/\r?\n/);
+            const inline = t => t.replace(/\*\*(.+?)\*\*/g, '<strong class="font-black text-stone-800">$1</strong>');
+            let html = '', inList = false;
+            const closeList = () => { if (inList) { html += '</ul>'; inList = false; } };
+            lines.forEach(raw => {
+                const line = raw.trim();
+                if (!line) { closeList(); html += '<div class="h-2"></div>'; return; }
+                if (/^##\s+/.test(line)) { closeList(); html += `<div class="pt-1 text-sm md:text-base font-black text-stone-800">${inline(line.replace(/^##\s+/, ''))}</div>`; return; }
+                if (/^(-|・|•)\s*/.test(line)) {
+                    if (!inList) { html += '<ul class="space-y-1.5">'; inList = true; }
+                    html += `<li class="flex gap-2"><span class="mt-[0.55em] w-1.5 h-1.5 rounded-full bg-[#5B7290] shrink-0"></span><span>${inline(line.replace(/^(-|・|•)\s*/, ''))}</span></li>`;
+                    return;
+                }
+                closeList();
+                html += `<p>${inline(line)}</p>`;
+            });
+            closeList();
+            return html;
+        }
+        function lilouDefaultLineLink() {
+            const a = document.querySelector('a[title="官方 LINE"]');
+            return a ? a.href : 'https://lin.ee/ane79Cw';
+        }
+        function renderNavPages() {
+            const holder = document.getElementById('navPageLinks');
+            if (!holder) return;
+            holder.innerHTML = localPages.map(p => `<button type="button" data-nav-mode="page:${lilouEscapeHtml(p.id)}" onclick="switchMode('page:${encodeURIComponent(p.id).replace(/'/g, '%27')}')" class="cursor-pointer transition-all duration-200 pb-0.5 text-white/70 whitespace-nowrap">${lilouEscapeHtml(p.nav_label)}</button>`).join('');
+        }
+        function renderCustomPage(pageId) {
+            pageId = decodeURIComponent(pageId);
+            const page = localPages.find(p => p.id === pageId);
+            const wrap = document.getElementById('pageContentWrapper');
+            if (!page || !wrap) return false;
+            const blocks = (page.blocks || []).map(b => {
+                const link = (b.button_link || '').trim() || lilouDefaultLineLink();
+                const btnText = (b.button_text || '').trim();
+                return `<article class="bg-white rounded-3xl border border-stone-200/70 shadow-sm overflow-hidden">
+                    ${b.image ? `<div class="aspect-[16/9] bg-stone-100"><img src="${lilouEscapeHtml(b.image)}" alt="${lilouEscapeHtml(b.title)}" class="w-full h-full object-cover" loading="lazy" decoding="async"></div>` : ''}
+                    <div class="p-5 md:p-7 space-y-4">
+                        <div>
+                            <h3 class="text-lg md:text-xl font-black text-stone-900 tracking-wide">${lilouEscapeHtml(b.title)}</h3>
+                            ${b.title_en ? `<div class="text-xs md:text-sm font-semibold tracking-wider text-stone-400 mt-0.5">${lilouEscapeHtml(b.title_en)}</div>` : ''}
+                        </div>
+                        ${b.body ? `<div class="text-sm md:text-[15px] text-stone-600 leading-relaxed space-y-1.5">${lilouFormatRichText(b.body)}</div>` : ''}
+                        ${btnText ? `<a href="${lilouEscapeHtml(link)}" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white text-sm font-black tracking-wider shadow-sm transition-colors w-full sm:w-auto">${lilouEscapeHtml(btnText)}</a>` : ''}
+                    </div>
+                </article>`;
+            }).join('');
+            wrap.innerHTML = `
+                <div class="space-y-1.5 px-1">
+                    <h2 class="text-xl md:text-2xl font-black text-[#222222] tracking-wider">${lilouEscapeHtml(page.title)}${page.title_en ? ` <span class="text-sm md:text-base font-semibold text-stone-400 tracking-wider ml-1">${lilouEscapeHtml(page.title_en)}</span>` : ''}</h2>
+                    ${page.intro ? `<p class="text-stone-500 text-xs md:text-sm tracking-wide leading-relaxed whitespace-pre-line">${lilouEscapeHtml(page.intro)}</p>` : ''}
+                </div>
+                <div class="space-y-4 md:space-y-5">${blocks || '<div class="text-center text-sm text-stone-400 py-10">內容準備中</div>'}</div>`;
+            return true;
         }
 
         window.switchMode = switchMode;
@@ -1912,8 +1984,18 @@
             const targetMode = urlParams.get('mode');
             const targetTab = urlParams.get('tab');
 
+            localPages = Array.isArray(data.pages) ? data.pages : [];
+            renderNavPages();
+            const targetPage = urlParams.get('page');
+            const pageWrapVisible = !!currentPageId;
             if (targetMode === 'query') {
                 switchMode('query');
+            } else if (targetPage && localPages.some(p => p.id === targetPage) && !window.__lilouPageOpened) {
+                window.__lilouPageOpened = true;
+                switchMode('page:' + targetPage);
+            } else if (pageWrapVisible && currentPageId) {
+                // 背景更新資料後，留在目前的頁面並刷新內容
+                if (localPages.some(p => p.id === currentPageId)) switchMode('page:' + currentPageId); else switchMode('shop');
             }
 
             if (targetTab && localCategories.some(c => c.id === targetTab)) {
