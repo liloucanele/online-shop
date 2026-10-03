@@ -478,7 +478,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.2.5</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.2.6</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -2220,6 +2220,11 @@ function nextOrderStep(order) {
   if (s === "已出貨") return { to: "已完成", label: "已送達" };
   return null;
 }
+// 門市自取：確認中可一鍵跳到「可取貨」（例如當日現做、已備好的訂單）
+function skipOrderStep(order) {
+  if (getOrderMethodType(order) === "store" && (order.orderStatus || "") === "訂單確認中") return { to: "可取貨", label: "直接可取貨" };
+  return null;
+}
 function nextStepButton(order, cls = "") {
   const n = nextOrderStep(order);
   if (!n) return "";
@@ -2289,6 +2294,7 @@ function orderDetailPanel(order, mode) {
   const flow = baseFlow.includes(status) || status === "已取消" || !statuses.includes(status) ? baseFlow : statuses.filter(x => baseFlow.includes(x) || x === status);
   const at = flow.indexOf(status);
   const next = nextOrderStep(order);
+  const skip = skipOrderStep(order);
   const id = escapeHtml(order.id);
   const progress = status === "已取消"
     ? `<div class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-black text-red-600">這筆訂單已取消</div>`
@@ -2305,6 +2311,7 @@ function orderDetailPanel(order, mode) {
         <div class="flex items-center justify-between"><span class="pe-title">訂單進度</span><span class="text-[11px] font-bold text-stone-400">有 Email 的客人會收到狀態通知</span></div>
         ${progress}
         ${next ? `<button type="button" onclick="quickAdvanceOrder('${id}')" class="h-12 rounded-xl bg-[#5B7290] text-white text-[15px] font-black hover:bg-[#3E4F66]">${next.label} → 改成「${escapeHtml(next.to)}」</button>` : ""}
+        ${skip ? `<button type="button" onclick="quickAdvanceOrder('${id}', true)" class="h-11 rounded-xl border-2 border-[#5B7290] bg-white text-[#3E4F66] text-[14px] font-black hover:bg-[#eef2f7]">${skip.label} → 改成「${escapeHtml(skip.to)}」</button>` : ""}
         <details class="group rounded-xl border border-stone-200 bg-stone-50">
           <summary class="list-none cursor-pointer px-3 py-2.5 text-sm font-black text-stone-600 flex items-center justify-between">改成其他狀態、付款連結、貨運編號、備註<span class="prod-chevron">▾</span></summary>
           <div class="px-3 pb-3 space-y-3">
@@ -2349,8 +2356,8 @@ async function sendOrderUpdate(payload) {
   if (o) Object.assign(o, { orderStatus: payload.orderStatus, paymentLink: payload.paymentLink, trackingNo: payload.trackingNo, statusNote: payload.statusNote, internalNote: payload.internalNote, lastUpdate: data.lastUpdate || o.lastUpdate });
   refreshOrderViews(payload.orderId);
 }
-function quickAdvanceOrder(id) {
-  const o = findOrder(id), n = o && nextOrderStep(o);
+function quickAdvanceOrder(id, skip) {
+  const o = findOrder(id), n = o && (skip ? skipOrderStep(o) : nextOrderStep(o));
   if (!n) return;
   showAdminConfirm(`把 ${o.name || ""}（${id}）改成「${n.to}」？${o.email ? "\n客人會收到狀態通知信。" : ""}`, async () => {
     const t = showAdminToast("更新中...", "loading", 0);
