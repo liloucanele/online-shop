@@ -3305,6 +3305,15 @@
                     packageName: box.boxName,
                     repeatQty: repeatQty,
                     options: box.optionText || "",
+                    cake: box.itemType === 'cake' && box.cakeOptions ? {
+                        base: box.cakeOptions.base || "",
+                        fill1: box.cakeOptions.fill1 || "",
+                        fill2: box.cakeOptions.fill2 || "",
+                        addons: box.cakeOptions.addons || {},
+                        celebrate: !!box.cakeOptions.celebrate,
+                        slot: box.cakeOptions.slot || "",
+                        people: box.cakeOptions.people || ""
+                    } : undefined,
                     items: (box.flavors || []).map(f => {
                         const qty = (Number(f.quantity) || 0) * repeatQty;
                         const price = Number(f.price) || 0;
