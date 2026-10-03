@@ -2071,8 +2071,12 @@
                 if (localPages.some(p => p.id === currentPageId)) switchMode('page:' + currentPageId); else switchMode('shop');
             }
 
-            if (targetTab && localCategories.some(c => c.id === targetTab)) {
+            let scrollToTab = false;
+            if (targetTab && localCategories.some(c => c.id === targetTab) && !window.__lilouTabOpened) {
+                // 分類分享連結（?tab=分類ID）：只在第一次載入時切換並捲到商品區，之後尊重客人自己點的分類
+                window.__lilouTabOpened = true;
                 currentCategoryId = targetTab;
+                scrollToTab = targetMode !== 'query' && !targetPage;
             } else if (!currentCategoryId && localCategories.length > 0) {
                 currentCategoryId = localCategories[0].id;
             }
@@ -2119,7 +2123,7 @@
 
             // 即時重新繪製上方頁籤與下方面板，確保試算表改名後自動替換
             renderTabs();
-            switchProductTab(currentCategoryId);
+            switchProductTab(currentCategoryId, scrollToTab ? { scroll: true } : {});
             
             const restoredDraft = restoreLilouDraftIfNeeded();
             if (!restoredDraft) handleShippingMethodChange(); 
