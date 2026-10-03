@@ -688,6 +688,38 @@
             .limited-product-description { font-size: 12px; }
         }
     </style>
+    <!-- 首頁圖片：用上次造訪的設定提早下載主圖，不必等資料載完才開始抓 -->
+    <script>
+        try {
+            var lilouCache = JSON.parse(localStorage.getItem('lilou_shop_fast_cache') || 'null');
+            var lilouSet = lilouCache && lilouCache.settings;
+            if (lilouSet) {
+                [lilouSet.promo_image, (lilouSet.gallery_images || '').toString().split(/[,\n]+/)[0]].forEach(function (u) {
+                    u = (u || '').toString().trim();
+                    if (!u) return;
+                    var l = document.createElement('link');
+                    l.rel = 'preload'; l.as = 'image'; l.href = u; l.setAttribute('fetchpriority', 'high');
+                    document.head.appendChild(l);
+                });
+            }
+        } catch (e) {}
+    </script>
+    <style>
+        /* 首頁圖片：先顯示模糊小圖，大圖下載完整後再淡入，不會一段一段出現 */
+        .lilou-fade-wrap { position: relative; background: #ece7e1; }
+        .lilou-fade-wrap::before {
+            content: ""; position: absolute; inset: 0;
+            background: linear-gradient(100deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.45) 50%, rgba(255,255,255,0) 70%) #ece7e1;
+            background-size: 220% 100%; animation: lilouShimmer 1.4s ease-in-out infinite;
+        }
+        .lilou-fade-wrap.is-loaded::before { animation: none; opacity: 0; }
+        .lilou-blur { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(14px); transform: scale(1.12); opacity: 0; transition: opacity .3s ease; }
+        .lilou-blur.is-loaded { opacity: 1; }
+        .lilou-fade-img { position: relative; opacity: 0; transition-property: opacity, transform !important; }
+        .lilou-fade-img.is-loaded { opacity: 1; }
+        @keyframes lilouShimmer { 0% { background-position: 120% 0; } 100% { background-position: -20% 0; } }
+        @media (prefers-reduced-motion: reduce) { .lilou-fade-wrap::before { animation: none; } .lilou-fade-img { transition: none !important; } }
+    </style>
 </head>
 <body class="bg-[#F4F6F9] text-[#222222] min-h-screen flex flex-col font-sans antialiased selection:bg-[#5B7290]/20">
 
@@ -754,8 +786,9 @@
                 
                 <!-- 1. 活動卡片 (Seasonal Promo) -->
                 <section id="seasonalGiftSection" class="hidden relative overflow-hidden rounded-[2rem] shadow-md group cursor-pointer border border-stone-200/50" onclick="document.getElementById('seasonalGiftButton').click()">
-                    <div class="absolute inset-0 bg-stone-100">
-                        <img id="seasonalGiftImage" alt="" decoding="async" class="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-105">
+                    <div id="seasonalGiftImageWrap" class="lilou-fade-wrap absolute inset-0">
+                        <img id="seasonalGiftBlur" class="lilou-blur" alt="" aria-hidden="true" decoding="async" onload="this.classList.add('is-loaded')" onerror="this.classList.remove('is-loaded')">
+                        <img id="seasonalGiftImage" alt="" decoding="async" fetchpriority="high" onload="lilouImgLoaded(this)" class="lilou-fade-img w-full h-full object-cover duration-[1.5s] ease-out group-hover:scale-105" style="transition-duration:.6s,1.5s">
                     </div>
                     <div class="absolute inset-0 bg-gradient-to-t from-stone-950/90 via-stone-900/40 to-transparent"></div>
                     <div class="relative z-10 p-6 md:p-10 min-h-[320px] md:min-h-[420px] flex flex-col justify-end h-full">
@@ -2129,7 +2162,27 @@
             if (link) document.getElementById('seasonalGiftButton').setAttribute('onclick', `switchProductTab('${link}', {scroll:true})`);
             const img = document.getElementById('seasonalGiftImage');
             const src = settings.promo_image || 'images/seasonal-gift-box.jpg';
-            if (img.getAttribute('src') !== src) { img.setAttribute('fetchpriority', 'high'); img.src = src; }
+            if (img.getAttribute('src') !== src) {
+                img.classList.remove('is-loaded');
+                document.getElementById('seasonalGiftImageWrap')?.classList.remove('is-loaded');
+                const blur = document.getElementById('seasonalGiftBlur');
+                const small = lilouThumbUrl(src);
+                if (blur) { blur.classList.remove('is-loaded'); if (small !== src) blur.src = small; else blur.removeAttribute('src'); }
+                img.src = src;
+                if (img.complete && img.naturalWidth) lilouImgLoaded(img);
+            }
+        }
+
+        // 模糊小圖（-s.jpg）當底圖；沒有小圖就只顯示柔和的載入底色
+        function lilouBlurImg(url) {
+            const small = lilouThumbUrl(url);
+            if (small === (url || '').toString().trim()) return '';
+            return `<img class="lilou-blur" src="${lilouEscapeHtml(small)}" alt="" aria-hidden="true" onload="this.classList.add('is-loaded')" onerror="this.remove()" decoding="async">`;
+        }
+        function lilouImgLoaded(img) {
+            img.classList.add('is-loaded');
+            const wrap = img.closest('.lilou-fade-wrap');
+            if (wrap) wrap.classList.add('is-loaded');
         }
 
         // 首頁小圖輪播：後台「設定 → 首頁小圖輪播」的圖片清單；沒設定就保留網頁內建的圖片
@@ -2145,9 +2198,11 @@
             wrap.innerHTML = '';
             if (style) wrap.appendChild(style);
             wrap.insertAdjacentHTML('beforeend', list.map((url, i) => `
-                        <div class="shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 bg-stone-100 cursor-pointer group" onclick="openLightbox(${i})">
-                            <img src="${lilouEscapeHtml(url)}" alt="Lilou 實拍 ${i + 1}" class="w-full h-full object-cover transition-transform duration-[0.8s] ease-out group-hover:scale-110" ${i === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">
+                        <div class="lilou-fade-wrap shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 cursor-pointer group" onclick="openLightbox(${i})">
+                            ${lilouBlurImg(url)}
+                            <img src="${lilouEscapeHtml(url)}" alt="Lilou 實拍 ${i + 1}" class="lilou-fade-img w-full h-full object-cover duration-[0.8s] ease-out group-hover:scale-110" style="transition-duration:.6s,.8s" onload="lilouImgLoaded(this)" ${i < 2 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">
                         </div>`).join(''));
+            wrap.querySelectorAll('.lilou-fade-img').forEach(img => { if (img.complete && img.naturalWidth) lilouImgLoaded(img); });
         }
 
         // ===== 生日蛋糕客製選單 =====
