@@ -1309,10 +1309,13 @@
             if (!p || !p.image) return '';
             return `<button type="button" class="lilou-product-thumb" onclick="openProductImage('${encodeURIComponent(p.image)}')" aria-label="放大 ${lilouEscapeHtml(p.name)} 的照片">${lilouThumbImg(p.image, p.name)}</button>`;
         }
+        const LILOU_LOW_STOCK_THRESHOLD = 10;
         function lilouStockText(p, available) {
             const limited = p.max_per_order > 0 && Number(p.real_stock || 0) > p.max_per_order;
             if (available <= 0) return limited && Number(p.real_stock || 0) > 0 ? '已達限購' : '已售完';
-            return limited ? `每筆限購 ${p.max_per_order}` : `剩 ${available}`;
+            if (limited) return `每筆限購 ${p.max_per_order}`;
+            // 剩不到 LILOU_LOW_STOCK_THRESHOLD 個才顯示數量
+            return available < LILOU_LOW_STOCK_THRESHOLD ? `剩 ${available}` : '';
         }
         function lilouOutOfStockMessage(p, available) {
             const limited = p.max_per_order > 0 && Number(p.real_stock || 0) > p.max_per_order;
