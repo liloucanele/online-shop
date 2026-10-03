@@ -478,7 +478,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.2.1</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.2.4</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -1676,6 +1676,12 @@ function dashTodaySection() {
 }
 
 // 2. 未來 7 天要做幾顆（依取貨／到貨日）
+// 備料日＝取貨／到貨日 − 備料準備期（設定頁可調）
+function orderPrepDate(o) {
+  const days = getOrderMethodFamily(o) === "store" ? parseInt(getSettingsVal("prep_days_pickup", "1"), 10) : parseInt(getSettingsVal("prep_days_delivery", "3"), 10);
+  const d = orderDay(o);
+  return d ? addDaysToDateInput(d, -Math.max(0, days || 0)) : "";
+}
 function dashProductionSection() {
   const today = getTodayDateInputValue();
   const prepStore = Math.max(0, parseInt(getSettingsVal("prep_days_pickup", "1"), 10) || 0);
@@ -2915,6 +2921,7 @@ const LIST_CONFIGS = {
       </section>`,
     validate: d => !d.name ? "請填寫頁籤名稱" : "",
     beforeDelete: r => { const n = (adminData.products || []).filter(p => prodCatKey(p.type) === prodCatKey(r.id)).length; return n ? `這個分類還有 ${n} 項商品，請先把商品移到其他分類或刪除。` : ""; },
+    rowAction: r => `<button type="button" onclick="copyCategoryLink('${escapeHtml(r.id)}')" class="shrink-0 h-9 px-3 rounded-xl border border-stone-200 bg-white text-xs font-black text-[#5B7290] hover:bg-[#eef2f7] inline-flex items-center gap-1.5" aria-label="複製「${escapeHtml(r.name)}」的連結"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"></path><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"></path></svg><span class="hidden sm:inline">複製連結</span></button>`,
     after: () => renderProducts()
   },
   packaging: {
@@ -3100,6 +3107,7 @@ function listRowHtml(tab, cfg, r, idx, total, searching) {
       </span>
       ${cfg.hasDisplay ? "" : `<span class="text-stone-300 font-black pr-1">›</span>`}
     </button>
+    ${cfg.rowAction ? cfg.rowAction(r) : ""}
     ${cfg.hasDisplay ? `<button type="button" class="admin-switch ${on ? "is-on" : ""}" onclick="toggleRowDisplay('${tab}', ${r.__i})" aria-label="${on ? "顯示中，點一下隱藏" : "隱藏中，點一下顯示"}"><span></span></button>` : ""}
     ${cfg.sortable && !searching ? `<div class="prod-sort">
       <button type="button" class="prod-sort-top hidden md:inline-flex" onclick="moveRow('${tab}', ${r.__i}, 'top')" ${idx === 0 ? "disabled" : ""} title="置頂" aria-label="置頂">⤒</button>
@@ -3107,6 +3115,25 @@ function listRowHtml(tab, cfg, r, idx, total, searching) {
       <button type="button" onclick="moveRow('${tab}', ${r.__i}, 1)" ${idx === total - 1 ? "disabled" : ""} title="往下" aria-label="往下">↓</button>
     </div>` : ""}
   </div>`;
+}
+
+// ===== 分類分享連結：給社群宣傳，點了直接打開那個分類 =====
+const SITE_URL = /^https?:/.test(location.protocol) && !/localhost|127\.0\.0\.1/.test(location.hostname) ? location.origin + "/" : "https://www.lilou.food/";
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand("copy"); ta.remove(); return ok;
+  } catch (e) { return false; }
+}
+async function copyCategoryLink(id) {
+  const c = (adminData.categories || []).find(x => x.id === id);
+  const url = `${SITE_URL}?tab=${encodeURIComponent(id)}`;
+  const ok = await copyText(url);
+  if (!ok) { window.prompt("請長按複製這個連結：", url); return; }
+  showAdminToast(c && !isDisplayOn(c.display) ? "已複製，但這個分類目前「未顯示」，客人打開會看到第一個分類" : `已複製「${c ? c.name : id}」的連結`, c && !isDisplayOn(c.display) ? "info" : "success", 3200);
 }
 
 function toggleListGroup(tab, key) { const st = lsState(tab); st.collapsed.has(key) ? st.collapsed.delete(key) : st.collapsed.add(key); renderListBody(tab); }
