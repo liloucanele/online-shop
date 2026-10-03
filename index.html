@@ -706,7 +706,7 @@
     </script>
     <style>
         /* 首頁圖片：先顯示模糊小圖，大圖下載完整後再淡入，不會一段一段出現 */
-        .lilou-fade-wrap { position: relative; background: #ece7e1; }
+        .lilou-fade-wrap { background: #ece7e1; } /* 位置交給各自的 class（輪播 relative、主圖 absolute） */
         .lilou-fade-wrap::before {
             content: ""; position: absolute; inset: 0;
             background: linear-gradient(100deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.45) 50%, rgba(255,255,255,0) 70%) #ece7e1;
@@ -2198,7 +2198,7 @@
             wrap.innerHTML = '';
             if (style) wrap.appendChild(style);
             wrap.insertAdjacentHTML('beforeend', list.map((url, i) => `
-                        <div class="lilou-fade-wrap shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 cursor-pointer group" onclick="openLightbox(${i})">
+                        <div class="lilou-fade-wrap relative shrink-0 snap-center w-[85%] sm:w-[45%] md:w-[32%] aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border border-stone-200/60 cursor-pointer group" onclick="openLightbox(${i})">
                             ${lilouBlurImg(url)}
                             <img src="${lilouEscapeHtml(url)}" alt="Lilou 實拍 ${i + 1}" class="lilou-fade-img w-full h-full object-cover duration-[0.8s] ease-out group-hover:scale-110" style="transition-duration:.6s,.8s" onload="lilouImgLoaded(this)" ${i < 2 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">
                         </div>`).join(''));
