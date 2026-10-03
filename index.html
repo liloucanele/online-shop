@@ -661,6 +661,12 @@
         /* 分類選單不使用陰影 */
         .product-tab-shell, .product-tab-button, .product-tab-button:hover,
         .product-tab-button.is-active, .product-tab-button.is-active:hover { box-shadow: none !important; }
+        /* 電腦版：依分類數平均分排（例如 6 個排成 3×2），長名稱自動換行不撞到數字 */
+        @media (min-width: 900px) {
+            .product-tab-list { grid-template-columns: repeat(var(--tab-cols, 5), minmax(0, 1fr)); }
+            .product-tab-button { white-space: normal; }
+            .product-tab-title { text-wrap: balance; word-break: keep-all; overflow-wrap: anywhere; line-height: 1.3; }
+        }
         @media (max-width: 899px) {
             .product-tab-button { padding: 7px 26px 7px 14px !important; }
             .product-tab-count { top: 50%; transform: translateY(-50%); right: 7px; }
@@ -2379,6 +2385,8 @@
         function renderTabs() {
             const tabList = document.querySelector('.product-tab-list');
             if (!tabList) return;
+            const tabCount = localCategories.length || 1;
+            tabList.style.setProperty('--tab-cols', Math.ceil(tabCount / Math.ceil(tabCount / 5)));
             tabList.innerHTML = localCategories.map(cat => {
                 const isActive = cat.id === currentCategoryId;
                 const prodCount = localProducts.filter(p => p.type === cat.id).length;
