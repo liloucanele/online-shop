@@ -1697,17 +1697,15 @@
         // 回傳 { dates, blockedBy }：blockedBy = 造成沒有日期可選的分類名稱
         function lilouAllowedDates(kind, openDates, cats) {
             const g = k => { const v = lilouRuleNum(localDateSettings[k]); return v === null ? (LILOU_RULE_DEFAULTS[k] || 0) : v; };
-            let minDays = g(kind + '_min_days');
-            let maxDays = g(kind + '_max_days');
-            cats.forEach(c => {
-                const cmin = lilouRuleNum(c[kind + '_min_days']);
-                const cmax = lilouRuleNum(c[kind + '_max_days']);
-                if (cmin !== null) minDays = Math.max(minDays, cmin);
-                if (cmax !== null && cmax > 0) maxDays = maxDays > 0 ? Math.min(maxDays, cmax) : cmax;
-            });
+            // 分類有填就用分類的（可填 0＝當天），沒填才用全店規則；購物車有多個分類時取大家都能接受的日期
+            const gMin = g(kind + '_min_days'), gMax = g(kind + '_max_days');
+            const effMin = c => { const v = lilouRuleNum(c[kind + '_min_days']); return v === null ? gMin : v; };
+            const effMax = c => { const v = lilouRuleNum(c[kind + '_max_days']); return v === null ? (gMax > 0 ? gMax : Infinity) : v; };
+            const minDays = cats.length ? Math.max(...cats.map(effMin)) : gMin;
+            const maxDays = cats.length ? Math.min(...cats.map(effMax)) : (gMax > 0 ? gMax : Infinity);
             const base = lilouOrderBaseDate();
             const from = lilouAddDays(base, minDays);
-            const to = maxDays > 0 ? lilouAddDays(base, maxDays) : '9999/99/99';
+            const to = isFinite(maxDays) ? lilouAddDays(base, maxDays) : '9999/99/99';
             const open = (openDates || []).map(lilouNormalizeDateForCompare).filter(Boolean);
             const withRules = cats.map(c => ({ c, r: lilouParseDateRule(c[kind + '_date_rule']) }));
             const inRange = open.filter(d => d >= from && d <= to);
