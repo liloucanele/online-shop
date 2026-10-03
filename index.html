@@ -1186,6 +1186,16 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbxLxTXWmKZspDDSoIC43IK0GXVvubKFQAhfubVwz2OkFXnD6kJI-d4fgoOywX4ik7Km/exec";
         
         let shippingFee = 129; 
+        // 運費由後台「設定」的 shipping_fee 決定；空白或格式不對時用 129
+        function lilouApplyShippingFee(v) {
+            const n = Number((v === undefined || v === null ? '' : v).toString().trim());
+            shippingFee = (v !== undefined && v !== null && v.toString().trim() !== '' && Number.isFinite(n) && n >= 0) ? Math.round(n) : 129;
+            const opt = document.querySelector('#shipMethod option[value="delivery_cod"]');
+            if (opt) opt.textContent = `7-11取貨付款（運費+$${shippingFee}）`;
+            const span = document.querySelector('#shipFeeDisplay span');
+            if (span) span.innerText = `+$${shippingFee}`;
+            if (typeof calculateTotal === 'function' && document.getElementById('subtotalDisplay')) { try { calculateTotal(); } catch (e) {} }
+        }
         let cart = []; 
         let localCategories = []; 
         let currentCategoryId = ""; 
@@ -2128,6 +2138,7 @@
                 });
 
                 localSettingsRaw = data.settings || {};
+                lilouApplyShippingFee(data.settings.shipping_fee);
                 localDateSettings = Object.assign({}, LILOU_RULE_DEFAULTS);
                 Object.keys(LILOU_RULE_DEFAULTS).forEach(k => {
                     const v = data.settings[k];
