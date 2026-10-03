@@ -1110,48 +1110,24 @@
         </div>
     </div>
 
-    <div id="countdownOverlay" class="fixed inset-0 bg-stone-950/70 backdrop-blur-xs flex items-center justify-center z-50 hidden">
-        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl max-w-sm w-full text-center space-y-5 mx-4 border border-stone-100">
-            <div class="space-y-1.5">
-                <h3 id="overlayMainTitle" class="text-lg md:text-xl font-black text-stone-800">請確認您的訂單內容</h3>
-                <p id="overlaySubTitle" class="text-xs text-stone-400 font-bold uppercase tracking-wider">倒數結束前可隨時確認或調整</p>
+    <!-- 訂單確認畫面（B 款）：不倒數，客人按「確認送出」才下單 -->
+    <div id="countdownOverlay" class="fixed inset-0 bg-stone-950/60 flex items-end md:items-center justify-center z-50 hidden">
+        <div class="order-confirm-sheet bg-white w-full md:max-w-lg rounded-t-[22px] md:rounded-[22px] flex flex-col max-h-[92vh] md:max-h-[88vh] md:mx-4">
+            <div class="px-5 pt-4 pb-3 border-b border-stone-100 text-center shrink-0">
+                <div class="w-10 h-1 rounded-full bg-stone-200 mx-auto mb-3 md:hidden"></div>
+                <h3 id="overlayMainTitle" class="text-lg md:text-xl font-black text-stone-900">請確認訂單內容</h3>
+                <p id="overlaySubTitle" class="text-xs text-stone-400 font-bold mt-0.5">確認無誤後再按「確認送出」</p>
             </div>
-            
-            <div class="text-6xl font-black text-[#5B7290] py-1" id="countdownTimer">20</div>
-            
-            <div class="bg-stone-50 border border-stone-200 p-4 rounded-xl text-left space-y-3 text-sm md:text-base text-stone-700 leading-relaxed font-sans">
-                <div>
-                    <span class="font-extrabold text-stone-400 block text-xs uppercase mb-0.5">配送方式：</span>
-                    <span id="overlayMethod" class="text-stone-900 font-black text-sm md:text-base"></span>
-                </div>
-                <div>
-                    <span id="overlayDateLabel" class="font-extrabold text-stone-400 block text-xs uppercase mb-0.5">取貨日期：</span>
-                    <span id="overlayDate" class="text-stone-900 font-black text-sm md:text-base"></span>
-                </div>
-                <div class="border-t border-stone-200 pt-2.5 mt-2 flex justify-between items-center">
-                    <span class="font-extrabold text-stone-800 text-sm md:text-base">應付總額：</span>
-                    <span id="overlayTotal" class="font-black text-base md:text-lg text-[#5B7290]"></span>
-                </div>
-            </div>
-            
-            <div id="loadingAnimationBlock" style="display: none;" class="py-2 space-y-2">
+            <div id="countdownTimer" class="hidden"></div>
+            <div id="orderConfirmBody" class="flex-1 overflow-y-auto px-4 py-3.5 space-y-2.5"></div>
+            <div id="loadingAnimationBlock" style="display: none;" class="py-5 space-y-2 text-center shrink-0">
                 <div class="spinner"></div>
                 <p class="text-xs text-[#5B7290] font-black tracking-wider animate-pulse">訂單同步中...</p>
+                <p id="overlayBottomPrompt" class="text-[11px] text-stone-400 leading-relaxed font-medium">請勿關閉視窗或刷新網頁。</p>
             </div>
-
-            <div id="overlayPaymentNotice" class="hidden bg-amber-50 border border-amber-200 p-4 rounded-xl text-left text-xs md:text-sm text-amber-900 font-bold leading-relaxed">
-                若您選擇 7-11取貨（線上付款），付款連結將寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的付款按鈕完成付款。
-            </div>
-
-            <p id="overlayBottomPrompt" class="text-[11px] text-stone-400 leading-relaxed font-medium">正確認商品庫存。</p>
-            
-            <div id="overlayActionButtons" class="flex flex-row-reverse gap-2.5 pt-1">
-                <button type="button" onclick="instantOrderSubmission()" class="flex-[3] bg-[#5B7290] text-white font-extrabold h-12 rounded-xl hover:bg-[#3E4F66] transition-colors text-xs md:text-sm uppercase shadow-xs cursor-pointer">
-                    直接送出
-                </button>
-                <button type="button" onclick="cancelOrderSubmission()" class="flex-[2] border border-stone-200 text-stone-500 font-bold h-12 rounded-xl hover:bg-stone-50 transition-colors text-xs md:text-sm uppercase shadow-2xs cursor-pointer">
-                    取消調整
-                </button>
+            <div id="overlayActionButtons" class="flex gap-2.5 px-4 pt-3 pb-[calc(16px+env(safe-area-inset-bottom))] md:pb-4 border-t border-stone-100 shrink-0">
+                <button type="button" onclick="cancelOrderSubmission()" class="flex-1 border border-stone-200 bg-white text-stone-600 font-black h-12 rounded-xl hover:bg-stone-50 transition-colors text-sm md:text-base cursor-pointer">返回修改</button>
+                <button type="button" onclick="instantOrderSubmission()" class="flex-[2] bg-[#5B7290] text-white font-black h-12 rounded-xl hover:bg-[#3E4F66] transition-colors text-sm md:text-base cursor-pointer">確認送出</button>
             </div>
         </div>
     </div>
@@ -3462,21 +3438,13 @@
             const orderId = "TEMP-" + new Date().getTime();
             const methodText = lilouIsDeliveryMethod(shipMethodVal) ? `${lilouShippingMethodDisplayLabel(shipMethodVal)} (${custAddress})` : `門市自取付款 (高雄市前鎮區景德路72巷12號)`;
             
-            document.getElementById('overlayDateLabel').innerText = lilouIsDeliveryMethod(shipMethodVal) ? "希望到貨日期：" : "門市自取日期：";
-            document.getElementById('overlayMainTitle').innerText = "請確認您的訂單內容";
-            document.getElementById('overlaySubTitle').innerText = "倒數結束前可隨時確認或調整";
-            document.getElementById('overlayBottomPrompt').innerText = "訂單準備送出中";
-            document.getElementById('countdownTimer').style.display = 'block';
+            document.getElementById('overlayMainTitle').innerText = "請確認訂單內容";
+            document.getElementById('overlaySubTitle').innerText = "確認無誤後再按「確認送出」";
             document.getElementById('loadingAnimationBlock').style.display = 'none';
+            document.getElementById('orderConfirmBody').style.display = '';
             document.getElementById('overlayActionButtons').style.display = 'flex';
-            document.getElementById('overlayMethod').innerText = methodText;
-            document.getElementById('overlayDate').innerText = shipDateWithWeekday;
-            document.getElementById('overlayTotal').innerText = `$${finalTotal} 元`;
-            const overlayPaymentNotice = document.getElementById('overlayPaymentNotice');
-            if (overlayPaymentNotice) {
-                if (lilouIsPrepaidDeliveryMethod(shipMethodVal)) overlayPaymentNotice.classList.remove('hidden');
-                else overlayPaymentNotice.classList.add('hidden');
-            }
+            document.getElementById('orderConfirmBody').innerHTML = buildOrderConfirmHtml({ custName, custPhone, custEmail, rawShipDate, shipMethodVal, custAddress });
+            document.getElementById('orderConfirmBody').scrollTop = 0;
 
             trackLilouEvent('begin_checkout', {
                 value: finalTotal,
@@ -3485,28 +3453,59 @@
             });
 
             pendingOrderSnapshot = { orderId, custName, custPhone, custEmail, shipDate: shipDateWithWeekday, shipMethodVal, custAddress, finalTotal };
-            countdownSeconds = 20; 
-            document.getElementById('countdownTimer').innerText = countdownSeconds;
             document.getElementById('countdownOverlay').classList.remove('hidden');
+        }
 
-            submissionInterval = setInterval(() => {
-                countdownSeconds--;
-                if (countdownSeconds > 0) document.getElementById('countdownTimer').innerText = countdownSeconds;
-                else clearInterval(submissionInterval);
-            }, 1000);
-
-            submissionTimeout = setTimeout(async () => {
-                clearInterval(submissionInterval);
-                switchToLoadingState();
-                await executeBackendPost(orderId, custName, custPhone, custEmail, shipDateWithWeekday, shipMethodVal, custAddress, finalTotal);
-            }, 20000); 
+        // 訂單確認畫面內容：取貨日＋應付總額在上、商品明細（含蛋糕選項）、地點與聯絡資料
+        function buildOrderConfirmHtml(f) {
+            const esc = lilouEscapeHtml;
+            const amt = getOrderAmountSummary();
+            const isDelivery = lilouIsDeliveryMethod(f.shipMethodVal);
+            const md = (() => { const m = (f.rawShipDate || '').match(/^\d{4}[-\/](\d{1,2})[-\/](\d{1,2})/); return m ? `${Number(m[1])}/${Number(m[2])}` : f.rawShipDate; })();
+            const week = (getWeekdayStr(f.rawShipDate) || '').replace(/[()（）\s]/g, '').replace(/^週/, '');
+            const methodShort = isDelivery ? lilouShippingMethodDisplayLabel(f.shipMethodVal) : '門市自取・現場付款';
+            const totalItems = cart.reduce((n, box) => n + (box.flavors || []).reduce((m, x) => m + (Number(x.quantity) || 0), 0) * (Number(box.repeatQty) || 1), 0);
+            const groups = cart.map((box, idx) => {
+                const repeatQty = Number(box.repeatQty) || 1;
+                const flavors = (box.flavors || []).map(x => `${esc(x.name)} ×${(Number(x.quantity) || 0) * repeatQty}`).join('、');
+                const opts = (box.optionText || '').split('／').map(t => t.trim()).filter(Boolean);
+                return `<div class="${idx ? 'border-t border-dashed border-stone-200 pt-2.5 mt-2.5' : ''}">
+                    <div class="text-xs font-black text-[#5B7290]">第${idx + 1}組｜${esc(box.boxName)}${repeatQty > 1 ? ` ×${repeatQty}組` : ''}</div>
+                    <div class="flex justify-between gap-3 mt-0.5 text-sm font-bold text-stone-800"><span class="min-w-0 break-words">${flavors}</span><b class="font-black whitespace-nowrap">$${Number(box.boxTotalCost) || 0}</b></div>
+                    ${opts.length ? `<div class="mt-1.5 rounded-lg bg-stone-50 px-3 py-1.5 text-xs text-stone-600 font-semibold leading-relaxed">${opts.map(t => `<div>${esc(t)}</div>`).join('')}</div>` : ''}
+                </div>`;
+            }).join('');
+            const note = (document.getElementById('orderNote')?.value || '').trim();
+            const place = isDelivery ? f.custAddress : '高雄市前鎮區景德路72巷12號（14:00–18:00）';
+            const amountLines = [
+                amt.discountAmount > 0 ? `已折 $${amt.discountAmount}` : '',
+                amt.shippingFee > 0 ? `含運費 $${amt.shippingFee}` : ''
+            ].filter(Boolean).join('・');
+            return `
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="rounded-2xl border border-stone-200 px-3 py-2.5"><div class="text-[11px] font-black text-stone-400 tracking-wider">${isDelivery ? '希望到貨日' : '取貨日'}</div><div class="text-lg font-black text-stone-900 mt-0.5">${esc(md)}${week ? `（${esc(week)}）` : ''}</div><div class="text-xs font-bold text-stone-500">${esc(methodShort)}</div></div>
+                    <div class="rounded-2xl border border-stone-200 px-3 py-2.5"><div class="text-[11px] font-black text-stone-400 tracking-wider">應付總額</div><div class="text-lg font-black text-[#5B7290] mt-0.5">$${amt.total}</div><div class="text-xs font-bold text-stone-500">${amountLines || '&nbsp;'}</div></div>
+                </div>
+                <details open class="group rounded-2xl border border-stone-200 px-3.5 py-3">
+                    <summary class="list-none cursor-pointer flex items-center justify-between text-sm font-black text-stone-900">
+                        <span>商品明細<span class="ml-1.5 inline-block rounded-full bg-[#eef2f7] text-[#3E4F66] text-[11px] font-black px-2 py-0.5">${cart.length} 組・${totalItems} 件</span></span>
+                        <span class="text-xs font-bold text-stone-400"><span class="group-open:hidden">展開 ▾</span><span class="hidden group-open:inline">收合 ▴</span></span>
+                    </summary>
+                    <div class="mt-2.5">${groups}</div>
+                </details>
+                <div class="rounded-2xl border border-stone-200 px-3.5 py-3">
+                    <div class="text-[11px] font-black text-stone-400 tracking-wider mb-1">${isDelivery ? '取貨門市與聯絡資料' : '取貨地點與聯絡資料'}</div>
+                    <div class="text-[13px] font-bold text-stone-600 leading-relaxed break-words">${esc(place)}<br>${esc(f.custName)}・${esc(f.custPhone)}・${esc(f.custEmail)}</div>
+                    ${note ? `<div class="mt-2 rounded-lg bg-stone-50 px-3 py-1.5 text-xs text-stone-600 font-semibold whitespace-pre-wrap break-words">備註：${esc(note)}</div>` : ''}
+                </div>
+                ${lilouIsPrepaidDeliveryMethod(f.shipMethodVal) ? `<div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900 leading-relaxed">付款連結會寄到您的 Email，請於期限內完成付款；沒收到信也可以到「查詢訂單」輸入手機號碼付款。</div>` : ''}`;
         }
 
         window.switchToLoadingState = function() {
             document.getElementById('overlayMainTitle').innerText = "預購單成立中";
             document.getElementById('overlaySubTitle').innerText = "正在送出您的訂單";
             document.getElementById('overlayBottomPrompt').innerText = "請勿關閉視窗或刷新網頁。";
-            document.getElementById('countdownTimer').style.display = 'none';
+            document.getElementById('orderConfirmBody').style.display = 'none';
             document.getElementById('overlayActionButtons').style.display = 'none';
             document.getElementById('loadingAnimationBlock').style.display = 'block';
         }
@@ -3650,7 +3649,7 @@
             }
         }
 
-        window.cancelOrderSubmission = function() { if (submissionTimeout) clearTimeout(submissionTimeout); if (submissionInterval) clearInterval(submissionInterval); pendingOrderSnapshot = null; document.getElementById('countdownOverlay').classList.add('hidden'); showToastNotification("已成功取消本次傳送！資料皆完整保留。"); }
+        window.cancelOrderSubmission = function() { if (submissionTimeout) clearTimeout(submissionTimeout); if (submissionInterval) clearInterval(submissionInterval); pendingOrderSnapshot = null; document.getElementById('countdownOverlay').classList.add('hidden'); showToastNotification("尚未送出，資料都還在，可以繼續修改。"); }
         window.shareReceipt = function() { 
             if (navigator.share) { navigator.share({ title: 'Lilou 預購收據確認單', text: sharePlainText }).catch(() => {}); } 
             else { navigator.clipboard.writeText(sharePlainText).then(() => showToastNotification("📋 明細已複製到您的剪貼簿！")).catch(() => window.print()); } 
