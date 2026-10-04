@@ -85,11 +85,10 @@
         body {
             min-height: 100dvh;
             background: #F5F7FB;
-            padding-bottom: env(safe-area-inset-bottom);
         }
         footer {
+            /* 頁尾一路延伸到手機最底部（含 iPhone 底部的安全區域），不留淺色空白 */
             padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
-            margin-bottom: calc(-1 * env(safe-area-inset-bottom));
             background-color: #1C1715;
         }
 
@@ -271,6 +270,8 @@
         }
         #composeBar.is-visible { display: flex; }
         body.lilou-composing #floatingCartButton.is-visible { display: none; }
+        /* 滑到頁尾時收起購物車按鈕，避免蓋住 LINE／IG 圖示 */
+        body.lilou-at-cart #floatingCartButton.is-visible { display: none; }
         #composeBar .cb-track { height: 6px; border-radius: 99px; background: #f0eeec; overflow: hidden; margin-top: 6px; }
         #composeBar .cb-fill { height: 100%; border-radius: 99px; background: #5B7290; transition: width .2s ease; }
         #composeBar.is-full .cb-fill { background: #16a34a; }
@@ -2867,6 +2868,17 @@
             new IntersectionObserver(entries => { entries.forEach(e => { lilouPanelInView = e.isIntersecting; }); updateComposeBar(); }).observe(panel);
         }
         document.addEventListener('DOMContentLoaded', initComposeBarObserver);
+        function initFloatingCartObserver() {
+            if (!('IntersectionObserver' in window)) return;
+            const targets = [document.querySelector('footer')].filter(Boolean);
+            const seen = new Map();
+            const io = new IntersectionObserver(entries => {
+                entries.forEach(e => seen.set(e.target, e.isIntersecting));
+                document.body.classList.toggle('lilou-at-cart', [...seen.values()].some(Boolean));
+            });
+            targets.forEach(t => io.observe(t));
+        }
+        if (document.readyState !== 'loading') setTimeout(initFloatingCartObserver, 0); else document.addEventListener('DOMContentLoaded', initFloatingCartObserver);
         if (document.readyState !== 'loading') setTimeout(initComposeBarObserver, 0);
 
         function updateFlavorComposerUI() {
