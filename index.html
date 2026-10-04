@@ -1492,6 +1492,31 @@
             closeList();
             return html;
         }
+        // 下單完成畫面：邀請門市自取的客人綁定 LINE，可以取貨時收到通知（文字和驗證碼由後端產生）
+        function lilouLineBindCardHtml(result) {
+            if (!result) return '';
+            if (result.lineBound) return `<div class="mb-4 text-sm font-bold text-emerald-900 bg-emerald-50 border border-emerald-200 p-4 rounded-xl">✅ 已連結 LINE：可以取貨時，會傳 LINE 通知您。</div>`;
+            const text = (result.lineBindText || '').toString();
+            if (!text) return '';
+            window.lilouLineBindText = text;
+            const oa = ((localSettingsRaw && localSettingsRaw.line_oa_id) || '').toString().trim();
+            const link = oa ? `https://line.me/R/oaMessage/${encodeURIComponent(oa.charAt(0) === '@' ? oa : '@' + oa)}/?${encodeURIComponent(text)}` : lilouDefaultLineLink();
+            const esc = lilouEscapeHtml;
+            return `<div class="mb-4 rounded-xl border border-[#06C755]/40 bg-[#06C755]/5 p-4">
+                <div class="text-base font-black text-stone-900">可以取貨時，用 LINE 通知您</div>
+                <p class="text-sm font-bold text-stone-600 mt-1 leading-relaxed">${oa ? '點下方按鈕會開啟 Lilou 官方 LINE，訂單資料已自動帶入，按「傳送」就完成了。' : '加入 Lilou 官方 LINE 好友後，貼上並傳送下面這段文字（按按鈕時會自動複製）。'}綁定一次後，之後的門市自取訂單都會通知。</p>
+                ${oa ? '' : `<div class="mt-3 select-all rounded-lg bg-white border border-stone-200 px-3 py-2 font-mono text-sm font-bold text-stone-800 break-all">${esc(text)}</div>`}
+                <div class="mt-3 flex gap-2">
+                    <a href="${esc(link)}" target="_blank" rel="noopener" onclick="lilouCopyLineBind(true)" class="flex-[2] h-12 rounded-xl bg-[#06C755] hover:brightness-95 text-white font-black text-sm flex items-center justify-center">${oa ? '用 LINE 接收取貨通知' : '開啟 LINE 加好友'}</a>
+                    ${oa ? '' : `<button type="button" onclick="lilouCopyLineBind()" class="flex-1 h-12 rounded-xl border border-stone-200 bg-white text-stone-700 font-black text-sm">複製文字</button>`}
+                </div>
+            </div>`;
+        }
+        window.lilouCopyLineBind = function(silent) {
+            const t = window.lilouLineBindText || '';
+            if (!t || !navigator.clipboard) return;
+            navigator.clipboard.writeText(t).then(() => { if (!silent) showToastNotification('已複製，到 LINE 貼上傳送即可'); }).catch(() => {});
+        }
         function lilouDefaultLineLink() {
             const a = document.querySelector('a[title="官方 LINE"]');
             return a ? a.href : 'https://lin.ee/ane79Cw';
@@ -3677,6 +3702,7 @@
                     
                     document.getElementById('receiptContent').innerHTML = `
                         <div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">重要提醒：請務必留存或截圖此訂購明細！方便您取貨時確認內容。</div>
+                        ${lilouLineBindCardHtml(result)}
                         ${lilouIsPrepaidDeliveryMethod(shipMethodVal) ? `<div class="mb-4 text-sm font-bold text-amber-900 leading-relaxed bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs">提醒您：7-11取貨（線上付款）的付款連結將另行寄送至您的 Email，請留意收件並於期限內完成付款。若未收到付款通知信件，也可以至網站左上角「查詢訂單」，輸入訂購時填寫的手機號碼後，點選付款按鈕完成付款。</div>` : ``}
                         <div class="space-y-3 text-stone-700 text-sm font-mono">
                             <div><strong>訂單編號：</strong>${officialOrderId}</div>

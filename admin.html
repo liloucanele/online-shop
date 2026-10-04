@@ -478,7 +478,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.2.8</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.2.9</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -3788,7 +3788,7 @@ function renderSettings() {
         <p class="text-sm text-stone-500 mt-1">改完任何一項，按最下方的「儲存設定」一次存好。</p>
       </div>
       <div class="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1">
-        ${[["set-days","📅 營業日"],["set-rules","⏱ 日期規則"],["set-shipping","🚚 運費"],["set-promo","🖼 首頁活動"],["set-gallery","🎞 首頁輪播"],["set-cake","🎂 蛋糕頁文字"]].map(([id, t]) => `<button type="button" onclick="document.getElementById('${id}').scrollIntoView({behavior:'smooth',block:'start'})" class="shrink-0 h-10 px-4 rounded-full border border-stone-200 bg-stone-50 text-sm font-black text-stone-600 hover:bg-white">${t}</button>`).join("")}
+        ${[["set-days","📅 營業日"],["set-rules","⏱ 日期規則"],["set-shipping","🚚 運費"],["set-line","💬 LINE 通知"],["set-promo","🖼 首頁活動"],["set-gallery","🎞 首頁輪播"],["set-cake","🎂 蛋糕頁文字"]].map(([id, t]) => `<button type="button" onclick="document.getElementById('${id}').scrollIntoView({behavior:'smooth',block:'start'})" class="shrink-0 h-10 px-4 rounded-full border border-stone-200 bg-stone-50 text-sm font-black text-stone-600 hover:bg-white">${t}</button>`).join("")}
       </div>
     </div>
 
@@ -3842,6 +3842,16 @@ function renderSettings() {
         <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5">7-11 運費（元）</span>
         <input id="shipping_fee" type="number" min="0" step="1" inputmode="numeric" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white font-black focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(getSettingsVal("shipping_fee", "129"))}" oninput="markUnsaved('settings');">
       </label>
+    </section>
+
+    <section id="set-line" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 scroll-mt-24">
+      <h3 class="text-lg font-black text-stone-900 mb-1">💬 LINE 取貨通知</h3>
+      <p class="text-sm text-stone-500 mb-4">門市自取的客人下單後，可以綁定官方 LINE。之後訂單改成「可取貨」或「已取消」時，系統會自動傳 LINE 給客人。填入官方帳號 ID 後，客人按一下就能開啟 LINE 傳送綁定訊息。</p>
+      <label class="block max-w-xs">
+        <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5">LINE 官方帳號 ID（@ 開頭）</span>
+        <input id="line_oa_id" type="text" placeholder="@123abcde" autocapitalize="off" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white font-black focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(getSettingsVal("line_oa_id", ""))}" oninput="markUnsaved('settings');">
+      </label>
+      <p class="text-xs font-bold text-stone-400 mt-2">在 LINE Official Account Manager 左上角帳號名稱下方可以看到。已綁定的客人記錄在試算表「LINE_Bindings」分頁。</p>
     </section>
 
     <section id="set-promo" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 scroll-mt-24">
@@ -3967,7 +3977,7 @@ function saveSettingsTab(btn) {
     });
 
     // 3. 覆寫活動宣傳設定
-    const promoKeys = ["shipping_fee", "closed_weekdays", "promo_enabled", "promo_eyebrow", "promo_title", "promo_desc", "promo_btn_text", "promo_btn_link", "promo_image", "gallery_images", "cake_intro", "cake_notice", "cake_outro", "celebration_time_slots"];
+    const promoKeys = ["shipping_fee", "line_oa_id", "closed_weekdays", "promo_enabled", "promo_eyebrow", "promo_title", "promo_desc", "promo_btn_text", "promo_btn_link", "promo_image", "gallery_images", "cake_intro", "cake_notice", "cake_outro", "celebration_time_slots"];
     promoKeys.forEach(k => {
        const el = document.getElementById(k);
        if (el) currentSettingsMap[k] = el.value.trim();
