@@ -263,6 +263,19 @@
             letter-spacing: .06em;
         }
         #floatingCartButton.is-visible { display: inline-flex; }
+        /* 挑口味時固定在底部的進度條；出現時先藏起購物車按鈕，避免重疊 */
+        #composeBar {
+            position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 46;
+            display: none; align-items: center; gap: 12px; padding: 10px 10px 10px 16px;
+            background: #fff; border: 1px solid #e7e5e4; border-radius: 18px; max-width: 560px; margin: 0 auto;
+        }
+        #composeBar.is-visible { display: flex; }
+        body.lilou-composing #floatingCartButton.is-visible { display: none; }
+        #composeBar .cb-track { height: 6px; border-radius: 99px; background: #f0eeec; overflow: hidden; margin-top: 6px; }
+        #composeBar .cb-fill { height: 100%; border-radius: 99px; background: #5B7290; transition: width .2s ease; }
+        #composeBar.is-full .cb-fill { background: #16a34a; }
+        #composeBar button { flex-shrink: 0; height: 46px; padding: 0 18px; border-radius: 14px; font-weight: 900; font-size: 14px; letter-spacing: .04em; color: #fff; background: #5B7290; }
+        #composeBar button:disabled { background: #d6d3d1; cursor: not-allowed; }
         #floatingCartCount {
             min-width: 24px;
             height: 24px;
@@ -1098,6 +1111,15 @@
         </section>
     </div>
 
+    <div id="composeBar" role="region" aria-label="目前盒裝進度">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-baseline gap-1.5 text-stone-900"><span class="text-xs font-bold text-stone-500 truncate" id="composeBarBox"></span></div>
+            <div class="text-base font-black text-stone-900 leading-tight" id="composeBarCount">已選 0 個</div>
+            <div class="cb-track"><div class="cb-fill" id="composeBarFill" style="width:0%"></div></div>
+        </div>
+        <button type="button" id="composeBarBtn" onclick="if (!document.getElementById('packBtn').disabled) packBoxToCart()" disabled>加入購物車</button>
+    </div>
+
     <button id="floatingCartButton" type="button" onclick="document.getElementById('cartSectionAnchor')?.scrollIntoView({behavior:'smooth', block:'start'})" aria-label="查看購物車">
         <span>購物車</span><span id="floatingCartCount">0</span>
     </button>
@@ -1424,10 +1446,13 @@
 
         function showToastNotification(message) {
             const toast = document.createElement('div');
-            toast.className = "fixed bottom-6 left-1/2 -translate-x-1/2 bg-stone-900/95 text-white font-bold px-5 py-3.5 rounded-2xl shadow-xl z-50 text-xs md:text-sm tracking-wide flex items-center gap-2 border border-stone-800 transition-all duration-300 transform translate-y-10 opacity-0";
+            toast.className = "fixed left-1/2 -translate-x-1/2 bg-stone-900/95 text-white font-bold px-5 py-3.5 rounded-2xl shadow-xl z-50 text-xs md:text-sm tracking-wide flex items-center gap-2 border border-stone-800 transition-all duration-300 transform translate-y-10 opacity-0";
             toast.setAttribute('aria-live', 'polite');
             toast.setAttribute('role', 'status');
             toast.innerHTML = `<span>${message}</span>`;
+            // 購物車按鈕或盒裝進度條在畫面上時，提示往上移，不要蓋住它們
+            const lifted = document.querySelector('#floatingCartButton.is-visible, #composeBar.is-visible');
+            toast.style.bottom = lifted ? 'calc(78px + env(safe-area-inset-bottom))' : 'calc(24px + env(safe-area-inset-bottom))';
             document.body.appendChild(toast);
             setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 50);
             setTimeout(() => {
@@ -2812,6 +2837,38 @@
             return selected;
         }
 
+        let lilouComposeState = { hasPackage: false, total: 0, complete: false };
+        let lilouPackBtnInView = false, lilouPanelInView = false;
+        function updateComposeBar() {
+            const bar = document.getElementById('composeBar');
+            if (!bar) return;
+            const { hasPackage, total, complete } = lilouComposeState;
+            const shopHidden = document.getElementById('shopContentWrapper')?.classList.contains('hidden');
+            const show = hasPackage && lilouPanelInView && !lilouPackBtnInView && !shopHidden;
+            bar.classList.toggle('is-visible', show);
+            document.body.classList.toggle('lilou-composing', show);
+            if (!hasPackage) return;
+            const limit = currentBoxLimit || 0;
+            const boxSelect = document.getElementById('boxSelect');
+            document.getElementById('composeBarBox').textContent = boxSelect ? boxSelect.value : '';
+            document.getElementById('composeBarCount').textContent = limit ? (complete ? `已選滿 ${limit} 個` : `已選 ${total}／${limit} 個`) : `已選 ${total} 個`;
+            document.getElementById('composeBarFill').style.width = (limit ? Math.min(100, total / limit * 100) : (total ? 100 : 0)) + '%';
+            bar.classList.toggle('is-full', complete);
+            const btn = document.getElementById('composeBarBtn');
+            btn.disabled = !complete;
+            btn.textContent = complete ? '加入購物車' : (limit && total > limit ? `多了 ${total - limit} 個` : (limit ? `還差 ${limit - total} 個` : '請選擇口味'));
+        }
+        function initComposeBarObserver() {
+            if (!('IntersectionObserver' in window)) return;
+            const packBtn = document.getElementById('packBtn');
+            const panel = document.getElementById('flavorComposerPanel');
+            if (!packBtn || !panel) return;
+            new IntersectionObserver(entries => { entries.forEach(e => { lilouPackBtnInView = e.isIntersecting; }); updateComposeBar(); }).observe(packBtn);
+            new IntersectionObserver(entries => { entries.forEach(e => { lilouPanelInView = e.isIntersecting; }); updateComposeBar(); }).observe(panel);
+        }
+        document.addEventListener('DOMContentLoaded', initComposeBarObserver);
+        if (document.readyState !== 'loading') setTimeout(initComposeBarObserver, 0);
+
         function updateFlavorComposerUI() {
             const boxSelect = document.getElementById('boxSelect');
             const hasPackage = !!boxSelect?.value;
@@ -2822,6 +2879,8 @@
             const complete = hasPackage && (currentBoxLimit ? total === currentBoxLimit : total > 0);
 
             if (panel) panel.classList.add('is-open');
+            lilouComposeState = { hasPackage, total, complete };
+            updateComposeBar();
             if (packBtn) {
                 packBtn.disabled = !complete;
                 packBtn.innerText = complete ? '加入購物車' : (hasPackage ? '請完成口味選擇' : '請先選擇包裝');
