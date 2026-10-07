@@ -478,7 +478,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.2.8</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.3.0</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -1697,6 +1697,7 @@ function dashProductionSection() {
     const dayOrders = orders.filter(x => x.prep === date).map(x => x.o);
     days.push({ date, orders: dayOrders, store: dayOrders.filter(o => getOrderMethodFamily(o) === "store").length, delivery: dayOrders.filter(o => getOrderMethodFamily(o) === "delivery").length, items: summarizeDetailsFromOrders(dayOrders).production });
   }
+  dashPrepDays = days;
   const totals = {};
   days.forEach(d => Object.entries(d.items).forEach(([n, q]) => totals[n] = (totals[n] || 0) + q));
   const names = Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
@@ -1704,12 +1705,12 @@ function dashProductionSection() {
   const head = d => `<span class="block text-sm font-black text-stone-800">${formatMonthDayWithWeekday(d.date)}</span><span class="block text-[11px] font-bold text-stone-400">${d.orders.length ? `備門市 ${d.store}・宅配 ${d.delivery} 筆` : "不用備料"}</span>`;
   const empty = `<p class="text-sm font-bold text-stone-400">未來 7 天沒有需要備料的訂單。</p>`;
   const mobile = `<div class="md:hidden flex gap-2.5 overflow-x-auto -mx-4 px-4 pb-1 snap-x">
-    ${days.map(d => {
+    ${days.map((d, i) => {
       const entries = Object.entries(d.items).sort((a, b) => b[1] - a[1]);
       const sum = entries.reduce((s, [, q]) => s + q, 0);
       return `<div class="snap-start shrink-0 w-[168px] text-left flex flex-col justify-start rounded-2xl border ${d.date === today ? "border-[#5B7290] bg-[#f4f6f9]" : "border-stone-100 bg-stone-50"} p-3">
-        ${head(d)}
-        <div class="mt-2 space-y-1">${entries.map(([n, q]) => `<div class="flex justify-between gap-2 text-xs"><span class="font-bold text-stone-600 truncate">${escapeHtml(n)}</span><span class="font-black mono text-stone-900">${q}</span></div>`).join("") || `<div class="text-xs font-bold text-stone-300">—</div>`}</div>
+        <button type="button" onclick="openPrepItemOrders(${i}, '')" class="block w-full text-left" ${d.orders.length ? "" : "disabled"}>${head(d)}</button>
+        <div class="mt-2 space-y-0.5">${entries.map(([n, q]) => `<button type="button" data-item="${escapeHtml(n)}" onclick="openPrepItemOrders(${i}, this.dataset.item)" class="w-full flex justify-between items-center gap-2 text-xs -mx-1.5 px-1.5 py-1 rounded-lg active:bg-white hover:bg-white"><span class="font-bold text-stone-600 truncate underline decoration-stone-300 decoration-dotted underline-offset-2">${escapeHtml(n)}</span><span class="font-black mono text-stone-900">${q}</span></button>`).join("") || `<div class="text-xs font-bold text-stone-300">—</div>`}</div>
         ${sum ? `<div class="mt-2 pt-2 border-t border-stone-200 flex justify-between text-xs font-black"><span class="text-stone-500">合計</span><span class="mono text-[#3E4F66]">${sum}</span></div>` : ""}
       </div>`;
     }).join("")}
@@ -1718,20 +1719,64 @@ function dashProductionSection() {
     <table class="w-full text-sm">
       <thead><tr class="border-b border-stone-200">
         <th class="text-left py-2 pr-3 text-xs font-black text-stone-400 w-[200px]">品項</th>
-        ${days.map(d => `<th class="py-2 px-1 text-center align-bottom"><div class="rounded-lg px-1.5 py-1 ${d.date === today ? "text-[#3E4F66]" : ""}">${head(d)}</div></th>`).join("")}
+        ${days.map((d, i) => `<th class="py-2 px-1 text-center align-bottom"><button type="button" onclick="openPrepItemOrders(${i}, '')" ${d.orders.length ? "" : "disabled"} class="w-full rounded-lg px-1.5 py-1 ${d.orders.length ? "hover:bg-[#eef2f7]" : ""} ${d.date === today ? "text-[#3E4F66]" : ""}">${head(d)}</button></th>`).join("")}
         <th class="py-2 pl-2 text-right text-xs font-black text-stone-400">7 天合計</th>
       </tr></thead>
       <tbody>${names.map(n => `<tr class="border-b border-stone-100">
-        <td class="py-2 pr-3 font-bold text-stone-700">${escapeHtml(n)}</td>
-        ${days.map(d => `<td class="py-2 text-center mono ${d.items[n] ? "font-black text-stone-900" : "text-stone-300"}">${d.items[n] || "·"}</td>`).join("")}
+        <td class="py-1 pr-3"><button type="button" data-item="${escapeHtml(n)}" onclick="openPrepItemOrders(-1, this.dataset.item)" class="text-left font-bold text-stone-700 underline decoration-stone-300 decoration-dotted underline-offset-2 hover:text-[#3E4F66]">${escapeHtml(n)}</button></td>
+        ${days.map((d, i) => `<td class="py-1 text-center mono ${d.items[n] ? "font-black text-stone-900" : "text-stone-300"}">${d.items[n] ? `<button type="button" data-item="${escapeHtml(n)}" onclick="openPrepItemOrders(${i}, this.dataset.item)" class="min-w-[36px] px-2 py-1 rounded-lg hover:bg-[#eef2f7]">${d.items[n]}</button>` : "·"}</td>`).join("")}
         <td class="py-2 pl-2 text-right mono font-black text-[#3E4F66]">${totals[n]}</td>
       </tr>`).join("")}</tbody>
     </table>
   </div>`;
   return `<section class="${DASH_CARD}">
-    ${dashTitle("📋", "未來 7 天備料清單", `<span class="text-xs font-bold text-stone-400">依備料日：自取提前 ${prepStore} 天、宅配提前 ${prepShip} 天${grand ? `・共 ${grand} 件` : ""}</span>`)}
+    ${dashTitle("📋", "未來 7 天備料清單", `<span class="text-xs font-bold text-stone-400">依備料日：自取提前 ${prepStore} 天、宅配提前 ${prepShip} 天${grand ? `・共 ${grand} 件・點品項看訂單` : ""}</span>`)}
     ${names.length ? mobile + desktop : empty}
   </section>`;
+}
+
+// 備料清單點進去：列出這個品項（或這一天）是哪幾筆訂單、哪位客人
+let dashPrepDays = [];
+function openPrepItemOrders(dayIdx, item) {
+  const days = dayIdx >= 0 ? [dashPrepDays[dayIdx]].filter(Boolean) : dashPrepDays;
+  const rows = [];
+  days.forEach(d => d.orders.forEach(o => {
+    const items = summarizeDetailsFromOrders([o]).production;
+    if (item && !items[item]) return;
+    rows.push({ o, prep: d.date, qty: item ? items[item] : 0, items });
+  }));
+  const total = rows.reduce((s, r) => s + r.qty, 0);
+  const when = dayIdx >= 0 && days[0] ? `${formatMonthDayWithWeekday(days[0].date)} 備料` : "未來 7 天";
+  const title = item ? escapeHtml(item) : `${when}的訂單`;
+  const sub = item ? `${when}・${rows.length} 筆訂單・共 ${total} 個` : `${rows.length} 筆訂單`;
+  const list = rows.map(r => {
+    const o = r.o;
+    const fam = getOrderMethodFamily(o) === "store" ? "門市自取" : "宅配";
+    const what = item ? "" : `<span class="block text-xs font-bold text-stone-500 mt-1">${Object.entries(r.items).map(([n, q]) => `${escapeHtml(n)} ×${q}`).join("、") || "—"}</span>`;
+    return `<button type="button" data-dashboard-order-id="${escapeHtml(o.id)}" onclick="closePrepItemOrders();openOrderFromDashboard(this.dataset.dashboardOrderId)" class="w-full text-left rounded-xl bg-stone-50 border border-stone-100 px-3 py-2.5 flex items-center justify-between gap-3 hover:bg-white active:bg-white">
+      <span class="min-w-0"><span class="block font-black text-stone-800 truncate">${escapeHtml(o.name || "-")}</span><span class="block text-xs font-bold text-stone-400 truncate">${escapeHtml(o.id)}・${fam} ${formatMonthDayWithWeekday(orderDay(o))}${dayIdx < 0 ? `・${formatMonthDayWithWeekday(r.prep)} 備` : ""}</span>${what}</span>
+      <span class="shrink-0 flex flex-col items-end gap-1">${item ? `<span class="text-lg font-black mono text-[#3E4F66]">×${r.qty}</span>` : ""}<span class="rounded-full border px-2 py-0.5 text-[11px] font-bold ${statusClass(o.orderStatus)}">${escapeHtml(o.orderStatus || "未設定")}</span></span>
+    </button>`;
+  }).join("");
+  closePrepItemOrders();
+  const wrap = document.createElement("div");
+  wrap.id = "prepItemSheet";
+  wrap.className = "fixed inset-0 z-[9990] flex items-end md:items-center justify-center bg-stone-900/40";
+  wrap.onclick = e => { if (e.target === wrap) closePrepItemOrders(); };
+  wrap.innerHTML = `<div class="bg-white w-full md:max-w-lg rounded-t-3xl md:rounded-3xl max-h-[80vh] flex flex-col">
+    <div class="flex items-start justify-between gap-3 px-5 pt-5 pb-3 border-b border-stone-100">
+      <div class="min-w-0"><h3 class="text-lg font-black text-stone-900 truncate">${title}</h3><p class="text-xs font-bold text-stone-400 mt-0.5">${sub}・點訂單看明細</p></div>
+      <button type="button" onclick="closePrepItemOrders()" class="shrink-0 w-9 h-9 rounded-full bg-stone-100 text-stone-500 font-black" aria-label="關閉">✕</button>
+    </div>
+    <div class="overflow-y-auto px-4 py-3 space-y-2" style="padding-bottom:max(12px, env(safe-area-inset-bottom))">${list || `<p class="text-sm font-bold text-stone-400">沒有訂單。</p>`}</div>
+  </div>`;
+  document.body.appendChild(wrap);
+  document.body.style.overflow = "hidden";
+}
+function closePrepItemOrders() {
+  const el = document.getElementById("prepItemSheet");
+  if (el) el.remove();
+  document.body.style.overflow = "";
 }
 
 // 3. 庫存提醒
