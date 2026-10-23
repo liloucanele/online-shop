@@ -4354,7 +4354,85 @@
             }
         }
 
+        // IG / FB / Threads / LINE 等 App 內建瀏覽器會擋掉 .ics 檔案下載，改顯示替代方式
+        function isSocialInAppBrowser() {
+            const ua = navigator.userAgent || "";
+            return /Instagram|FBAN|FBAV|FB_IAB|FBIOS|Barcelona|Threads|Messenger|Line\/|MicroMessenger/i.test(ua);
+        }
+
+        function buildGoogleCalendarUrl(orderId, dateStr, address) {
+            const dateMatch = (dateStr || "").match(/\d{4}\/\d{2}\/\d{2}/);
+            const cleanDate = dateMatch ? dateMatch[0].replace(/\//g, '') : (dateStr || "").replace(/[^0-9]/g, '').substring(0, 8);
+            if (!cleanDate || cleanDate.length !== 8) return "";
+            const url = new URL('https://calendar.google.com/calendar/render');
+            url.searchParams.append('action', 'TEMPLATE');
+            url.searchParams.append('text', '粒露Lilou | 門市自取提醒');
+            url.searchParams.append('dates', `${cleanDate}T140000/${cleanDate}T180000`);
+            url.searchParams.append('ctz', 'Asia/Taipei');
+            url.searchParams.append('details', `您的 Lilou 訂單 (${orderId}) 預定於${dateStr}取貨付款。\n門市營業時間為14:00-18:00，詳細請至網站查詢訂單：https://www.lilou.food/`);
+            url.searchParams.append('location', address || "高雄市前鎮區景德路72巷12號");
+            return url.toString();
+        }
+
+        // 外部瀏覽器開啟「查詢訂單」頁：LINE 用 openExternalBrowser，Android 用 intent，iOS 用 x-safari-https
+        function buildExternalQueryUrl() {
+            const queryUrl = `${location.origin}${location.pathname}?mode=query`;
+            const ua = navigator.userAgent || "";
+            if (/Line\//i.test(ua)) return queryUrl + '&openExternalBrowser=1';
+            if (/Android/i.test(ua)) return `intent://${location.host}${location.pathname}?mode=query#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(queryUrl)};end`;
+            if (/iPhone|iPad|iPod/i.test(ua)) return 'x-safari-' + queryUrl;
+            return queryUrl;
+        }
+
+        window.closeInAppCalendarSheet = function() {
+            const sheet = document.getElementById('inAppCalendarSheet');
+            if (sheet) sheet.remove();
+        }
+
+        window.copyLilouQueryUrl = function() {
+            const queryUrl = `${location.origin}${location.pathname}?mode=query`;
+            const done = () => showToastNotification('✅ 已複製網址，請貼到 ' + getRecommendedBrowserName() + ' 開啟');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(queryUrl).then(done).catch(() => window.prompt('請複製以下網址', queryUrl));
+            } else {
+                window.prompt('請複製以下網址', queryUrl);
+            }
+        }
+
+        function showInAppCalendarSheet(orderId, dateStr, address) {
+            closeInAppCalendarSheet();
+            const googleUrl = buildGoogleCalendarUrl(orderId, dateStr, address);
+            const browserName = getRecommendedBrowserName();
+            const sheet = document.createElement('div');
+            sheet.id = 'inAppCalendarSheet';
+            sheet.className = 'fixed inset-0 z-[9999] flex items-end sm:items-center justify-center px-4 pb-4 bg-stone-950/55 backdrop-blur-sm';
+            sheet.onclick = (e) => { if (e.target === sheet) closeInAppCalendarSheet(); };
+            sheet.innerHTML = `
+                <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-stone-100 overflow-hidden" style="margin-bottom: env(safe-area-inset-bottom)">
+                    <div class="px-6 pt-5 pb-3">
+                        <h2 class="text-lg font-black text-stone-800 tracking-wide">📅 加入行事曆</h2>
+                        <p class="mt-2 text-sm font-bold text-stone-600 leading-relaxed">目前的 App 內建瀏覽器無法下載行事曆檔案，請改用下列方式：</p>
+                    </div>
+                    <div class="px-6 pb-6 space-y-3">
+                        ${googleUrl ? `<a href="${googleUrl}" target="_blank" rel="noopener" class="w-full h-12 rounded-xl bg-[#5B7290] text-white font-black tracking-wide hover:bg-[#3E4F66] transition-colors flex items-center justify-center">加入 Google 日曆</a>` : ''}
+                        <a href="${buildExternalQueryUrl()}" class="w-full h-12 rounded-xl bg-white border border-stone-200 text-stone-700 font-black tracking-wide hover:bg-stone-50 transition-colors flex items-center justify-center">用 ${browserName} 開啟查詢訂單</a>
+                        <div class="bg-stone-50 border border-stone-100 rounded-2xl p-4 text-xs text-stone-600 leading-relaxed space-y-1">
+                            <p class="font-black text-stone-800">若上方按鈕沒有反應：</p>
+                            <p>1. 點右上角「⋯」，選「在外部瀏覽器開啟」或「在 ${browserName} 中開啟」</p>
+                            <p>2. 到「查詢訂單」輸入手機號碼，再點「將取貨日加入行事曆」</p>
+                            <button type="button" onclick="copyLilouQueryUrl()" class="mt-1 font-black text-[#5B7290] underline underline-offset-2">或複製查詢訂單網址</button>
+                        </div>
+                        <button type="button" onclick="closeInAppCalendarSheet()" class="w-full h-11 rounded-xl text-stone-500 font-bold hover:bg-stone-50 transition-colors">關閉</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(sheet);
+        }
+
         window.smartAddToCalendar = function(orderId, dateStr, address) {
+            if (isSocialInAppBrowser()) {
+                showInAppCalendarSheet(orderId, dateStr, address);
+                return;
+            }
             const ua = navigator.userAgent || navigator.vendor || window.opera;
             const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
             if (isIOS) {
