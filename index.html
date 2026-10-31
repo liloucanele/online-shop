@@ -797,7 +797,7 @@
 
     <nav class="bg-[#5B7290] text-white p-4 md:p-5 shadow-sm sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
         <div class="max-w-3xl mx-auto flex justify-between items-center">
-            <a href="#" class="flex items-center shrink-0" aria-label="Lilou 首頁">
+            <a href="#" onclick="lilouGoHome(event)" class="flex items-center shrink-0" aria-label="Lilou 首頁">
                 <img
                     src="images/lilou-logo.svg"
                     alt="Lilou"
@@ -1247,6 +1247,8 @@
         let localPackaging = []; 
         let localCoupons = []; 
         let currentBoxLimit = null;
+        // 單顆包裝（box_size = 1）：每個口味可直接填多顆，加入購物車時自動拆成「每口味 × N 組」
+        let currentPerUnitBox = false;
         const limitedAddonQty = {};
         let flavorComposerOpen = false;
 
@@ -1578,6 +1580,15 @@
         }
 
         window.switchMode = switchMode;
+
+        // 點 logo：回到初始畫面（購物頁、第一個商品分類、頁面最上方），購物車內容保留
+        window.lilouGoHome = function(event) {
+            if (event) event.preventDefault();
+            switchMode('shop');
+            const firstCat = localCategories && localCategories[0];
+            if (firstCat && currentCategoryId !== firstCat.id) switchProductTab(firstCat.id);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
 
         function preventEnterSubmit(e) {
             const keyCode = e.keyCode || e.which;
@@ -2917,9 +2928,11 @@
             const selectedOption = boxSelect.selectedOptions && boxSelect.selectedOptions[0];
             if (boxSelect.value !== "" && selectedOption) {
                 const explicitBoxSize = Number(selectedOption.getAttribute('data-box-size')) || 0;
-                currentBoxLimit = explicitBoxSize > 0 ? explicitBoxSize : null;
+                currentPerUnitBox = explicitBoxSize === 1;
+                currentBoxLimit = explicitBoxSize > 1 ? explicitBoxSize : null;
             } else {
                 currentBoxLimit = null;
+                currentPerUnitBox = false;
             }
             
             let hasViolation = false; 
@@ -3098,8 +3111,32 @@
             packBtn.innerText = "✨ 正在將美味組合打包中...";
             packBtn.className = "w-full bg-[#3E4F66] text-white font-extrabold tracking-widest h-12 rounded-xl transition-all text-sm md:text-base uppercase shadow-inner animate-pulse scale-98";
 
+            const perUnit = currentPerUnitBox;
             setTimeout(() => {
-                cart.push({ 
+                if (perUnit) {
+                    boxFlavors.forEach(f => {
+                        const unitCost = (Number(f.price) || 0) + boxExtra;
+                        const existing = cart.find(b => !isSingleCartItem(b) && !b.optionText && b.boxName === boxName
+                            && (b.flavors || []).length === 1 && b.flavors[0].name === f.name && Number(b.flavors[0].quantity) === 1);
+                        if (existing) {
+                            existing.repeatQty = (Number(existing.repeatQty) || 1) + f.quantity;
+                            existing.totalQty = existing.repeatQty;
+                            existing.boxTotalCost = unitCost * existing.repeatQty;
+                        } else {
+                            cart.push({
+                                boxName: boxName,
+                                boxExtra: boxExtra,
+                                repeatQty: f.quantity,
+                                flavors: [{ ...f, quantity: 1 }],
+                                flavorsCost: Number(f.price) || 0,
+                                totalQty: f.quantity,
+                                singleBoxQty: 1,
+                                boxTotalCost: unitCost * f.quantity,
+                                singleBoxCost: unitCost
+                            });
+                        }
+                    });
+                } else cart.push({ 
                     boxName: boxName, 
                     boxExtra: boxExtra, 
                     repeatQty: repeatQty,
@@ -3112,11 +3149,12 @@
                 }); 
                 boxSelect.value = ""; 
                 currentBoxLimit = null; 
+                currentPerUnitBox = false;
                 syncPackageCardState();
                 renderFlavorMenu(); 
                 renderCart(); 
                 scheduleLilouDraftSave();
-                showToastNotification(`已加入購物車：【${boxName}】`);
+                showToastNotification(perUnit ? `已加入購物車：${boxName} 共 ${totalFlavorsCountInBox} 顆` : `已加入購物車：【${boxName}】`);
                 updateFlavorComposerUI();
             }, 600);
         }
