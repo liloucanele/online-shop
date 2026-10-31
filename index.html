@@ -782,7 +782,7 @@
 
     <nav class="bg-[#5B7290] text-white p-4 md:p-5 shadow-sm sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
         <div class="max-w-3xl mx-auto flex justify-between items-center">
-            <a href="#" class="flex items-center shrink-0" aria-label="Lilou 首頁">
+            <a href="#" onclick="lilouGoHome(event)" class="flex items-center shrink-0" aria-label="Lilou 首頁">
                 <img
                     src="images/lilou-logo.svg"
                     alt="Lilou"
@@ -1565,6 +1565,15 @@
         }
 
         window.switchMode = switchMode;
+
+        // 點 logo：回到初始畫面（購物頁、第一個商品分類、頁面最上方），購物車內容保留
+        window.lilouGoHome = function(event) {
+            if (event) event.preventDefault();
+            switchMode('shop');
+            const firstCat = localCategories && localCategories[0];
+            if (firstCat && currentCategoryId !== firstCat.id) switchProductTab(firstCat.id);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
 
         function preventEnterSubmit(e) {
             const keyCode = e.keyCode || e.which;
