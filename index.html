@@ -200,6 +200,27 @@
             }
         }
 
+        /* 客製服務頁：扁平卡片、編號流程、品牌藍框線按鈕 */
+        .lilou-page-intro { padding: 4px 4px 0; }
+        .lilou-page-intro-body { margin-top: 6px; color: #78716c; font-size: 12px; line-height: 1.625; letter-spacing: .025em; }
+        .lilou-page-intro-body p + p { margin-top: 4px; }
+        .lilou-page-intro-head { margin-top: 14px; font-weight: 900; color: #44403c; }
+        .lilou-page-steps { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
+        .lilou-page-steps li { display: flex; gap: 12px; align-items: baseline; color: #57534e; }
+        .lilou-page-step-no { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid #5B7290; color: #5B7290; font-size: 11px; font-weight: 900; display: inline-flex; align-items: center; justify-content: center; transform: translateY(-1px); }
+        .lilou-page-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        .lilou-page-card { background: #fff; border: 1px solid #e7e2dc; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
+        .lilou-page-card-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+        .lilou-page-btn { margin-top: auto; align-self: flex-start; display: inline-flex; align-items: center; justify-content: center; height: 42px; padding: 0 20px; border: 1px solid #5B7290; border-radius: 4px; color: #5B7290; font-size: 14px; font-weight: 900; letter-spacing: .05em; transition: background-color .15s, color .15s; }
+        .lilou-page-btn:hover { background: #5B7290; color: #fff; }
+        @media (min-width: 768px) {
+            .lilou-page-intro-body { font-size: 14px; }
+            .lilou-page-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+            .lilou-page-steps li { flex-direction: column; gap: 8px; }
+            .lilou-page-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+            .lilou-page-card-body { padding: 22px; }
+        }
+
         /* UX v28：訂單查詢與購物頁共用視覺規則 */
         .query-page-heading {
             padding: 4px 2px 0;
@@ -1529,7 +1550,7 @@
             lines.forEach(raw => {
                 const line = raw.trim();
                 if (!line) { closeList(); html += '<div class="h-2"></div>'; return; }
-                if (/^##\s+/.test(line)) { closeList(); html += `<div class="pt-1 text-sm md:text-base font-black text-stone-800">${inline(line.replace(/^##\s+/, ''))}</div>`; return; }
+                if (/^##\s+/.test(line)) { closeList(); html += `<div class="pt-1 text-sm md:text-base font-black text-stone-800">${inline(line.replace(/^##\s+/, '').replace(/\s*#+$/, ''))}</div>`; return; }
                 if (/^(-|・|•)\s*/.test(line)) {
                     if (!inList) { html += '<ul class="space-y-1.5">'; inList = true; }
                     html += `<li class="flex gap-2"><span class="mt-[0.55em] w-1.5 h-1.5 rounded-full bg-[#5B7290] shrink-0"></span><span>${inline(line.replace(/^(-|・|•)\s*/, ''))}</span></li>`;
@@ -1550,6 +1571,28 @@
             if (!holder) return;
             holder.innerHTML = localPages.map(p => `<button type="button" data-nav-mode="page:${lilouEscapeHtml(p.id)}" onclick="switchMode('page:${encodeURIComponent(p.id).replace(/'/g, '%27')}')" class="cursor-pointer transition-all duration-200 pb-0.5 text-white/70 whitespace-nowrap">${lilouEscapeHtml(p.nav_label)}</button>`).join('');
         }
+        // 客製頁開頭說明：一般文字 →段落；「## 標題 ##」→小標；「Step 1 - …」或「1. …」→編號流程
+        function lilouFormatPageIntro(text) {
+            const lines = (text || '').toString().split(/\r?\n/).map(l => l.trim());
+            const inline = t => lilouEscapeHtml(t).replace(/\*\*(.+?)\*\*/g, '<strong class="font-black text-stone-800">$1</strong>');
+            let html = '', steps = [];
+            const flush = () => {
+                if (!steps.length) return;
+                html += `<ol class="lilou-page-steps">${steps.map((t, i) => `<li><span class="lilou-page-step-no">${i + 1}</span><span>${inline(t)}</span></li>`).join('')}</ol>`;
+                steps = [];
+            };
+            lines.forEach(line => {
+                if (!line) { flush(); return; }
+                const step = line.match(/^(?:step\s*\d+|\d+\s*[.、)])\s*[-–—:：.]?\s*(.+)$/i);
+                if (step) { steps.push(step[1].trim()); return; }
+                flush();
+                const head = line.match(/^#{2,}\s*(.+?)\s*#*$/);
+                if (head) { html += `<div class="lilou-page-intro-head">${inline(head[1])}</div>`; return; }
+                html += `<p>${inline(line)}</p>`;
+            });
+            flush();
+            return html;
+        }
         function renderCustomPage(pageId) {
             pageId = decodeURIComponent(pageId);
             const page = localPages.find(p => p.id === pageId);
@@ -1558,24 +1601,24 @@
             const blocks = (page.blocks || []).map(b => {
                 const link = (b.button_link || '').trim() || lilouDefaultLineLink();
                 const btnText = (b.button_text || '').trim();
-                return `<article class="bg-white rounded-3xl border border-stone-200/70 shadow-sm overflow-hidden">
-                    ${b.image ? `<div class="aspect-[16/9] bg-stone-100"><img src="${lilouEscapeHtml(b.image)}" alt="${lilouEscapeHtml(b.title)}" class="w-full h-full object-cover" loading="lazy" decoding="async"></div>` : ''}
-                    <div class="p-5 md:p-7 space-y-4">
+                return `<article class="lilou-page-card">
+                    ${b.image ? `<div class="aspect-[16/9] bg-stone-100 overflow-hidden"><img src="${lilouEscapeHtml(b.image)}" alt="${lilouEscapeHtml(b.title)}" class="w-full h-full object-cover" loading="lazy" decoding="async"></div>` : ''}
+                    <div class="lilou-page-card-body">
                         <div>
                             <h3 class="text-lg md:text-xl font-black text-stone-900 tracking-wide">${lilouEscapeHtml(b.title)}</h3>
                             ${b.title_en ? `<div class="text-xs md:text-sm font-semibold tracking-wider text-stone-400 mt-0.5">${lilouEscapeHtml(b.title_en)}</div>` : ''}
                         </div>
                         ${b.body ? `<div class="text-sm md:text-[15px] text-stone-600 leading-relaxed space-y-1.5">${lilouFormatRichText(b.body)}</div>` : ''}
-                        ${btnText ? `<a href="${lilouEscapeHtml(link)}" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white text-sm font-black tracking-wider shadow-sm transition-colors w-full sm:w-auto">${lilouEscapeHtml(btnText)}</a>` : ''}
+                        ${btnText ? `<a href="${lilouEscapeHtml(link)}" target="_blank" rel="noopener" class="lilou-page-btn">${lilouEscapeHtml(btnText)}</a>` : ''}
                     </div>
                 </article>`;
             }).join('');
             wrap.innerHTML = `
-                <div class="space-y-1.5 px-1">
+                <div class="lilou-page-intro">
                     <h2 class="text-xl md:text-2xl font-black text-[#222222] tracking-wider">${lilouEscapeHtml(page.title)}${page.title_en ? ` <span class="text-sm md:text-base font-semibold text-stone-400 tracking-wider ml-1">${lilouEscapeHtml(page.title_en)}</span>` : ''}</h2>
-                    ${page.intro ? `<p class="text-stone-500 text-xs md:text-sm tracking-wide leading-relaxed whitespace-pre-line">${lilouEscapeHtml(page.intro)}</p>` : ''}
+                    ${page.intro ? `<div class="lilou-page-intro-body">${lilouFormatPageIntro(page.intro)}</div>` : ''}
                 </div>
-                <div class="space-y-4 md:space-y-5">${blocks || '<div class="text-center text-sm text-stone-400 py-10">內容準備中</div>'}</div>`;
+                <div class="lilou-page-grid">${blocks || '<div class="text-center text-sm text-stone-400 py-10">內容準備中</div>'}</div>`;
             return true;
         }
 
