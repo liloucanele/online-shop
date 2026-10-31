@@ -1232,6 +1232,8 @@
         let localPackaging = []; 
         let localCoupons = []; 
         let currentBoxLimit = null;
+        // 單顆包裝（box_size = 1）：每個口味可直接填多顆，加入購物車時自動拆成「每口味 × N 組」
+        let currentPerUnitBox = false;
         const limitedAddonQty = {};
         let flavorComposerOpen = false;
 
@@ -2902,9 +2904,11 @@
             const selectedOption = boxSelect.selectedOptions && boxSelect.selectedOptions[0];
             if (boxSelect.value !== "" && selectedOption) {
                 const explicitBoxSize = Number(selectedOption.getAttribute('data-box-size')) || 0;
-                currentBoxLimit = explicitBoxSize > 0 ? explicitBoxSize : null;
+                currentPerUnitBox = explicitBoxSize === 1;
+                currentBoxLimit = explicitBoxSize > 1 ? explicitBoxSize : null;
             } else {
                 currentBoxLimit = null;
+                currentPerUnitBox = false;
             }
             
             let hasViolation = false; 
@@ -3083,8 +3087,32 @@
             packBtn.innerText = "✨ 正在將美味組合打包中...";
             packBtn.className = "w-full bg-[#3E4F66] text-white font-extrabold tracking-widest h-12 rounded-xl transition-all text-sm md:text-base uppercase shadow-inner animate-pulse scale-98";
 
+            const perUnit = currentPerUnitBox;
             setTimeout(() => {
-                cart.push({ 
+                if (perUnit) {
+                    boxFlavors.forEach(f => {
+                        const unitCost = (Number(f.price) || 0) + boxExtra;
+                        const existing = cart.find(b => !isSingleCartItem(b) && !b.optionText && b.boxName === boxName
+                            && (b.flavors || []).length === 1 && b.flavors[0].name === f.name && Number(b.flavors[0].quantity) === 1);
+                        if (existing) {
+                            existing.repeatQty = (Number(existing.repeatQty) || 1) + f.quantity;
+                            existing.totalQty = existing.repeatQty;
+                            existing.boxTotalCost = unitCost * existing.repeatQty;
+                        } else {
+                            cart.push({
+                                boxName: boxName,
+                                boxExtra: boxExtra,
+                                repeatQty: f.quantity,
+                                flavors: [{ ...f, quantity: 1 }],
+                                flavorsCost: Number(f.price) || 0,
+                                totalQty: f.quantity,
+                                singleBoxQty: 1,
+                                boxTotalCost: unitCost * f.quantity,
+                                singleBoxCost: unitCost
+                            });
+                        }
+                    });
+                } else cart.push({ 
                     boxName: boxName, 
                     boxExtra: boxExtra, 
                     repeatQty: repeatQty,
@@ -3097,11 +3125,12 @@
                 }); 
                 boxSelect.value = ""; 
                 currentBoxLimit = null; 
+                currentPerUnitBox = false;
                 syncPackageCardState();
                 renderFlavorMenu(); 
                 renderCart(); 
                 scheduleLilouDraftSave();
-                showToastNotification(`已加入購物車：【${boxName}】`);
+                showToastNotification(perUnit ? `已加入購物車：${boxName} 共 ${totalFlavorsCountInBox} 顆` : `已加入購物車：【${boxName}】`);
                 updateFlavorComposerUI();
             }, 600);
         }
