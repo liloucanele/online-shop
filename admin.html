@@ -181,13 +181,35 @@
       font-weight: 600 !important;
     }
     .admin-toast.show { transform: translateY(0) scale(1); opacity: 1; }
-    .admin-toast-spinner {
-      width: 16px; height: 16px; border-radius: 999px;
-      border: 2px solid rgba(255,255,255,.45);
-      border-top-color: #fff;
-      animation: adminSpin .75s linear infinite;
+    /* Set --ink to your foreground colour (defaults to currentColor here). */
+    :root { --ink: currentColor; }
+
+    /* 76 Nova-Burst — radial explosion */
+    .ld-firework { position: relative; width: 48px; height: 48px; }
+    .ld-firework i {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 6px; height: 6px;
+      margin: -3px;
+      border-radius: 50%;
+      background: var(--ink);
+      animation: firework 1.3s ease-out infinite;
     }
-    @keyframes adminSpin { to { transform: rotate(360deg); } }
+    .ld-firework i:nth-child(1) { --fx: 0;     --fy: -20px; }
+    .ld-firework i:nth-child(2) { --fx: 14px;  --fy: -14px; }
+    .ld-firework i:nth-child(3) { --fx: 20px;  --fy: 0; }
+    .ld-firework i:nth-child(4) { --fx: 14px;  --fy: 14px; }
+    .ld-firework i:nth-child(5) { --fx: 0;     --fy: 20px; }
+    .ld-firework i:nth-child(6) { --fx: -14px; --fy: 14px; }
+    .ld-firework i:nth-child(7) { --fx: -20px; --fy: 0; }
+    .ld-firework i:nth-child(8) { --fx: -14px; --fy: -14px; }
+    @keyframes firework {
+      0%        { transform: translate(0, 0); opacity: 1; }
+      70%, 100% { transform: translate(var(--fx), var(--fy)); opacity: 0; }
+    }
+    /* 後台：通知和按鈕裡用白色，縮小到跟文字差不多高 */
+    .admin-toast .ld-firework { display: inline-block; zoom: .5; }
+    .ld-firework.ld-firework-sm { display: inline-block; zoom: .36; }
 
     /* ========== 隱藏 Categories 的 ID 欄位 ========== */
     table[data-edit-table="categories"] th:first-child,
@@ -634,7 +656,7 @@ function showAdminToast(message, type = "info", duration = 2600) {
   const isSuccess = type === "success";
   const isLoading = type === "loading";
   const bgClass = isError ? "bg-red-600" : isSuccess ? "bg-emerald-600" : "bg-[#5B7290]";
-  const icon = isLoading ? `<span class="admin-toast-spinner"></span>` : isError ? "❌" : isSuccess ? "✅" : "ℹ️";
+  const icon = isLoading ? `<span class="ld-firework"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>` : isError ? "❌" : isSuccess ? "✅" : "ℹ️";
 
   toast.className = `admin-toast ${bgClass} text-white flex items-center gap-2.5 text-[15px] font-semibold tracking-wide`;
   toast.innerHTML = `<span class="shrink-0 flex items-center justify-center">${icon}</span><span class="leading-relaxed whitespace-nowrap">${escapeHtml(message)}</span>`;
@@ -686,7 +708,7 @@ function setButtonLoading(button, loadingText) {
   };
   button.disabled = true;
   button.classList.add("opacity-70", "cursor-wait");
-  button.innerHTML = `<span class="inline-flex items-center gap-2"><span class="admin-toast-spinner !w-4 !h-4"></span>${escapeHtml(loadingText || "處理中...")}</span>`;
+  button.innerHTML = `<span class="inline-flex items-center gap-2"><span class="ld-firework ld-firework-sm"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>${escapeHtml(loadingText || "處理中...")}</span>`;
   return function restoreButton() {
     button.disabled = original.disabled;
     button.classList.remove("opacity-70", "cursor-wait");
