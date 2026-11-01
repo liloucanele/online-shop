@@ -773,6 +773,12 @@
         @keyframes lilouShimmer { 0% { background-position: 120% 0; } 100% { background-position: -20% 0; } }
         @media (prefers-reduced-motion: reduce) { .lilou-fade-wrap::before { animation: none; } .lilou-fade-img { transition: none !important; } }
     </style>
+    <style>
+        /* 扁平設計：拿掉所有陰影，只保留邊框線（盒裝選滿的亮光動畫除外） */
+        *:not(.lilou-just-full), *::before, *::after { box-shadow: none !important; }
+        .cake-choice.is-on { box-shadow: 0 0 0 1px #5B7290 inset !important; }
+        .cake-choice.is-on .dot { box-shadow: inset 0 0 0 4px #fff !important; }
+    </style>
 </head>
 <body class="bg-[#F4F6F9] text-[#222222] min-h-screen flex flex-col font-sans antialiased selection:bg-[#5B7290]/20">
 
