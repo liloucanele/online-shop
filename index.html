@@ -991,12 +991,13 @@
                         </div>
                     </section>
 
-                    <section id="cakeSection" class="product-tab-panel space-y-5" role="tabpanel" hidden></section>
+                    <section id="cakeSection" class="product-tab-panel space-y-5 mb-6 md:mb-8" role="tabpanel" hidden></section>
 
                     <form id="orderForm" class="hidden bg-white p-4 md:p-8 rounded-2xl shadow-xs border border-stone-100 space-y-6 md:space-y-8" onsubmit="handleOrderSubmit(event)" onkeypress="return preventEnterSubmit(event)">
                         <div id="cartSectionAnchor" class="space-y-4 scroll-mt-20">
-                            <div class="border-b border-stone-100 pb-3">
+                            <div class="border-b border-stone-100 pb-3 flex items-center justify-between gap-3">
                                 <h3 class="text-sm md:text-base font-black text-[#5B7290] tracking-widest uppercase">購物車</h3>
+                                <button type="button" id="clearCartBtn" onclick="clearCart()" class="h-8 px-3 rounded-lg border border-stone-200 bg-white text-xs font-bold text-stone-500 tracking-wide hover:bg-stone-50 hover:text-stone-700 transition-colors">清空購物車</button>
                             </div>
                             <div id="cartListContainer" class="space-y-2.5 transition-all duration-300">
                                 <p class="text-stone-400 text-center py-6 text-xs md:text-base">購物車目前空空的喔！</p>
@@ -3193,6 +3194,31 @@
         }
 
         window.removeFromCart = function(cartIdx) { cart.splice(cartIdx, 1); renderFlavorMenu(); renderCart(); scheduleLilouDraftSave(); }
+        // 清空購物車：第一次點按鈕變成「確定清空？」，3 秒內再點一次才真的清空，避免誤觸
+        let clearCartArmTimer = null;
+        function resetClearCartBtn() {
+            clearTimeout(clearCartArmTimer); clearCartArmTimer = null;
+            const btn = document.getElementById('clearCartBtn');
+            if (!btn) return;
+            btn.textContent = '清空購物車';
+            btn.classList.remove('border-red-200', 'bg-red-50', 'text-red-600', 'hover:bg-red-100');
+            btn.classList.add('border-stone-200', 'bg-white', 'text-stone-500', 'hover:bg-stone-50');
+        }
+        window.clearCart = function() {
+            const btn = document.getElementById('clearCartBtn');
+            if (!cart.length) return;
+            if (!clearCartArmTimer) {
+                btn.textContent = '確定清空？再點一次';
+                btn.classList.remove('border-stone-200', 'bg-white', 'text-stone-500', 'hover:bg-stone-50');
+                btn.classList.add('border-red-200', 'bg-red-50', 'text-red-600', 'hover:bg-red-100');
+                clearCartArmTimer = setTimeout(resetClearCartBtn, 3000);
+                return;
+            }
+            resetClearCartBtn();
+            cart = [];
+            renderFlavorMenu(); renderCart(); scheduleLilouDraftSave();
+            showToastNotification('已清空購物車');
+        }
 
         function getCartProductUsedQty(productName, excludeCartIdx = -1) {
             return cart.reduce((sum, box, idx) => {
