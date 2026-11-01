@@ -298,6 +298,24 @@
         #composeBar.is-full .cb-fill { background: #16a34a; }
         #composeBar button { flex-shrink: 0; height: 46px; padding: 0 18px; border-radius: 14px; font-weight: 900; font-size: 14px; letter-spacing: .04em; color: #fff; background: #5B7290; }
         #composeBar button:disabled { background: #d6d3d1; cursor: not-allowed; }
+        /* 盒裝剛選滿時的小動畫：進度條亮光掃過、數量標籤輕輕彈一下、加入購物車按鈕一圈淡光 */
+        #composeBar .cb-fill { position: relative; overflow: hidden; }
+        #composeBar.lilou-just-full { animation: lilouFullNudge .45s ease-out; }
+        #composeBar.lilou-just-full .cb-fill::after {
+            content: ""; position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent);
+            transform: translateX(-100%); animation: lilouFullSheen .7s ease-out .1s;
+        }
+        #currentBoxCountDisplay.lilou-just-full { animation: lilouFullPop .45s cubic-bezier(.34,1.56,.64,1); }
+        #packBtn.lilou-just-full, #composeBarBtn.lilou-just-full { animation: lilouFullRing .9s ease-out; }
+        @keyframes lilouFullNudge { 0%,100% { transform: translateY(0); } 40% { transform: translateY(-4px); } }
+        @keyframes lilouFullSheen { to { transform: translateX(100%); } }
+        @keyframes lilouFullPop { 0% { transform: scale(1); } 45% { transform: scale(1.12); } 100% { transform: scale(1); } }
+        @keyframes lilouFullRing { 0% { box-shadow: 0 0 0 0 rgba(91,114,144,.45); } 100% { box-shadow: 0 0 0 10px rgba(91,114,144,0); } }
+        @media (prefers-reduced-motion: reduce) {
+            #composeBar.lilou-just-full, #composeBar.lilou-just-full .cb-fill::after, #currentBoxCountDisplay.lilou-just-full,
+            #packBtn.lilou-just-full, #composeBarBtn.lilou-just-full { animation: none; }
+        }
         #floatingCartCount {
             min-width: 24px;
             height: 24px;
@@ -2912,6 +2930,7 @@
             const complete = hasPackage && (currentBoxLimit ? total === currentBoxLimit : total > 0);
 
             if (panel) panel.classList.add('is-open');
+            const prevState = lilouComposeState;
             lilouComposeState = { hasPackage, total, complete };
             updateComposeBar();
             if (packBtn) {
@@ -2921,6 +2940,20 @@
                     ? "w-full bg-[#5B7290] text-white font-extrabold tracking-widest h-12 rounded-xl hover:bg-[#3E4F66] transition-colors text-sm md:text-base uppercase shadow-xs cursor-pointer"
                     : "w-full bg-stone-300 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed transition-all duration-200";
             }
+            // 從「還差幾個」變成剛好選滿的那一刻，播一次小動畫
+            if (complete && currentBoxLimit && !prevState.complete && prevState.hasPackage && prevState.total !== total) playBoxFullAnimation();
+        }
+
+        function playBoxFullAnimation() {
+            ['composeBar', 'currentBoxCountDisplay', 'packBtn', 'composeBarBtn'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.classList.remove('lilou-just-full');
+                void el.offsetWidth; // 重新觸發動畫
+                el.classList.add('lilou-just-full');
+                clearTimeout(el._lilouFullTimer);
+                el._lilouFullTimer = setTimeout(() => el.classList.remove('lilou-just-full'), 1000);
+            });
         }
 
         window.handleBoxChange = function() { 
