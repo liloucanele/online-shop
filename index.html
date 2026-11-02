@@ -1069,12 +1069,14 @@
                             <div id="addressGroup" class="transition-all duration-300 space-y-1.5">
                                 <div class="flex justify-between items-center">
                                     <label id="addressLabel" for="custAddress" class="block text-xs md:text-sm font-bold text-stone-600">自取門市地址</label>
-                                    <a id="storeNavLink" href="https://maps.app.goo.gl/D9619o6FGNP22bzs9" target="_blank" rel="noopener" class="text-xs font-bold text-[#5B7290] hover:text-[#3E4F66] underline underline-offset-2 inline-flex items-center gap-0.5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5" aria-hidden="true"><path fill-rule="evenodd" d="m11.54 22.35.07.04.03.02a.75.75 0 0 0 .72 0l.03-.02.07-.04a16.98 16.98 0 0 0 1.14-.73 20.6 20.6 0 0 0 2.68-2.25C18.07 17.46 20 14.6 20 11a8 8 0 1 0-16 0c0 3.6 1.93 6.46 3.72 8.37a20.6 20.6 0 0 0 3.82 2.98ZM12 14a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd"/></svg>導航</a>
                                     <a id="mapLink" href="https://emap.pcsc.com.tw/" target="_blank" style="display: none;" class="text-xs font-bold text-emerald-600 hover:text-emerald-800 underline inline-flex items-center gap-0.5">
                                         開啟 7-11 門市地圖查詢
                                     </a>
                                 </div>
-                                <input type="text" id="custAddress" class="w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none h-12 md:h-14 bg-stone-100 font-bold text-stone-700 select-all" value="高雄市前鎮區景德路72巷12號" readonly>
+                                <div class="flex items-center gap-2">
+                                    <input type="text" id="custAddress" class="w-full min-w-0 flex-1 px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none h-12 md:h-14 bg-stone-100 font-bold text-stone-700 select-all" value="高雄市前鎮區景德路72巷12號" readonly>
+                                    <a id="storeNavLink" href="https://maps.app.goo.gl/D9619o6FGNP22bzs9" target="_blank" rel="noopener" class="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-stone-100 hover:bg-[#5B7290] border border-stone-200 hover:border-[#5B7290] inline-flex items-center justify-center transition-all duration-200 text-stone-500 hover:text-white shrink-0" title="Google 地圖導航" aria-label="用 Google 地圖導航到門市"><svg class="social-icon-svg stroke-current fill-none stroke-2" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg></a>
+                                </div>
                             </div>
 
                             <div id="deliveryPaymentNotice" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs md:text-sm text-amber-900 font-bold leading-relaxed">
@@ -1176,7 +1178,7 @@
         <div class="max-w-3xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
             <div class="space-y-1.5">
                 <div class="text-white font-black text-base md:text-lg tracking-widest">粒露 Lilou｜迷你可麗露專賣</div>
-                <div class="text-xs md:text-sm text-stone-500 font-medium tracking-wide">高雄市前鎮區景德路72巷12號<a href="https://maps.app.goo.gl/D9619o6FGNP22bzs9" target="_blank" rel="noopener" class="inline-flex items-center gap-0.5 ml-1 align-baseline text-stone-400 hover:text-white underline underline-offset-2" aria-label="用 Google 地圖導航到門市"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-[1em] h-[1em]" aria-hidden="true"><path fill-rule="evenodd" d="m11.54 22.35.07.04.03.02a.75.75 0 0 0 .72 0l.03-.02.07-.04a16.98 16.98 0 0 0 1.14-.73 20.6 20.6 0 0 0 2.68-2.25C18.07 17.46 20 14.6 20 11a8 8 0 1 0-16 0c0 3.6 1.93 6.46 3.72 8.37a20.6 20.6 0 0 0 3.82 2.98ZM12 14a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd"/></svg>導航</a><br>營業時間 14:00－18:00，週一、二公休</div>
+                <div class="text-xs md:text-sm text-stone-500 font-medium tracking-wide">高雄市前鎮區景德路72巷12號<a href="https://maps.app.goo.gl/D9619o6FGNP22bzs9" target="_blank" rel="noopener" class="inline-flex w-7 h-7 ml-1.5 align-middle rounded-lg bg-stone-800 hover:bg-[#5B7290] items-center justify-center transition-all duration-200 text-stone-300 hover:text-white shrink-0" title="Google 地圖導航" aria-label="用 Google 地圖導航到門市"><svg class="social-icon-svg !w-4 !h-4 stroke-current fill-none stroke-2" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg></a><br>營業時間 14:00－18:00，週一、二公休</div>
                 <div class="text-xs text-stone-500 pt-1">© 2026 Lilou. All rights reserved.</div>
             </div>
             
@@ -1307,7 +1309,7 @@
         const LILOU_STORE_MAP_URL = "https://maps.app.goo.gl/D9619o6FGNP22bzs9";
         // 門市自取地址後的「導航」連結（開新分頁到 Google 地圖）
         function lilouStoreNavLink(extraClass) {
-            return `<a href="${LILOU_STORE_MAP_URL}" target="_blank" rel="noopener" class="lilou-nav-link inline-flex items-center gap-0.5 ml-1 align-baseline whitespace-nowrap text-[#5B7290] hover:text-[#3E4F66] underline underline-offset-2 ${extraClass || ''}" aria-label="用 Google 地圖導航到門市"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-[1em] h-[1em] shrink-0" aria-hidden="true"><path fill-rule="evenodd" d="m11.54 22.35.07.04.03.02a.75.75 0 0 0 .72 0l.03-.02.07-.04a16.98 16.98 0 0 0 1.14-.73 20.6 20.6 0 0 0 2.68-2.25C18.07 17.46 20 14.6 20 11a8 8 0 1 0-16 0c0 3.6 1.93 6.46 3.72 8.37a20.6 20.6 0 0 0 3.82 2.98ZM12 14a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd"/></svg>導航</a>`;
+            return `<a href="${LILOU_STORE_MAP_URL}" target="_blank" rel="noopener" class="lilou-nav-btn inline-flex w-8 h-8 ml-1.5 align-middle rounded-lg bg-stone-100 hover:bg-[#5B7290] border border-stone-200 hover:border-[#5B7290] items-center justify-center transition-all duration-200 text-stone-500 hover:text-white shrink-0 ${extraClass || ''}" title="Google 地圖導航" aria-label="用 Google 地圖導航到門市"><svg class="social-icon-svg !w-4 !h-4 stroke-current fill-none stroke-2" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg></a>`;
         }
 
         function lilouEscapeHtml(value) {
@@ -1727,7 +1729,7 @@
                     addrInput.value = "";
                 }
                 addrInput.placeholder = "範例：Lilou門市";
-                addrInput.className = "w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50 text-stone-800 font-normal";
+                addrInput.className = "w-full min-w-0 flex-1 px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none focus:border-[#5B7290] h-12 md:h-14 bg-stone-50/50 text-stone-800 font-normal";
                 shipFeeDisplay.querySelector('span').innerText = `+$${shippingFee}`;
                 shipFeeDisplay.classList.remove('hidden');
                 dateLabel.innerText = "希望到貨日期 *";
@@ -1740,7 +1742,7 @@
                 addrInput.required = false;
                 addrInput.readOnly = true;
                 addrInput.value = "高雄市前鎮區景德路72巷12號";
-                addrInput.className = "w-full px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none h-12 md:h-14 bg-stone-100 font-bold text-stone-700 select-all";
+                addrInput.className = "w-full min-w-0 flex-1 px-3 border border-stone-200 rounded-xl text-sm md:text-base focus:outline-none h-12 md:h-14 bg-stone-100 font-bold text-stone-700 select-all";
                 shipFeeDisplay.classList.add('hidden');
                 dateLabel.innerText = "門市自取日期 *";
                 if (deliveryNotice) deliveryNotice.classList.add("hidden");
@@ -3877,7 +3879,7 @@
                             <div><strong>顧客姓名：</strong>${custName}</div>
                             <div><strong>聯絡電話：</strong>${custPhone}</div>
                             <div><strong>Email：</strong>${custEmail}</div>
-                            <div><strong>取貨門市：</strong>${finalDatabaseAddress}${lilouOrderMethodIsStore(shipMethodVal) ? lilouStoreNavLink('font-sans font-bold') : ''}</div>
+                            <div><strong>取貨門市：</strong>${finalDatabaseAddress}${lilouOrderMethodIsStore(shipMethodVal) ? lilouStoreNavLink() : ''}</div>
                             <div><strong>配送方式：</strong>${lilouShippingMethodDisplayLabel(shipMethodVal)}</div>
                             <div><strong>預定日期：</strong>${shipDate}</div>
                         </div>
