@@ -33,6 +33,153 @@
     </script>
     
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Lilou UI：數字滾動、按鈕文字切換、按下回饋、升起與滑入動態、統一圖示（做法取自 Stageshow 開源元件，MIT） -->
+    <style id="lilou-ui">
+        /* 數字滾動：每個數字是一條 0–9 的捲軸，只有改變的位數會轉 */
+        .lilou-roll { display: inline-flex; align-items: flex-end; white-space: pre; }
+        .lilou-roll__d { display: inline-block; height: 1.2em; line-height: 1.2em; overflow: hidden; font-variant-numeric: tabular-nums; }
+        .lilou-roll__reel { display: flex; flex-direction: column; transition: transform .42s cubic-bezier(.3,.75,.1,1); }
+        .lilou-roll__reel > span { display: block; height: 1.2em; line-height: 1.2em; text-align: center; }
+        .lilou-roll__t { line-height: 1.2em; }
+        /* 按鈕文字切換：同一顆按鈕上淡出淡入，寬度跟著平順變化 */
+        .lilou-label { display: inline-block; }
+        .lilou-label-anim { transition: width .3s cubic-bezier(.3,.75,.1,1); overflow: hidden; }
+        /* 按下回饋：按下時輕微內縮（用 scale 屬性，不會和既有的 transform 衝突） */
+        @layer base {
+            button { transition: scale .15s ease, color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease; }
+        }
+        button:not(:disabled):active { scale: .96; }
+        .no-zoom-area button:not(:disabled):active, .cake-qty button:not(:disabled):active,
+        .limited-addon-stepper button:not(:disabled):active { scale: .9; }
+        /* 從下方升起：盒裝進度條與購物車按鈕（舊瀏覽器直接出現，不影響功能） */
+        #composeBar, #floatingCartButton {
+            transition: opacity .3s ease, translate .45s cubic-bezier(.3,.75,.1,1), display .45s allow-discrete;
+        }
+        @starting-style {
+            #composeBar.is-visible, #floatingCartButton.is-visible { opacity: 0; translate: 0 18px; }
+        }
+        /* 訂單確認、成分標示面板：背景淡入、面板從下方滑上來；關閉時反向收起 */
+        #countdownOverlay, #nutritionSheetOverlay { transition: opacity .35s ease, display .45s allow-discrete; }
+        #countdownOverlay.hidden, #nutritionSheetOverlay.hidden { opacity: 0; }
+        #countdownOverlay .order-confirm-sheet, #nutritionSheetOverlay > div { transition: translate .5s cubic-bezier(.3,.75,.1,1); }
+        #countdownOverlay.hidden .order-confirm-sheet, #nutritionSheetOverlay.hidden > div { translate: 0 100%; }
+        @starting-style {
+            #countdownOverlay:not(.hidden), #nutritionSheetOverlay:not(.hidden) { opacity: 0; }
+            #countdownOverlay:not(.hidden) .order-confirm-sheet, #nutritionSheetOverlay:not(.hidden) > div { translate: 0 100%; }
+        }
+        @media (min-width: 768px) {
+            #countdownOverlay.hidden .order-confirm-sheet, #nutritionSheetOverlay.hidden > div { translate: 0 24px; }
+            @starting-style {
+                #countdownOverlay:not(.hidden) .order-confirm-sheet, #nutritionSheetOverlay:not(.hidden) > div { translate: 0 24px; }
+            }
+        }
+        /* 統一圖示：同一套線條圖示（Lucide，ISC 授權），粗細大小一致 */
+        .lilou-ico { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: block; }
+        .lilou-ico--sm { width: 14px; height: 14px; }
+        @media (prefers-reduced-motion: reduce) {
+            .lilou-roll__reel, .lilou-label-anim, #composeBar, #floatingCartButton, #countdownOverlay, #nutritionSheetOverlay,
+            #countdownOverlay .order-confirm-sheet, #nutritionSheetOverlay > div { transition: none; }
+            button:not(:disabled):active { scale: none; }
+        }
+    </style>
+    <script>
+        // Lilou UI 小工具：數字滾動 roll()、按鈕文字切換 label()、圖示 LILOU_ICON
+        (function () {
+            const SVG = (body, cls) => `<svg class="lilou-ico${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
+            window.LILOU_ICON = {
+                minus: SVG('<path d="M5 12h14"/>'),
+                plus: SVG('<path d="M5 12h14"/><path d="M12 5v14"/>'),
+                close: SVG('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'),
+                closeSm: SVG('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>', 'lilou-ico--sm'),
+                bag: SVG('<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>'),
+            };
+            const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const keyOf = (t) => t.replace(/\d/g, '#');
+            function build(el, text) {
+                el.classList.add('lilou-roll');
+                el.innerHTML = '';
+                for (const ch of text) {
+                    if (/\d/.test(ch)) {
+                        const d = document.createElement('span'); d.className = 'lilou-roll__d'; d.setAttribute('aria-hidden', 'true');
+                        const reel = document.createElement('span'); reel.className = 'lilou-roll__reel';
+                        for (let n = 0; n < 10; n++) { const s = document.createElement('span'); s.textContent = n; reel.appendChild(s); }
+                        d.appendChild(reel); el.appendChild(d);
+                    } else {
+                        const s = document.createElement('span'); s.className = 'lilou-roll__t'; s.setAttribute('aria-hidden', 'true'); s.textContent = ch; el.appendChild(s);
+                    }
+                }
+            }
+            function place(el, text, animate) {
+                const reels = el.querySelectorAll('.lilou-roll__reel');
+                let i = 0;
+                for (const ch of text) {
+                    if (!/\d/.test(ch)) continue;
+                    const reel = reels[i++];
+                    if (!animate) reel.style.transition = 'none';
+                    reel.style.transform = `translateY(${-1.2 * Number(ch)}em)`;
+                    if (!animate) { void reel.offsetHeight; reel.style.transition = ''; }
+                }
+            }
+            // 把 el 的文字換成 text；只有數字會滾動，其他字照常顯示
+            window.lilouRoll = function (el, text) {
+                if (!el) return;
+                text = String(text);
+                const rolled = el._lilouRoll !== undefined && el.querySelector('.lilou-roll__d, .lilou-roll__t');
+                const prev = rolled ? el._lilouRoll : el.textContent.trim();
+                el.classList.add('lilou-roll');
+                if (rolled && el._lilouRoll === text) return;
+                el._lilouRoll = text;
+                el.setAttribute('aria-label', text);
+                const sameShape = keyOf(prev) === keyOf(text) && el.querySelector('.lilou-roll__reel');
+                if (sameShape && !reduced()) { place(el, text, true); return; }
+                if (keyOf(prev) === keyOf(text) && !reduced()) {
+                    build(el, prev); place(el, prev, false);
+                    requestAnimationFrame(() => place(el, text, true));
+                    return;
+                }
+                build(el, text); place(el, text, false);
+            };
+            // 加減數量的數字（輸入框也適用）：變大從下方滑入、變小從上方滑入
+            window.lilouBump = function (el, dir) {
+                if (!el || !dir || reduced() || !el.animate) return;
+                el.getAnimations().forEach(a => a.cancel());
+                el.animate([{ transform: `translateY(${dir > 0 ? '.6em' : '-.6em'})`, opacity: .1 }, { transform: 'none', opacity: 1 }], { duration: 280, easing: 'cubic-bezier(.3,.75,.1,1)' });
+            };
+            // 按鈕換字：舊字淡出、新字淡入，按鈕寬度平順變化
+            window.lilouLabel = function (btn, text) {
+                if (!btn) return;
+                text = String(text);
+                let span = btn.querySelector(':scope > .lilou-label');
+                const current = span ? span.textContent : btn.textContent.trim();
+                if (current === text) return;
+                const visible = btn.offsetParent !== null;
+                if (!visible || reduced() || !span) {
+                    btn.textContent = '';
+                    span = document.createElement('span'); span.className = 'lilou-label'; span.textContent = text;
+                    btn.appendChild(span);
+                    return;
+                }
+                const w0 = btn.getBoundingClientRect().width;
+                clearTimeout(btn._lilouLabelTimer);
+                span.getAnimations().forEach(a => a.cancel());
+                span.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 110, easing: 'ease-out', fill: 'forwards' }).finished.then(() => {
+                    span.textContent = text;
+                    const autoW = btn.style.width;
+                    btn.style.width = '';
+                    const w1 = btn.getBoundingClientRect().width;
+                    if (Math.abs(w1 - w0) > 1 && getComputedStyle(btn).display !== 'block') {
+                        btn.style.width = w0 + 'px';
+                        btn.classList.add('lilou-label-anim');
+                        void btn.offsetWidth;
+                        btn.style.width = w1 + 'px';
+                        btn._lilouLabelTimer = setTimeout(() => { btn.style.width = autoW; btn.classList.remove('lilou-label-anim'); }, 320);
+                    }
+                    span.getAnimations().forEach(a => a.cancel());
+                    span.animate([{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.3,.75,.1,1)' });
+                }).catch(() => {});
+            };
+        })();
+    </script>
     <style>
         :root {
             --brand-color: #5B7290;       
@@ -1168,7 +1315,7 @@
     </div>
 
     <button id="floatingCartButton" type="button" onclick="document.getElementById('cartSectionAnchor')?.scrollIntoView({behavior:'smooth', block:'start'})" aria-label="查看購物車">
-        <span>購物車</span><span id="floatingCartCount">0</span>
+        <span class="lilou-cart-ico" aria-hidden="true"><svg class="lilou-ico" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span><span class="fcb-label">購物車</span><span id="floatingCartCount">0</span>
     </button>
 
     <footer class="bg-stone-900 text-stone-400 py-8 px-4 mt-12 border-t border-stone-800 font-sans">
@@ -1211,7 +1358,7 @@
                         <h2 class="text-lg md:text-xl font-black text-stone-900 tracking-wide">成分與營養標示</h2>
                         <p class="text-xs md:text-sm text-stone-400 font-bold mt-1 leading-relaxed">資訊依店內最新食品標示整理，若有過敏疑慮請先與店家確認。</p>
                     </div>
-                    <button type="button" onclick="closeNutritionSheet()" class="w-9 h-9 rounded-full bg-stone-100 text-stone-500 font-black hover:bg-stone-200 shrink-0">✕</button>
+                    <button type="button" onclick="closeNutritionSheet()" class="w-9 h-9 rounded-full bg-stone-100 text-stone-500 font-black hover:bg-stone-200 shrink-0 grid place-items-center" aria-label="關閉"><svg class="lilou-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
                 </div>
             </div>
             <div id="nutritionSheetContent" class="overflow-y-auto px-5 py-4 space-y-2"></div>
@@ -1502,6 +1649,7 @@
         function showToastNotification(message) {
             const toast = document.createElement('div');
             toast.className = "fixed left-1/2 -translate-x-1/2 bg-stone-900/95 text-white font-bold px-5 py-3.5 rounded-2xl shadow-xl z-50 text-xs md:text-sm tracking-wide flex items-center gap-2 border border-stone-800 transition-all duration-300 transform translate-y-10 opacity-0";
+            toast.style.transitionTimingFunction = "cubic-bezier(.3,.75,.1,1)"; toast.style.transitionDuration = "450ms";
             toast.setAttribute('aria-live', 'polite');
             toast.setAttribute('role', 'status');
             toast.innerHTML = `<span>${message}</span>`;
@@ -2403,7 +2551,7 @@
                                 return `<div class="cake-choice is-static" style="cursor:default">
                                     <span class="flex-1 min-w-0"><span class="block font-black text-[15px]">${esc(o.name)}</span><span class="block text-xs font-semibold text-stone-400">${esc(o.name_en)}</span>
                                     <span class="block text-xs font-bold text-stone-500 mt-1">已附 ${o.included_qty} 組，超過每組 +$${o.price}${over ? `　<span class="text-[#5B7290]">目前加購 ${over} 組 +$${over * o.price}</span>` : ''}</span></span>
-                                    <span class="cake-qty no-zoom-area"><button type="button" onclick="cakeSetQty('${enc(o.name)}', ${q - 1})" aria-label="減少">—</button><input type="number" min="0" ${o.max_qty ? `max="${o.max_qty}"` : ''} value="${q}" inputmode="numeric" onchange="cakeSetQty('${enc(o.name)}', this.value)" aria-label="${esc(o.name)}數量"><button type="button" onclick="cakeSetQty('${enc(o.name)}', ${q + 1})" aria-label="增加">＋</button></span>
+                                    <span class="cake-qty no-zoom-area"><button type="button" onclick="cakeSetQty('${enc(o.name)}', ${q - 1})" aria-label="減少">${LILOU_ICON.minus}</button><input type="number" min="0" ${o.max_qty ? `max="${o.max_qty}"` : ''} value="${q}" data-cake-qty="${esc(o.name)}" inputmode="numeric" onchange="cakeSetQty('${enc(o.name)}', this.value)" aria-label="${esc(o.name)}數量"><button type="button" onclick="cakeSetQty('${enc(o.name)}', ${q + 1})" aria-label="增加">${LILOU_ICON.plus}</button></span>
                                 </div>`;
                             }
                             const limitTxt = o.max_qty === 1 && /蠟燭/.test(o.name) ? '（單支）' : '';
@@ -2449,8 +2597,10 @@
             const o = cakeOpt('addon', name);
             let q = Math.max(0, parseInt(value, 10) || 0);
             if (o && o.max_qty) q = Math.min(q, o.max_qty);
+            const before = Number(cakeState.addons[name]) || 0;
             cakeState.addons[name] = q;
             renderCakeSection();
+            if (q !== before) lilouBump(document.querySelector(`[data-cake-qty="${CSS.escape(name)}"]`), q - before);
         }
         window.cakeToggleCelebrate = function() {
             cakeState.celebrate = !cakeState.celebrate;
@@ -2655,9 +2805,9 @@
                             ${p.description ? `<span class="limited-product-description block">${lilouEscapeHtml(p.description)}</span>` : ''}
                         </div>
                         <div class="no-zoom-area shrink-0 flex items-center bg-stone-100 rounded-xl p-1 border border-stone-200 gap-1 ${available <= 0 ? 'opacity-30 select-none' : ''}">
-                            <button type="button" onclick="changeLimitedAddonQty(${idx}, -1)" ${qty <= 0 || available <= 0 ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">—</button>
-                            <input type="number" value="${qty}" min="0" max="${available}" inputmode="numeric" ${available <= 0 ? 'disabled' : ''} oninput="setLimitedAddonQty(${idx}, this.value)" style="width: 44px; height: 32px;" class="text-center text-base md:text-base font-black bg-transparent border-0 focus:outline-none text-stone-800">
-                            <button type="button" onclick="changeLimitedAddonQty(${idx}, 1)" ${qty >= available || available <= 0 ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">＋</button>
+                            <button type="button" onclick="changeLimitedAddonQty(${idx}, -1)" ${qty <= 0 || available <= 0 ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">${LILOU_ICON.minus}</button>
+                            <input type="number" data-ltd-idx="${idx}" value="${qty}" min="0" max="${available}" inputmode="numeric" ${available <= 0 ? 'disabled' : ''} oninput="setLimitedAddonQty(${idx}, this.value)" style="width: 44px; height: 32px;" class="text-center text-base md:text-base font-black bg-transparent border-0 focus:outline-none text-stone-800">
+                            <button type="button" onclick="changeLimitedAddonQty(${idx}, 1)" ${qty >= available || available <= 0 ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">${LILOU_ICON.plus}</button>
                         </div>
                     </div>`;
                 }).join('') : `<div class="py-5 text-center text-sm font-bold text-stone-400">目前沒有相關商品。</div>`;
@@ -2668,7 +2818,8 @@
                     if (totalSelected > 0) {
                         addLimitedBtn.disabled = false;
                         addLimitedBtn.className = "w-full bg-[#5B7290] text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-pointer transition-colors hover:bg-[#3E4F66]";
-                        addLimitedBtn.innerText = `加入購物車（共 ${totalSelected} 件）`;
+                        if (!addLimitedBtn.querySelector('.ltd-n')) addLimitedBtn.innerHTML = '加入購物車（共 <span class="ltd-n"></span> 件）';
+                        lilouRoll(addLimitedBtn.querySelector('.ltd-n'), totalSelected);
                     } else {
                         addLimitedBtn.disabled = true;
                         addLimitedBtn.className = "w-full bg-stone-300 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed transition-all duration-200";
@@ -2696,7 +2847,10 @@
         }
 
         window.changeLimitedAddonQty = function(productIdx, change) {
-            window.setLimitedAddonQty(productIdx, Number(limitedAddonQty[productIdx] || 0) + change);
+            const before = Number(limitedAddonQty[productIdx] || 0);
+            window.setLimitedAddonQty(productIdx, before + change);
+            const after = Number(limitedAddonQty[productIdx] || 0);
+            if (after !== before) lilouBump(document.querySelector(`[data-ltd-idx="${productIdx}"]`), after - before);
         }
 
         window.addSelectedLimitedAddonsToCart = function() {
@@ -2837,9 +2991,9 @@
                         ${p.description ? `<span class="limited-product-description block">${lilouEscapeHtml(p.description)}</span>` : ''}
                     </div>
                     <div class="no-zoom-area shrink-0 flex items-center bg-stone-100 rounded-xl p-1 border border-stone-200 gap-1 ${(isBoxNotSelected || shouldDisable) ? 'opacity-30 select-none' : ''}">
-                        <button type="button" onpointerdown="startLilouStepperPress(event, 'stepFlavorQty', [${originalIdx}, -1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">—</button>
+                        <button type="button" onpointerdown="startLilouStepperPress(event, 'stepFlavorQty', [${originalIdx}, -1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">${LILOU_ICON.minus}</button>
                         <input type="number" id="flavorQty_${originalIdx}" data-idx="${originalIdx}" min="0" max="${virtualStock >= 0 ? virtualStock : 0}" value="0" ${shouldDisable ? 'disabled' : ''} oninput="handleFlavorInput(this, ${originalIdx})" onblur="handleFlavorBlur(this)" style="width: 44px; height: 32px;" class="flavor-input text-center text-base md:text-base font-black bg-transparent border-0 focus:outline-none text-stone-800">
-                        <button type="button" id="plusBtn_${originalIdx}" onpointerdown="startLilouStepperPress(event, 'stepFlavorQty', [${originalIdx}, 1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">＋</button>
+                        <button type="button" id="plusBtn_${originalIdx}" onpointerdown="startLilouStepperPress(event, 'stepFlavorQty', [${originalIdx}, 1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${shouldDisable ? 'disabled' : ''} style="width: 32px; height: 32px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-white rounded-lg border border-stone-200 active:bg-stone-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-xs md:text-sm">${LILOU_ICON.plus}</button>
                     </div>
                 </div>`;
             }).join('');
@@ -2855,6 +3009,8 @@
             if (newVal > maxStock) newVal = maxStock; 
             input.value = newVal; 
             calculateCurrentBoxTotal(input, idx, currentVal); 
+            const finalVal = parseInt(input.value) || 0;
+            if (finalVal !== currentVal) lilouBump(input, finalVal - currentVal);
         }
 
         window.handleFlavorInput = function(inputObj, idx) {
@@ -2915,12 +3071,12 @@
             const limit = currentBoxLimit || 0;
             const boxSelect = document.getElementById('boxSelect');
             document.getElementById('composeBarBox').textContent = boxSelect ? boxSelect.value : '';
-            document.getElementById('composeBarCount').textContent = limit ? (complete ? `已選滿 ${limit} 個` : `已選 ${total}／${limit} 個`) : `已選 ${total} 個`;
+            lilouRoll(document.getElementById('composeBarCount'), limit ? (complete ? `已選滿 ${limit} 個` : `已選 ${total}／${limit} 個`) : `已選 ${total} 個`);
             document.getElementById('composeBarFill').style.width = (limit ? Math.min(100, total / limit * 100) : (total ? 100 : 0)) + '%';
             bar.classList.toggle('is-full', complete);
             const btn = document.getElementById('composeBarBtn');
             btn.disabled = !complete;
-            btn.textContent = complete ? '加入購物車' : (limit && total > limit ? `多了 ${total - limit} 個` : (limit ? `還差 ${limit - total} 個` : '請選擇口味'));
+            lilouLabel(btn, complete ? '加入購物車' : (limit && total > limit ? `多了 ${total - limit} 個` : (limit ? `還差 ${limit - total} 個` : '請選擇口味')));
         }
         function initComposeBarObserver() {
             if (!('IntersectionObserver' in window)) return;
@@ -2948,7 +3104,7 @@
             updateComposeBar();
             if (packBtn) {
                 packBtn.disabled = !complete;
-                packBtn.innerText = complete ? '加入購物車' : (hasPackage ? '請完成口味選擇' : '請先選擇包裝');
+                lilouLabel(packBtn, complete ? '加入購物車' : (hasPackage ? '請完成口味選擇' : '請先選擇包裝'));
                 packBtn.className = complete
                     ? "w-full bg-[#5B7290] text-white font-extrabold tracking-widest h-12 rounded-xl hover:bg-[#3E4F66] transition-colors text-sm md:text-base uppercase shadow-xs cursor-pointer"
                     : "w-full bg-stone-300 text-white font-extrabold tracking-widest h-12 rounded-xl text-sm md:text-base uppercase shadow-xs cursor-not-allowed transition-all duration-200";
@@ -3021,15 +3177,15 @@
             const display = document.getElementById('currentBoxCountDisplay'); 
             if (currentBoxLimit) { 
                 if (currentTotal === currentBoxLimit) {
-                    display.innerText = `已滿: ${currentBoxLimit} 個`;
                     display.className = "text-xs md:text-sm font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-lg";
+                    lilouRoll(display, `已滿: ${currentBoxLimit} 個`);
                 } else if (currentTotal < currentBoxLimit) {
                     const diff = currentBoxLimit - currentTotal;
-                    display.innerText = `還差 ${diff} 個`; 
                     display.className = "text-xs md:text-sm font-black text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-lg";
+                    lilouRoll(display, `還差 ${diff} 個`);
                 } else {
-                    display.innerText = `超出限制`; 
                     display.className = "text-xs md:text-sm font-black text-red-600 bg-red-50 border border-red-200 px-2.5 py-1.5 rounded-lg";
+                    lilouRoll(display, `超出限制`);
                 }
 
                 inputs.forEach(input => { 
@@ -3278,7 +3434,10 @@
         window.changeCartBoxRepeatQty = function(cartIdx, change) {
             const box = cart[cartIdx];
             if (!box) return;
-            setCartBoxRepeatQty(cartIdx, (Number(box.repeatQty) || 1) + change, true);
+            const before = Number(box.repeatQty) || 1;
+            setCartBoxRepeatQty(cartIdx, before + change, true);
+            const after = Number(cart[cartIdx]?.repeatQty) || 1;
+            if (after !== before) lilouBump(document.querySelector(`[data-cart-qty="${cartIdx}"]`), after - before);
         }
 
         window.changeCartSingleQty = function(cartIdx, change) {
@@ -3315,6 +3474,7 @@
             renderFlavorMenu();
             renderCart();
             scheduleLilouDraftSave();
+            lilouBump(document.querySelector(`[data-cart-qty="${cartIdx}"]`), nextQty - currentQty);
         }
 
         window.handleCartRepeatInput = function(input, cartIdx) {
@@ -3345,7 +3505,7 @@
             }, 0);
         
             // 金額標籤統一由 calculateTotal() 更新（含運費與折扣），避免兩處寫入不一致
-            count.textContent = totalGroups;
+            lilouRoll(count, totalGroups);
         
             button.classList.toggle('is-visible', totalGroups > 0 && !document.getElementById('shopContentWrapper')?.classList.contains('hidden'));
         }
@@ -3388,13 +3548,13 @@
                     <div class="border border-stone-200 rounded-xl p-3 md:p-4 bg-stone-50/50 space-y-3">
                         <div class="flex items-start justify-between gap-3">
                             <div class="font-extrabold text-sm md:text-base text-stone-900 tracking-wide min-w-0 break-words">${lilouEscapeHtml(item.name || box.boxName)}</div>
-                            <button type="button" onclick="removeFromCart(${i})" aria-label="刪除 ${lilouEscapeHtml(item.name || box.boxName)}" class="bg-stone-100 text-stone-400 p-1.5 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center font-bold text-xs md:text-sm cursor-pointer shrink-0">✕</button>
+                            <button type="button" onclick="removeFromCart(${i})" aria-label="刪除 ${lilouEscapeHtml(item.name || box.boxName)}" class="bg-stone-100 text-stone-400 p-1.5 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center font-bold text-xs md:text-sm cursor-pointer shrink-0">${LILOU_ICON.closeSm}</button>
                         </div>
                         <div class="flex items-center justify-between gap-3 border-t border-stone-200 pt-3">
                             <div class="no-zoom-area flex items-center bg-white rounded-xl p-1 border border-stone-200 gap-1 w-fit">
-                                <button type="button" onclick="changeCartSingleQty(${i}, -1)" ${qty <= 1 ? 'disabled' : ''} style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm">—</button>
-                                <span style="min-width: 42px;" class="text-center text-base font-black text-stone-800">${qty}</span>
-                                <button type="button" onclick="changeCartSingleQty(${i}, 1)" ${qty >= maxQty ? 'disabled' : ''} style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm">＋</button>
+                                <button type="button" onclick="changeCartSingleQty(${i}, -1)" ${qty <= 1 ? 'disabled' : ''} style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm">${LILOU_ICON.minus}</button>
+                                <span data-cart-qty="${i}" style="min-width: 42px;" class="inline-block text-center text-base font-black text-stone-800">${qty}</span>
+                                <button type="button" onclick="changeCartSingleQty(${i}, 1)" ${qty >= maxQty ? 'disabled' : ''} style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm">${LILOU_ICON.plus}</button>
                             </div>
                             <div class="font-black text-sm md:text-base text-stone-950 shrink-0">$${itemTotal}</div>
                         </div>
@@ -3418,15 +3578,15 @@
                             <div class="text-xs md:text-sm text-[#5B7290] font-bold leading-relaxed break-words">${flavorDetailHtml}</div>
                             ${box.optionText ? `<div class="text-xs md:text-sm text-stone-500 font-semibold leading-relaxed break-words space-y-0.5 pt-1">${box.optionText.split('／').map(t => `<div>${lilouEscapeHtml(t)}</div>`).join('')}</div>` : ''}
                         </div>
-                        <button type="button" onclick="removeFromCart(${i})" aria-label="刪除 ${lilouEscapeHtml(box.boxName)}" class="bg-stone-100 text-stone-400 p-1.5 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center font-bold text-xs md:text-sm cursor-pointer shrink-0">✕</button>
+                        <button type="button" onclick="removeFromCart(${i})" aria-label="刪除 ${lilouEscapeHtml(box.boxName)}" class="bg-stone-100 text-stone-400 p-1.5 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center font-bold text-xs md:text-sm cursor-pointer shrink-0">${LILOU_ICON.closeSm}</button>
                     </div>
 
                     <div class="flex items-center justify-between gap-3 border-t border-stone-200 pt-3">
                         <div class="space-y-1">
                             <div class="no-zoom-area flex items-center bg-white rounded-xl p-1 border border-stone-200 gap-1 w-fit">
-                                <button type="button" onpointerdown="startLilouStepperPress(event, 'changeCartBoxRepeatQty', [${i}, -1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${repeatQty <= 1 ? 'disabled' : ''} style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm">—</button>
-                                <input type="number" min="1" max="${maxRepeat}" value="${repeatQty}" inputmode="numeric" oninput="handleCartRepeatInput(this, ${i})" onblur="handleCartRepeatBlur(this, ${i})" style="width: 52px; height: 34px;" class="text-center text-base font-black bg-transparent border-0 focus:outline-none text-stone-800">
-                                <button type="button" onpointerdown="startLilouStepperPress(event, 'changeCartBoxRepeatQty', [${i}, 1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${repeatQty >= maxRepeat ? 'disabled' : ''} style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm">＋</button>
+                                <button type="button" onpointerdown="startLilouStepperPress(event, 'changeCartBoxRepeatQty', [${i}, -1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${repeatQty <= 1 ? 'disabled' : ''} style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm">${LILOU_ICON.minus}</button>
+                                <input type="number" data-cart-qty="${i}" min="1" max="${maxRepeat}" value="${repeatQty}" inputmode="numeric" oninput="handleCartRepeatInput(this, ${i})" onblur="handleCartRepeatBlur(this, ${i})" style="width: 52px; height: 34px;" class="text-center text-base font-black bg-transparent border-0 focus:outline-none text-stone-800">
+                                <button type="button" onpointerdown="startLilouStepperPress(event, 'changeCartBoxRepeatQty', [${i}, 1])" onpointerup="stopLilouStepperPress()" onpointerleave="stopLilouStepperPress()" onpointercancel="stopLilouStepperPress()" ${repeatQty >= maxRepeat ? 'disabled' : ''} style="width: 34px; height: 34px;" class="flex items-center justify-center font-black text-stone-600 hover:text-stone-900 bg-stone-50 rounded-lg border border-stone-200 active:bg-stone-100 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-sm">${LILOU_ICON.plus}</button>
                             </div>
                             ${limitHint}
                         </div>
@@ -3470,7 +3630,7 @@
             } else { couponDisplay.classList.add('hidden'); } 
             document.getElementById('totalDisplay').innerText = `$${finalTotal}`; 
             
-            const floatingBtnLabel = document.querySelector('#floatingCartButton span:first-child');
+            const floatingBtnLabel = document.querySelector('#floatingCartButton .fcb-label');
             if (floatingBtnLabel) {
                 floatingBtnLabel.textContent = `$${finalTotal} · 購物車`;
             }
@@ -3887,8 +4047,7 @@
                         </div>
                         ` : ''}
 
-                        <div class="border-t border-dashed border-stone-200 my-4 pt-4 text-sm font-mono text-stone-600 space-y-1"><div class="font-bold text-stone-800 mb-1">購物明細：</div>${cartDetailsHtml}</div>
-                        <div class="text-right text-lg font-black text-[#5B7290] pt-2 border-t border-stone-100 mb-4">總金額：$${finalTotal} 元</div>
+                        <div class="border-t border-dashed border-stone-200 my-4 pt-4 text-sm text-stone-700">${renderCustomerOrderDetailBlock({ itemsDetail: JSON.stringify(itemsDetailSnapshot), subtotalAmount: String(amountSummary.subtotal), discountAmount: String(amountSummary.discountAmount), shippingFee: String(amountSummary.shippingFee), total: String(finalTotal) })}</div>
                         <div class="text-sm font-medium text-stone-600 leading-relaxed bg-stone-50 border border-stone-200 p-4 rounded-xl">如需要修改訂單內容，請私訊官方 LINE 或 Instagram，我們將由人工為您調整。謝謝😀</div>
                     `;
                     document.getElementById('receiptContainer').classList.remove('hidden');
