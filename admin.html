@@ -3247,6 +3247,25 @@ function couponValueText(r) {
 function peSelect(key, options, val) {
   return `<select data-pe="${key}" class="${PE_INPUT}">${options.map(([v, t]) => `<option value="${escapeHtml(v)}" ${String(val ?? "") === v ? "selected" : ""}>${escapeHtml(t)}</option>`).join("")}</select>`;
 }
+// 包裝「不限顆數」：舊資料沒填時，容量 1 的包裝（大粒露單顆）視為已開啟
+function packIsMultiQty(r) {
+  const raw = (r.multi_qty ?? "").toString().trim();
+  return raw === "" ? Number(r.box_size) === 1 : isDisplayOn(raw);
+}
+function peSwitchRow(key, on, label, onText, offText) {
+  return `<div class="flex items-center gap-3 rounded-xl bg-stone-50 border border-stone-200 px-3 py-2.5 mt-3">
+    <span class="flex-1"><span class="block text-sm font-black text-stone-800">${label}</span><span class="block text-xs font-bold text-stone-400" data-pe-switch-text>${on ? onText : offText}</span></span>
+    <button type="button" class="admin-switch ${on ? "is-on" : ""}" onclick="peToggleSwitch(this)" data-on-text="${escapeHtml(onText)}" data-off-text="${escapeHtml(offText)}" aria-label="${label}"><span></span></button>
+    <input type="hidden" data-pe="${key}" value="${on ? "TRUE" : "FALSE"}">
+  </div>`;
+}
+function peToggleSwitch(btn) {
+  const on = !btn.classList.contains("is-on");
+  btn.classList.toggle("is-on", on);
+  const row = btn.parentElement;
+  row.querySelector("input[data-pe]").value = on ? "TRUE" : "FALSE";
+  row.querySelector("[data-pe-switch-text]").textContent = on ? btn.dataset.onText : btn.dataset.offText;
+}
 function peDisplayRow(on, label = "在前台顯示") {
   return `<div class="flex items-center gap-3 rounded-xl bg-stone-50 border border-stone-200 px-3 py-2.5">
     <span class="flex-1"><span class="block text-sm font-black text-stone-800">${label}</span><span class="block text-xs font-bold text-stone-400" data-pe-display-text>${on ? "前台看得到" : "前台不顯示"}</span></span>
@@ -3308,7 +3327,7 @@ const LIST_CONFIGS = {
     group: r => prodCatKey(r.type),
     groups: () => (adminData.categories || []).slice().sort((a, b) => (Number(a.sort) || 0) - (Number(b.sort) || 0)).map(c => ({ key: prodCatKey(c.id), name: c.name, en: c.name_en })),
     title_: r => r.name, sub: r => r.name_en,
-    meta: r => [Number(r.extra_price) ? `加價 ${money(r.extra_price)}` : "不加價", r.box_size ? `可放 ${escapeHtml(r.box_size)} 顆` : "未設定容量"],
+    meta: r => [Number(r.extra_price) ? `加價 ${money(r.extra_price)}` : "不加價", packIsMultiQty(r) ? "不限顆數" : r.box_size ? `可放 ${escapeHtml(r.box_size)} 顆` : "未設定容量"],
     newRow: () => ({ type: (adminData.categories || []).find(c => (c.behavior || "") === "combo")?.id || "combo", display: "TRUE" }),
     form: r => `
       <section class="pe-card"><h4 class="pe-title">基本資料</h4>
@@ -3322,6 +3341,7 @@ const LIST_CONFIGS = {
           ${peField("加價", peNum("extra_price", r.extra_price, "0"))}
           ${peField("容量（顆）", peNum("box_size", r.box_size, "例：5"))}
         </div>
+        ${peSwitchRow("multi_qty", packIsMultiQty(r), "不限顆數", "客人每個口味可以一次加很多顆，每顆各算一組（不用裝滿容量）", "要剛好裝滿容量才能加入購物車")}
       </section>`,
     validate: d => !d.name ? "請填寫包裝名稱" : ""
   },

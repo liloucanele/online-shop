@@ -403,6 +403,7 @@ function getFormOptions() {
   const packDisplayIdx = findHeaderIndex_(packHeaders, ["display", "Display", "顯示", "是否顯示"]);
   const packSortIdx = findHeaderIndex_(packHeaders, ["sort", "Sort", "排序"]);
   const packNameEnIdx = findHeaderIndex_(packHeaders, ["name_en", "英文名稱"]);
+  const packMultiIdx = findHeaderIndex_(packHeaders, ["multi_qty", "不限顆數"]);
 
   const packaging = [];
   for (let i = 1; i < packDisplay.length; i++) {
@@ -420,7 +421,8 @@ function getFormOptions() {
       packaging_type: packTypeIdx >= 0 ? (row[packTypeIdx] || "combo").toString().trim().toLowerCase() : "combo",
       display: true,
       sort: Number((packSortIdx >= 0 ? row[packSortIdx] : "").toString().replace(/[^0-9.-]/g, "")) || (i * 10),
-      name_en: packNameEnIdx >= 0 ? row[packNameEnIdx].toString().trim() : ""
+      name_en: packNameEnIdx >= 0 ? row[packNameEnIdx].toString().trim() : "",
+      multi_qty: packMultiIdx >= 0 ? row[packMultiIdx].toString().trim() : ""
     });
   }
 
@@ -592,7 +594,7 @@ function doGet(e) {
     if (action === "diag") {
       let github = "ok";
       try { const c = githubConfig_(); github = "ok（" + c.repo + "／" + c.branch + "）"; } catch (err) { github = err.message; }
-      return jsonOutput({ status: "success", codeVersion: "2026-11-08-orderdate", scriptId: ScriptApp.getScriptId(), github: github });
+      return jsonOutput({ status: "success", codeVersion: "2026-11-08-multiqty", scriptId: ScriptApp.getScriptId(), github: github });
     }
     if (action === "adminLogin") return jsonOutput({ status: "error", message: "後台已更新，請重新整理後台頁面再登入。" });
     if (action === "adminGetAll") return jsonOutput(adminGetAll_(e.parameter.token));
@@ -830,7 +832,9 @@ function lilouVerifyOrderPricing_(opts, data) {
     if (isCombo) {
       const pack = packByName[boxName];
       if (!pack) return { error: "包裝「" + boxName + "」目前已下架或名稱已變更，請重新整理頁面後再下單。" };
-      if (pack.box_size > 0 && perBoxCount !== pack.box_size) return { error: "「" + boxName + "」必須剛好裝 " + pack.box_size + " 個，請重新整理頁面後再下單。" };
+      // 不限顆數的包裝：前台每顆各算一組，所以每組固定 1 顆
+      if (packIsMultiQty_(pack)) { if (perBoxCount !== 1) return { error: "「" + boxName + "」每組只能放 1 顆，請重新整理頁面後再下單。" }; }
+      else if (pack.box_size > 0 && perBoxCount !== pack.box_size) return { error: "「" + boxName + "」必須剛好裝 " + pack.box_size + " 個，請重新整理頁面後再下單。" };
       boxExtra = Number(pack.extra_price) || 0;
     }
     subtotal += (groupUnitCost + boxExtra) * repeat;
@@ -1136,7 +1140,7 @@ function adminGetAll_(token) {
   const packaging = adminGetSheetObjects_(ss, "Packaging").map((o, index) => ({
     name: o.name || o.Name || "", extra_price: o.extra_price || o.Extra_Price || "", box_size: o.box_size || o.Box_Size || "",
     type: (o.type || o.Type || o.packaging_type || "combo").toString().trim().toLowerCase(), display: (o.display !== undefined && o.display !== "") ? o.display : "TRUE", sort: o.sort || o.Sort || ((index + 1) * 10),
-    name_en: o.name_en || ""
+    name_en: o.name_en || "", multi_qty: o.multi_qty === undefined || o.multi_qty === null ? "" : o.multi_qty.toString().trim()
   })).filter(o => o.name).sort((a, b) => (Number(a.sort) || 999999) - (Number(b.sort) || 999999) || a.name.localeCompare(b.name, 'zh-Hant'));
 
   const coupons = adminGetSheetObjects_(ss, "Coupons").map(o => ({
@@ -1164,6 +1168,13 @@ function adminGetAll_(token) {
   return { status: "success", dashboard, orders, categories, products, packaging, coupons, settings, revenueSettings, productionSummary, packagingSummary, pages, pageBlocks, cakeOptions };
 }
 
+// 包裝「不限顆數」：有填就照填的；沒填（舊資料）時，容量 1 的包裝視為不限顆數
+function packIsMultiQty_(pack) {
+  const raw = (pack.multi_qty === undefined || pack.multi_qty === null ? "" : pack.multi_qty).toString().trim();
+  if (raw === "") return Number(pack.box_size) === 1;
+  return /^(true|1|yes|y|是|開)$/i.test(raw);
+}
+
 // 🔽 已修正：支援「Categories 分類管理」別名與自動分頁對齊
 function adminReplaceSheetRows_(token, sheetName, rows) {
   adminRequire_(token);
@@ -1172,7 +1183,7 @@ function adminReplaceSheetRows_(token, sheetName, rows) {
     Categories: categoryConfig,
     "Categories 分類管理": categoryConfig,
     Products: { coreHeaders: ["name", "price", "stock", "type", "display", "shipping_rule", "sort", "description", "ingredients", "allergens", "storage", "weight", "nutrition", "origin_manufacturer", "name_en", "image", "min_per_order", "max_per_order"], keyHeader: "name" },
-    Packaging: { coreHeaders: ["name", "extra_price", "box_size", "type", "display", "sort", "name_en"], keyHeader: "name" },
+    Packaging: { coreHeaders: ["name", "extra_price", "box_size", "type", "display", "sort", "name_en", "multi_qty"], keyHeader: "name" },
     Coupons: { coreHeaders: ["code", "type", "value", "min_spend", "start_date", "end_date"], keyHeader: "code" },
     Settings: { coreHeaders: ["setting_name", "value"], keyHeader: "setting_name" },
     Pages: { coreHeaders: PAGE_HEADERS, keyHeader: "page_id" },
@@ -1304,7 +1315,7 @@ function adminDeleteProduct_(data) {
 function rowSheetConfig_(kind) {
   const cfgs = {
     categories: { sheets: ["Categories", "Categories 分類管理"], fields: ["id", "name", "behavior", "display", "sort"].concat(CATEGORY_RULE_HEADERS), key: ["id"], label: "分類" },
-    packaging: { sheets: ["Packaging"], fields: ["name", "extra_price", "box_size", "type", "display", "sort", "name_en"], key: ["name"], label: "包裝" },
+    packaging: { sheets: ["Packaging"], fields: ["name", "extra_price", "box_size", "type", "display", "sort", "name_en", "multi_qty"], key: ["name"], label: "包裝" },
     coupons: { sheets: ["Coupons"], fields: ["code", "type", "value", "min_spend", "start_date", "end_date"], key: ["code"], label: "優惠券" },
     cakeoptions: { sheets: ["Cake_Options"], fields: CAKE_OPTION_HEADERS, key: ["group", "name"], label: "蛋糕選項" }
   };

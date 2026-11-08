@@ -1425,7 +1425,7 @@
         let localPackaging = []; 
         let localCoupons = []; 
         let currentBoxLimit = null;
-        // 單顆包裝（box_size = 1）：每個口味可直接填多顆，加入購物車時自動拆成「每口味 × N 組」
+        // 不限顆數的包裝（後台「不限顆數」開關）：每個口味可直接填多顆，加入購物車時自動拆成「每口味 × N 組」
         let currentPerUnitBox = false;
         const limitedAddonQty = {};
         let flavorComposerOpen = false;
@@ -1534,6 +1534,9 @@
             normalized.name = (normalized.name || "").toString().trim();
             normalized.extra_price = Number(normalized.extra_price) || 0;
             normalized.box_size = Number(normalized.box_size) || 0;
+            // 不限顆數：後台開關；舊資料沒填時，容量 1 的包裝（大粒露單顆）沿用不限顆數
+            const multiRaw = (normalized.multi_qty === undefined || normalized.multi_qty === null ? "" : normalized.multi_qty).toString().trim();
+            normalized.multi_qty = multiRaw === "" ? normalized.box_size === 1 : lilouIsTruthy(multiRaw);
             normalized.packaging_type = (normalized.packaging_type || normalized.type || "combo").toString().trim().toLowerCase();
             normalized.display = normalized.display === undefined || normalized.display === "" ? true : lilouIsTruthy(normalized.display);
             normalized.sort = Number(normalized.sort) || 9999;
@@ -2723,7 +2726,7 @@
                 const boxSelect = document.getElementById('boxSelect');
                 const catPackaging = localPackaging.filter(p => p.packaging_type === categoryId || p.type === categoryId);
                 const savedVal = boxSelect.value;
-                boxSelect.innerHTML = `<option value="" disabled selected>-- 請選擇包裝樣式 --</option>` + catPackaging.map(p => `<option value="${lilouEscapeHtml(p.name)}" data-extra="${p.extra_price}" data-box-size="${p.box_size}" data-packaging-type="${lilouEscapeHtml(p.packaging_type)}">${lilouEscapeHtml(p.name)}${p.extra_price > 0 ? ` (+$${p.extra_price})` : ""}</option>`).join('');
+                boxSelect.innerHTML = `<option value="" disabled selected>-- 請選擇包裝樣式 --</option>` + catPackaging.map(p => `<option value="${lilouEscapeHtml(p.name)}" data-extra="${p.extra_price}" data-box-size="${p.box_size}" data-multi-qty="${p.multi_qty ? 1 : 0}" data-packaging-type="${lilouEscapeHtml(p.packaging_type)}">${lilouEscapeHtml(p.name)}${p.extra_price > 0 ? ` (+$${p.extra_price})` : ""}</option>`).join('');
                 if(savedVal && catPackaging.find(p => p.name === savedVal)) {
                     boxSelect.value = savedVal;
                 } else {
@@ -3130,8 +3133,8 @@
             const selectedOption = boxSelect.selectedOptions && boxSelect.selectedOptions[0];
             if (boxSelect.value !== "" && selectedOption) {
                 const explicitBoxSize = Number(selectedOption.getAttribute('data-box-size')) || 0;
-                currentPerUnitBox = explicitBoxSize === 1;
-                currentBoxLimit = explicitBoxSize > 1 ? explicitBoxSize : null;
+                currentPerUnitBox = selectedOption.getAttribute('data-multi-qty') === '1';
+                currentBoxLimit = !currentPerUnitBox && explicitBoxSize > 1 ? explicitBoxSize : null;
             } else {
                 currentBoxLimit = null;
                 currentPerUnitBox = false;
