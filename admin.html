@@ -652,6 +652,8 @@
     .prod-order-bar.hidden { display: none; }
     .prod-order-bar button { min-height: 40px !important; }
     #tab-products { padding-bottom: 72px; }
+    /* 生日蛋糕：下方直接接蛋糕選項，不留給排序列的空白 */
+    #tab-products:has(~ #tab-cakeoptions:not(.hidden)) { padding-bottom: 0; }
     @media (max-width: 640px) {
       .prod-row { gap: 8px; padding: 8px 10px 8px 6px; }
       .prod-main { gap: 10px; }
