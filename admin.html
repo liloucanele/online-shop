@@ -57,28 +57,16 @@
     .order-date-btn { min-height: 28px !important; }
     button:has(> .lilou-ico:only-child) { display: inline-flex; align-items: center; justify-content: center; }
     .prod-chevron .lilou-ico, .row-toggle-btn .chevron .lilou-ico { width: 16px; height: 16px; }
-    /* 上方分頁選單的游標效果（取自 Stageshow cursors 的玻璃圓點）：
-       電腦：滑鼠移到哪個分頁，一塊半透明玻璃就滑過去、變成那個分頁的大小；按下時縮一下
-       手機：手指點下的位置出現一個柔和的圓點，放開後淡出 */
-    #tabs { position: relative; isolation: isolate; }
-    #tabs .tab-btn { z-index: 1; }
-    #tabs .tab-btn.tab-idle { background: transparent; }
-    .tab-glass {
-      position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; border-radius: 12px;
-      background: rgba(91,114,144,.12); opacity: 0; will-change: transform, width;
-      transition: transform .24s cubic-bezier(.22,1,.36,1), width .24s cubic-bezier(.22,1,.36,1), height .24s cubic-bezier(.22,1,.36,1), opacity .18s ease, scale .18s cubic-bezier(.22,1,.36,1), background-color .15s ease;
-    }
-    .tab-glass[data-on] { opacity: 1; }
-    .tab-glass[data-pressed] { scale: .95; background: rgba(91,114,144,.2); transition-duration: .24s, .24s, .24s, .18s, .08s, .08s; }
-    .tab-glass[data-jump] { transition: opacity .18s ease, scale .18s ease; }
-    #tabs .tab-btn:active { scale: none; }
-    [data-tab-touch] {
-      position: absolute; z-index: 2; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
-      background: rgba(91,114,144,.22); pointer-events: none; animation: tabTouch .5s cubic-bezier(.22,1,.36,1) forwards;
-    }
-    [data-tab-touch="active"] { background: rgba(255,255,255,.35); }
-    @keyframes tabTouch { 0% { opacity: 0; transform: scale(.7); } 25% { opacity: 1; transform: scale(.82); } 100% { opacity: 0; transform: scale(1.25); } }
-    @media (prefers-reduced-motion: reduce) { .tab-glass { transition: opacity .2s ease; } [data-tab-touch] { display: none; } }
+    /* 分頁選單（主選單與子分頁共用）：淺灰膠囊底，選中的那格有一塊深藍膠囊滑過去（帶一點彈性） */
+    .seg-track { width: fit-content; max-width: 100%; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; border-radius: 9999px; background: rgba(28,25,23,.06); padding: 4px; }
+    .seg-track::-webkit-scrollbar { display: none; }
+    .seg { position: relative; display: flex; min-width: max-content; isolation: isolate; }
+    .seg > button { position: relative; z-index: 1; border-radius: 9999px !important; background: transparent !important; color: #57534e; white-space: nowrap; transition: color .25s ease; }
+    .seg > button.is-on, .seg > button.tab-active { color: #fff; }
+    @media (hover: hover) { .seg > button:not(.is-on):not(.tab-active):hover { color: #1c1917; } }
+    .seg-pill { position: absolute; left: 0; top: 0; bottom: 0; z-index: 0; border-radius: 9999px; background: #5B7290; pointer-events: none; opacity: 0; will-change: transform, width;
+      transition: transform .42s cubic-bezier(.3,1.18,.5,1), width .42s cubic-bezier(.3,1.18,.5,1), opacity .2s ease; }
+    @media (prefers-reduced-motion: reduce) { .seg-pill { transition: opacity .2s ease; } }
     @media (prefers-reduced-motion: reduce) {
       .lilou-roll__reel, .admin-toast, .prod-order-bar, .settings-save-bar, .prod-editor-panel, .prod-editor-backdrop,
       #adminConfirmModal, #adminConfirmBox, #prepItemSheet, #prepItemSheet > div { transition: none !important; }
@@ -142,53 +130,6 @@
       build(el, from); place(el, from, false);
       requestAnimationFrame(() => requestAnimationFrame(() => place(el, to, true)));
     };
-    // 上方分頁選單的游標效果（Stageshow cursors：電腦是玻璃底滑到分頁上，手機是點下的柔和圓點）
-    // 注意：Tailwind 會在任何 class 改變時重新產生樣式，所以這裡只改 style 與 data 屬性，避免滑動時卡頓
-    document.addEventListener("DOMContentLoaded", () => {
-      const tabs = document.getElementById("tabs");
-      if (!tabs) return;
-      const glass = document.createElement("span");
-      glass.className = "tab-glass"; glass.setAttribute("aria-hidden", "true");
-      tabs.prepend(glass);
-      let current = null, frame = 0;
-      const moveTo = btn => {
-        current = btn;
-        cancelAnimationFrame(frame);
-        frame = requestAnimationFrame(() => {
-          const jump = !glass.hasAttribute("data-on");
-          if (jump) glass.setAttribute("data-jump", "");
-          glass.style.transform = `translate3d(${btn.offsetLeft}px, ${btn.offsetTop}px, 0)`;
-          glass.style.width = btn.offsetWidth + "px";
-          glass.style.height = btn.offsetHeight + "px";
-          glass.setAttribute("data-on", "");
-          if (jump) requestAnimationFrame(() => glass.removeAttribute("data-jump"));
-        });
-      };
-      tabs.addEventListener("pointermove", e => {
-        if (e.pointerType !== "mouse") return;
-        const btn = e.target.closest(".tab-btn");
-        if (btn && btn !== current) moveTo(btn);
-      }, { passive: true });
-      tabs.addEventListener("pointerleave", e => {
-        if (e.pointerType !== "mouse") return;
-        cancelAnimationFrame(frame);
-        glass.removeAttribute("data-on"); glass.removeAttribute("data-pressed"); current = null;
-      });
-      tabs.addEventListener("pointerdown", e => {
-        const btn = e.target.closest(".tab-btn");
-        if (!btn) return;
-        if (e.pointerType === "mouse") { if (btn !== current) moveTo(btn); glass.setAttribute("data-pressed", ""); return; }
-        const r = tabs.getBoundingClientRect();
-        const dot = document.createElement("span");
-        dot.setAttribute("data-tab-touch", btn.classList.contains("tab-active") ? "active" : "");
-        dot.style.left = (e.clientX - r.left) + "px"; dot.style.top = (e.clientY - r.top) + "px";
-        tabs.appendChild(dot);
-        setTimeout(() => dot.remove(), 520);
-      }, { passive: true });
-      const release = () => glass.removeAttribute("data-pressed");
-      tabs.addEventListener("pointerup", release);
-      tabs.addEventListener("pointercancel", release);
-    });
     // 畫面重畫後，標了 data-roll 的數字會從上次的值滾到新值（只用在數量，不用在金額）
     const last = {};
     window.lilouRollAll = function (root) {
@@ -698,7 +639,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.5.1</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.5.2</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -719,17 +660,17 @@
 <p class="hidden text-sm font-bold" id="loginMessage"></p>
 </section>
 <section class="hidden space-y-5" id="adminPanel">
-<div id="tabMenu" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-3 tab-scroll-wrapper">
-  <div class="overflow-x-auto scrollbar-hide" style="-ms-overflow-style: none; scrollbar-width: none;">
-    <div class="flex gap-2 min-w-max" id="tabs">
-      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard<span class="unsaved-dot"></span></button>
-      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="orders" onclick="switchTab('orders')">訂單管理<span class="unsaved-dot"></span></button>
-      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="categories" onclick="switchTab('categories')">分類<span class="unsaved-dot"></span></button>
-      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="products" onclick="switchTab('products')">產品<span class="unsaved-dot"></span></button>
-      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="packaging" onclick="switchTab('packaging')">包裝<span class="unsaved-dot"></span></button>
-      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="settings" onclick="switchTab('settings')">設定<span class="unsaved-dot"></span></button>
-      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="pages" onclick="switchTab('pages')">頁面<span class="unsaved-dot"></span></button>
-      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="revenue" onclick="switchTab('revenue')">分潤<span class="unsaved-dot"></span></button>
+<div id="tabMenu" class="seg-track">
+  <div>
+    <div class="seg" id="tabs" data-seg="main">
+      <button class="tab-btn px-4 py-2 font-black text-sm tab-active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 font-black text-sm tab-idle" data-tab="orders" onclick="switchTab('orders')">訂單管理<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 font-black text-sm tab-idle" data-tab="categories" onclick="switchTab('categories')">分類<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 font-black text-sm tab-idle" data-tab="products" onclick="switchTab('products')">產品<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 font-black text-sm tab-idle" data-tab="packaging" onclick="switchTab('packaging')">包裝<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 font-black text-sm tab-idle" data-tab="settings" onclick="switchTab('settings')">設定<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 font-black text-sm tab-idle" data-tab="pages" onclick="switchTab('pages')">頁面<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 font-black text-sm tab-idle" data-tab="revenue" onclick="switchTab('revenue')">分潤<span class="unsaved-dot"></span></button>
     </div>
   </div>
 </div>
@@ -964,7 +905,7 @@ const SUB_TABS = {
   pages: [["sitehome", "首頁"], ["sitecake", "生日蛋糕頁"], ["pages", "自訂頁面"]]
 };
 const SUB_TAB_PARENT = { coupons: "settings", cakeoptions: "products", sitehome: "pages", sitecake: "pages" };
-const SUB_TAB_BTN = on => `shrink-0 px-4 py-2 rounded-xl text-sm font-black whitespace-nowrap transition-colors ${on ? "bg-[#5B7290]/15 text-[#3E4F66]" : "text-stone-600 hover:bg-stone-50"}`;
+const SUB_TAB_BTN = on => `shrink-0 px-4 py-2 text-sm font-black${on ? " is-on" : ""}`;
 function subTabNav(active) {
   const parent = SUB_TAB_PARENT[active] || active;
   let buttons;
@@ -976,7 +917,7 @@ function subTabNav(active) {
   } else {
     if (parent === "settings") {
       // 設定：營業日／日期規則／運費 是同一頁的三個區塊（共用一次儲存），優惠券是另一頁
-      return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-3" data-no-dirty><div class="flex gap-2 overflow-x-auto" style="scrollbar-width:none">${SUB_TABS.settings.map(([key, label]) => key === "coupons"
+      return `<div class="seg-track" data-no-dirty><div class="seg" data-seg="settings">${SUB_TABS.settings.map(([key, label]) => key === "coupons"
         ? `<button type="button" onclick="switchTab('coupons')" class="${SUB_TAB_BTN(active === "coupons")}">${label}</button>`
         : `<button type="button" data-settings-btn="${key}" onclick="openSettingsSection('${key}')" class="${SUB_TAB_BTN(active === "settings" && settingsSection === key)}">${label}</button>`).join("")}</div></div>`;
     }
@@ -984,7 +925,7 @@ function subTabNav(active) {
     if (!items) return "";
     buttons = items.map(([tab, label]) => `<button type="button" onclick="switchTab('${tab}')" class="${SUB_TAB_BTN(active === tab)}">${label}</button>`).join("");
   }
-  return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-3" data-no-dirty><div class="flex gap-2 overflow-x-auto" style="scrollbar-width:none">${buttons}</div></div>`;
+  return `<div class="seg-track" data-no-dirty><div class="seg" data-seg="${parent}">${buttons}</div></div>`;
 }
 let settingsSection = "set-days";
 function openSettingsSection(key) {
@@ -1010,7 +951,41 @@ function switchTab(tab) {
   document.getElementById("tab-" + tab).classList.remove("hidden");
   // 生日蛋糕分類：同一頁下方接著顯示蛋糕選項（夾餡、配件等）
   if (tab === "products" && isCakeCategory(prodState.cat)) document.getElementById("tab-cakeoptions").classList.remove("hidden");
+  segSync();
 }
+// 分頁選單的滑動膠囊：每次畫面更新後，把膠囊放到選中的那格；換分頁時從上一格滑過去
+const segLast = {};
+function segSync(animate = true) {
+  document.querySelectorAll("[data-seg]").forEach(seg => {
+    if (!seg.offsetParent) return;
+    const on = seg.querySelector(":scope > .is-on, :scope > .tab-active");
+    let pill = seg.querySelector(":scope > .seg-pill");
+    if (!on) { if (pill) pill.style.opacity = "0"; return; }
+    const key = seg.dataset.seg, x = on.offsetLeft, w = on.offsetWidth;
+    const fresh = !pill;
+    if (fresh) { pill = document.createElement("span"); pill.className = "seg-pill"; pill.setAttribute("aria-hidden", "true"); seg.prepend(pill); }
+    const place = (px, pw, anim) => { pill.style.transition = anim ? "" : "none"; pill.style.transform = `translateX(${px}px)`; pill.style.width = pw + "px"; pill.style.opacity = "1"; };
+    const last = segLast[key];
+    const moved = !last || last.x !== x || last.w !== w;
+    const track = seg.closest(".seg-track");
+    if (moved && track && track.scrollWidth > track.clientWidth) track.scrollTo({ left: Math.max(0, x - (track.clientWidth - w) / 2), behavior: animate ? "smooth" : "auto" });
+    if (fresh) {
+      if (animate && last && (last.x !== x || last.w !== w)) { place(last.x, last.w, false); void pill.offsetWidth; place(x, w, true); }
+      else place(x, w, false);
+    } else if (Number(pill.dataset.x) !== x || Number(pill.dataset.w) !== w) place(x, w, animate);
+    pill.dataset.x = x; pill.dataset.w = w;
+    segLast[key] = { x, w };
+  });
+}
+(() => {
+  let queued = false;
+  new MutationObserver(() => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => { queued = false; segSync(); });
+  }).observe(document.body, { childList: true, subtree: true });
+  window.addEventListener("resize", () => segSync(false));
+})();
 function isCakeCategory(key) {
   if (!key) return false;
   return (adminData?.categories || []).some(c => prodCatKey(c.id) === key && (c.behavior || "").toString().trim().toLowerCase() === "cake");
