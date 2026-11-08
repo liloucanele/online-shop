@@ -57,6 +57,27 @@
     .order-date-btn { min-height: 28px !important; }
     button:has(> .lilou-ico:only-child) { display: inline-flex; align-items: center; justify-content: center; }
     .prod-chevron .lilou-ico, .row-toggle-btn .chevron .lilou-ico { width: 16px; height: 16px; }
+    /* 上方分頁選單的游標效果（取自 Stageshow cursors 的玻璃圓點）：
+       電腦：滑鼠移到哪個分頁，一塊半透明玻璃就滑過去、變成那個分頁的大小；按下時縮一下
+       手機：手指點下的位置出現一個柔和的圓點，放開後淡出 */
+    #tabs { position: relative; isolation: isolate; }
+    #tabs .tab-btn { z-index: 1; }
+    #tabs .tab-btn.tab-idle { background: transparent; }
+    .tab-glass {
+      position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; border-radius: 12px;
+      background: rgba(91,114,144,.12); opacity: 0;
+      transition: transform .32s cubic-bezier(.22,1,.36,1), width .32s cubic-bezier(.22,1,.36,1), height .32s cubic-bezier(.22,1,.36,1), opacity .2s ease, scale .2s cubic-bezier(.22,1,.36,1);
+    }
+    .tab-glass.is-on { opacity: 1; }
+    .tab-glass.is-pressed { scale: .94; background: rgba(91,114,144,.2); transition-duration: .32s, .32s, .32s, .2s, .08s; }
+    .tab-glass.no-slide { transition: opacity .2s ease, scale .2s ease; }
+    .tab-touch {
+      position: absolute; z-index: 2; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
+      background: rgba(91,114,144,.22); pointer-events: none; animation: tabTouch .5s cubic-bezier(.22,1,.36,1) forwards;
+    }
+    .tab-active .tab-touch, .tab-touch.on-active { background: rgba(255,255,255,.35); }
+    @keyframes tabTouch { 0% { opacity: 0; transform: scale(.7); } 25% { opacity: 1; transform: scale(.82); } 100% { opacity: 0; transform: scale(1.25); } }
+    @media (prefers-reduced-motion: reduce) { .tab-glass { transition: opacity .2s ease; } .tab-touch { display: none; } }
     @media (prefers-reduced-motion: reduce) {
       .lilou-roll__reel, .admin-toast, .prod-order-bar, .settings-save-bar, .prod-editor-panel, .prod-editor-backdrop,
       #adminConfirmModal, #adminConfirmBox, #prepItemSheet, #prepItemSheet > div { transition: none !important; }
@@ -120,6 +141,48 @@
       build(el, from); place(el, from, false);
       requestAnimationFrame(() => requestAnimationFrame(() => place(el, to, true)));
     };
+    // 上方分頁選單的游標效果（Stageshow cursors：電腦是玻璃圓點滑到分頁上，手機是點下的柔和圓點）
+    document.addEventListener("DOMContentLoaded", () => {
+      const tabs = document.getElementById("tabs");
+      if (!tabs) return;
+      const glass = document.createElement("span");
+      glass.className = "tab-glass"; glass.setAttribute("aria-hidden", "true");
+      tabs.prepend(glass);
+      let current = null;
+      const moveTo = btn => {
+        const first = !glass.classList.contains("is-on");
+        glass.classList.toggle("no-slide", first);
+        glass.style.transform = `translate(${btn.offsetLeft}px, ${btn.offsetTop}px)`;
+        glass.style.width = btn.offsetWidth + "px";
+        glass.style.height = btn.offsetHeight + "px";
+        if (first) { void glass.offsetWidth; glass.classList.remove("no-slide"); }
+        glass.classList.add("is-on");
+        current = btn;
+      };
+      tabs.addEventListener("pointerover", e => {
+        if (e.pointerType !== "mouse") return;
+        const btn = e.target.closest(".tab-btn");
+        if (btn && btn !== current) moveTo(btn);
+      });
+      tabs.addEventListener("pointerleave", e => {
+        if (e.pointerType !== "mouse") return;
+        glass.classList.remove("is-on", "is-pressed"); current = null;
+      });
+      tabs.addEventListener("pointerdown", e => {
+        const btn = e.target.closest(".tab-btn");
+        if (!btn) return;
+        if (e.pointerType === "mouse") { if (btn !== current) moveTo(btn); glass.classList.add("is-pressed"); return; }
+        const r = tabs.getBoundingClientRect();
+        const dot = document.createElement("span");
+        dot.className = "tab-touch" + (btn.classList.contains("tab-active") ? " on-active" : "");
+        dot.style.left = (e.clientX - r.left) + "px"; dot.style.top = (e.clientY - r.top) + "px";
+        tabs.appendChild(dot);
+        setTimeout(() => dot.remove(), 520);
+      });
+      const release = () => glass.classList.remove("is-pressed");
+      tabs.addEventListener("pointerup", release);
+      tabs.addEventListener("pointercancel", release);
+    });
     // 畫面重畫後，標了 data-roll 的數字會從上次的值滾到新值（只用在數量，不用在金額）
     const last = {};
     window.lilouRollAll = function (root) {
