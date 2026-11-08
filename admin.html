@@ -65,19 +65,20 @@
     #tabs .tab-btn.tab-idle { background: transparent; }
     .tab-glass {
       position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; border-radius: 12px;
-      background: rgba(91,114,144,.12); opacity: 0;
-      transition: transform .32s cubic-bezier(.22,1,.36,1), width .32s cubic-bezier(.22,1,.36,1), height .32s cubic-bezier(.22,1,.36,1), opacity .2s ease, scale .2s cubic-bezier(.22,1,.36,1);
+      background: rgba(91,114,144,.12); opacity: 0; will-change: transform, width;
+      transition: transform .24s cubic-bezier(.22,1,.36,1), width .24s cubic-bezier(.22,1,.36,1), height .24s cubic-bezier(.22,1,.36,1), opacity .18s ease, scale .18s cubic-bezier(.22,1,.36,1), background-color .15s ease;
     }
-    .tab-glass.is-on { opacity: 1; }
-    .tab-glass.is-pressed { scale: .94; background: rgba(91,114,144,.2); transition-duration: .32s, .32s, .32s, .2s, .08s; }
-    .tab-glass.no-slide { transition: opacity .2s ease, scale .2s ease; }
-    .tab-touch {
+    .tab-glass[data-on] { opacity: 1; }
+    .tab-glass[data-pressed] { scale: .95; background: rgba(91,114,144,.2); transition-duration: .24s, .24s, .24s, .18s, .08s, .08s; }
+    .tab-glass[data-jump] { transition: opacity .18s ease, scale .18s ease; }
+    #tabs .tab-btn:active { scale: none; }
+    [data-tab-touch] {
       position: absolute; z-index: 2; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
       background: rgba(91,114,144,.22); pointer-events: none; animation: tabTouch .5s cubic-bezier(.22,1,.36,1) forwards;
     }
-    .tab-active .tab-touch, .tab-touch.on-active { background: rgba(255,255,255,.35); }
+    [data-tab-touch="active"] { background: rgba(255,255,255,.35); }
     @keyframes tabTouch { 0% { opacity: 0; transform: scale(.7); } 25% { opacity: 1; transform: scale(.82); } 100% { opacity: 0; transform: scale(1.25); } }
-    @media (prefers-reduced-motion: reduce) { .tab-glass { transition: opacity .2s ease; } .tab-touch { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .tab-glass { transition: opacity .2s ease; } [data-tab-touch] { display: none; } }
     @media (prefers-reduced-motion: reduce) {
       .lilou-roll__reel, .admin-toast, .prod-order-bar, .settings-save-bar, .prod-editor-panel, .prod-editor-backdrop,
       #adminConfirmModal, #adminConfirmBox, #prepItemSheet, #prepItemSheet > div { transition: none !important; }
@@ -141,45 +142,50 @@
       build(el, from); place(el, from, false);
       requestAnimationFrame(() => requestAnimationFrame(() => place(el, to, true)));
     };
-    // 上方分頁選單的游標效果（Stageshow cursors：電腦是玻璃圓點滑到分頁上，手機是點下的柔和圓點）
+    // 上方分頁選單的游標效果（Stageshow cursors：電腦是玻璃底滑到分頁上，手機是點下的柔和圓點）
+    // 注意：Tailwind 會在任何 class 改變時重新產生樣式，所以這裡只改 style 與 data 屬性，避免滑動時卡頓
     document.addEventListener("DOMContentLoaded", () => {
       const tabs = document.getElementById("tabs");
       if (!tabs) return;
       const glass = document.createElement("span");
       glass.className = "tab-glass"; glass.setAttribute("aria-hidden", "true");
       tabs.prepend(glass);
-      let current = null;
+      let current = null, frame = 0;
       const moveTo = btn => {
-        const first = !glass.classList.contains("is-on");
-        glass.classList.toggle("no-slide", first);
-        glass.style.transform = `translate(${btn.offsetLeft}px, ${btn.offsetTop}px)`;
-        glass.style.width = btn.offsetWidth + "px";
-        glass.style.height = btn.offsetHeight + "px";
-        if (first) { void glass.offsetWidth; glass.classList.remove("no-slide"); }
-        glass.classList.add("is-on");
         current = btn;
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(() => {
+          const jump = !glass.hasAttribute("data-on");
+          if (jump) glass.setAttribute("data-jump", "");
+          glass.style.transform = `translate3d(${btn.offsetLeft}px, ${btn.offsetTop}px, 0)`;
+          glass.style.width = btn.offsetWidth + "px";
+          glass.style.height = btn.offsetHeight + "px";
+          glass.setAttribute("data-on", "");
+          if (jump) requestAnimationFrame(() => glass.removeAttribute("data-jump"));
+        });
       };
-      tabs.addEventListener("pointerover", e => {
+      tabs.addEventListener("pointermove", e => {
         if (e.pointerType !== "mouse") return;
         const btn = e.target.closest(".tab-btn");
         if (btn && btn !== current) moveTo(btn);
-      });
+      }, { passive: true });
       tabs.addEventListener("pointerleave", e => {
         if (e.pointerType !== "mouse") return;
-        glass.classList.remove("is-on", "is-pressed"); current = null;
+        cancelAnimationFrame(frame);
+        glass.removeAttribute("data-on"); glass.removeAttribute("data-pressed"); current = null;
       });
       tabs.addEventListener("pointerdown", e => {
         const btn = e.target.closest(".tab-btn");
         if (!btn) return;
-        if (e.pointerType === "mouse") { if (btn !== current) moveTo(btn); glass.classList.add("is-pressed"); return; }
+        if (e.pointerType === "mouse") { if (btn !== current) moveTo(btn); glass.setAttribute("data-pressed", ""); return; }
         const r = tabs.getBoundingClientRect();
         const dot = document.createElement("span");
-        dot.className = "tab-touch" + (btn.classList.contains("tab-active") ? " on-active" : "");
+        dot.setAttribute("data-tab-touch", btn.classList.contains("tab-active") ? "active" : "");
         dot.style.left = (e.clientX - r.left) + "px"; dot.style.top = (e.clientY - r.top) + "px";
         tabs.appendChild(dot);
         setTimeout(() => dot.remove(), 520);
-      });
-      const release = () => glass.classList.remove("is-pressed");
+      }, { passive: true });
+      const release = () => glass.removeAttribute("data-pressed");
       tabs.addEventListener("pointerup", release);
       tabs.addEventListener("pointercancel", release);
     });
@@ -685,7 +691,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.4.0</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.4.1</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
