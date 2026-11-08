@@ -67,6 +67,10 @@
     .seg-pill { position: absolute; left: 0; top: 0; bottom: 0; z-index: 0; border-radius: 9999px; background: #5B7290; pointer-events: none; opacity: 0; will-change: transform, width;
       transition: transform .42s cubic-bezier(.3,1.18,.5,1), width .42s cubic-bezier(.3,1.18,.5,1), opacity .2s ease; }
     @media (prefers-reduced-motion: reduce) { .seg-pill { transition: opacity .2s ease; } }
+    /* 第二層（子分頁）：白底細框，選中的那格是深藍框線膠囊 */
+    .seg-track--outline { background: #fff; border: 1px solid #e7e5e4; }
+    .seg-track--outline .seg-pill { background: rgba(91,114,144,.08); border: 1.5px solid #5B7290; }
+    .seg-track--outline .seg > button.is-on { color: #3E4F66; }
     @media (prefers-reduced-motion: reduce) {
       .lilou-roll__reel, .admin-toast, .prod-order-bar, .settings-save-bar, .prod-editor-panel, .prod-editor-backdrop,
       #adminConfirmModal, #adminConfirmBox, #prepItemSheet, #prepItemSheet > div { transition: none !important; }
@@ -917,7 +921,7 @@ function subTabNav(active) {
   } else {
     if (parent === "settings") {
       // 設定：營業日／日期規則／運費 是同一頁的三個區塊（共用一次儲存），優惠券是另一頁
-      return `<div class="seg-track" data-no-dirty><div class="seg" data-seg="settings">${SUB_TABS.settings.map(([key, label]) => key === "coupons"
+      return `<div class="seg-track seg-track--outline" data-no-dirty><div class="seg" data-seg="settings">${SUB_TABS.settings.map(([key, label]) => key === "coupons"
         ? `<button type="button" onclick="switchTab('coupons')" class="${SUB_TAB_BTN(active === "coupons")}">${label}</button>`
         : `<button type="button" data-settings-btn="${key}" onclick="openSettingsSection('${key}')" class="${SUB_TAB_BTN(active === "settings" && settingsSection === key)}">${label}</button>`).join("")}</div></div>`;
     }
@@ -925,7 +929,7 @@ function subTabNav(active) {
     if (!items) return "";
     buttons = items.map(([tab, label]) => `<button type="button" onclick="switchTab('${tab}')" class="${SUB_TAB_BTN(active === tab)}">${label}</button>`).join("");
   }
-  return `<div class="seg-track" data-no-dirty><div class="seg" data-seg="${parent}">${buttons}</div></div>`;
+  return `<div class="seg-track seg-track--outline" data-no-dirty><div class="seg" data-seg="${parent}">${buttons}</div></div>`;
 }
 let settingsSection = "set-days";
 function openSettingsSection(key) {
