@@ -694,7 +694,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.5.0</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.6.0</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -739,6 +739,8 @@
 <section class="tab-page hidden space-y-5" id="tab-settings"></section>
 <section class="tab-page hidden space-y-5" id="tab-revenue"></section>
 <section class="tab-page hidden space-y-5" id="tab-pages"></section>
+<section class="tab-page hidden space-y-5" id="tab-sitehome"></section>
+<section class="tab-page hidden space-y-5" id="tab-sitecake"></section>
 <section class="tab-page hidden space-y-5" id="tab-cakeoptions"></section>
 </section>
 </main>
@@ -767,12 +769,16 @@ function markUnsaved(tab) {
   if (!tab || ['dashboard', 'revenue', 'products', 'categories', 'packaging', 'coupons', 'cakeoptions'].includes(tab)) return;
   unsavedTabs.add(tab);
   if (tab === "settings") { const t = document.getElementById("settingsDirtyText"); if (t) t.textContent = "● 有變更尚未儲存"; }
-  const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+  const parent = (typeof SUB_TAB_PARENT !== "undefined" && SUB_TAB_PARENT[tab]) || tab;
+  const btn = document.querySelector(`.tab-btn[data-tab="${parent}"]`);
   if (btn) btn.classList.add('has-unsaved');
 }
 function clearUnsaved(tab) {
   unsavedTabs.delete(tab);
-  const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+  const parentOf = t => (typeof SUB_TAB_PARENT !== "undefined" && SUB_TAB_PARENT[t]) || t;
+  const parent = parentOf(tab);
+  if ([...unsavedTabs].some(t => parentOf(t) === parent)) return;
+  const btn = document.querySelector(`.tab-btn[data-tab="${parent}"]`);
   if (btn) btn.classList.remove('has-unsaved');
 }
 function clearAllUnsaved() {
@@ -947,10 +953,11 @@ function logoutAdmin() {
 // 優惠券放在「設定」底下當子頁：上方選單仍亮「設定」
 // 子分頁：優惠券在「設定」底下、蛋糕在「產品」底下；上方選單亮的是母分頁
 const SUB_TABS = {
-  settings: [["settings", "網站設定"], ["coupons", "優惠券"]],
-  products: [["products", "產品"], ["cakeoptions", "蛋糕"]]
+  settings: [["set-days", "營業日"], ["set-rules", "日期規則"], ["set-shipping", "運費"], ["coupons", "優惠券"]],
+  products: [["products", "產品"], ["cakeoptions", "蛋糕"]],
+  pages: [["sitehome", "首頁"], ["sitecake", "生日蛋糕頁"], ["pages", "自訂頁面"]]
 };
-const SUB_TAB_PARENT = { coupons: "settings", cakeoptions: "products" };
+const SUB_TAB_PARENT = { coupons: "settings", cakeoptions: "products", sitehome: "pages", sitecake: "pages" };
 const SUB_TAB_BTN = on => `shrink-0 h-10 px-4 rounded-xl text-sm font-black whitespace-nowrap ${on ? "bg-white text-stone-900 border border-stone-200" : "text-stone-500 hover:text-stone-800"}`;
 function subTabNav(active) {
   const parent = SUB_TAB_PARENT[active] || active;
@@ -962,11 +969,24 @@ function subTabNav(active) {
     buttons = cats.map(([key, name]) => `<button type="button" data-cat="${escapeHtml(key)}" onclick="openProductCategory(this.dataset.cat)" class="${SUB_TAB_BTN(onProducts && prodState.cat === key)}">${escapeHtml(name)}</button>`).join("")
       + `<button type="button" onclick="switchTab('cakeoptions')" class="${SUB_TAB_BTN(active === "cakeoptions")}">蛋糕</button>`;
   } else {
+    if (parent === "settings") {
+      // 設定：營業日／日期規則／運費 是同一頁的三個區塊（共用一次儲存），優惠券是另一頁
+      return `<div class="flex w-fit max-w-full gap-1 p-1 rounded-2xl bg-stone-100 border border-stone-200 overflow-x-auto" style="scrollbar-width:none" data-no-dirty>${SUB_TABS.settings.map(([key, label]) => key === "coupons"
+        ? `<button type="button" onclick="switchTab('coupons')" class="${SUB_TAB_BTN(active === "coupons")}">${label}</button>`
+        : `<button type="button" data-settings-btn="${key}" onclick="openSettingsSection('${key}')" class="${SUB_TAB_BTN(active === "settings" && settingsSection === key)}">${label}</button>`).join("")}</div>`;
+    }
     const items = SUB_TABS[parent];
     if (!items) return "";
     buttons = items.map(([tab, label]) => `<button type="button" onclick="switchTab('${tab}')" class="${SUB_TAB_BTN(active === tab)}">${label}</button>`).join("");
   }
   return `<div class="flex w-fit max-w-full gap-1 p-1 rounded-2xl bg-stone-100 border border-stone-200 overflow-x-auto" style="scrollbar-width:none" data-no-dirty>${buttons}</div>`;
+}
+let settingsSection = "set-days";
+function openSettingsSection(key) {
+  settingsSection = key;
+  document.querySelectorAll("#tab-settings [data-settings-section]").forEach(sec => sec.classList.toggle("hidden", sec.id !== key));
+  document.querySelectorAll("#tab-settings [data-settings-btn]").forEach(btn => { btn.className = SUB_TAB_BTN(btn.dataset.settingsBtn === key); });
+  switchTab("settings");
 }
 function openProductCategory(key) {
   prodState.cat = key || "";
@@ -1026,6 +1046,7 @@ function renderAll() {
   renderPackaging();
   renderCoupons();
   renderSettings();
+  renderSiteContent();
   renderRevenueShare();
   renderPagesEditor(true);
   renderCakeOptions();
@@ -3752,7 +3773,7 @@ function renderPagesEditor(reset) {
   const blocks = pagesDraft.blocks.filter(b => b.page_id === selectedPageId);
   const el = document.getElementById("tab-pages");
   if (!el) return;
-  el.innerHTML = `
+  el.innerHTML = `${subTabNav("pages")}
   <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-5" id="pagesEditor">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
       <div>
@@ -4109,33 +4130,9 @@ function renderSettings() {
     { setting_name: "店到店出貨日期", value: settingValueByLabel("店到店出貨日期") }
   ];
 
-  // 取得活動宣傳設定
-  const promo_enabled = isDisplayOn(getSettingsVal("promo_enabled", "TRUE"));
-  const promo_eyebrow = getSettingsVal("promo_eyebrow", "中秋限定禮盒");
-  const promo_title = getSettingsVal("promo_title", "把團圓的心意裝進一盒甜點");
-  const promo_desc = getSettingsVal("promo_desc", "限量製作，預購至 9 月 20 日，售完為止。");
-  const promo_image = getSettingsVal("promo_image", "images/seasonal-gift-box.jpg");
-  const promo_btn_text = getSettingsVal("promo_btn_text", "立即預購");
-  const promo_btn_link = getSettingsVal("promo_btn_link", "giftbox");
-  const gallery_images = getSettingsVal("gallery_images", "");
-
-  // 將分類動態轉換為按鈕跳轉的下拉選單
-  const categoryOptions = (adminData.categories || []).map(c =>
-     `<option value="${escapeHtml(c.id)}" ${c.id === promo_btn_link ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
-  ).join("");
-
   document.getElementById("tab-settings").innerHTML = `${subTabNav("settings")}
-    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-3">
-      <div>
-        <h2 class="text-xl font-black text-stone-900">設定</h2>
-        <p class="text-sm text-stone-500 mt-1">改完任何一項，按最下方的「儲存設定」一次存好。</p>
-      </div>
-      <div class="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1">
-        ${[["set-days","📅 營業日"],["set-rules","⏱ 日期規則"],["set-shipping","🚚 運費"],["set-promo","🖼 首頁活動"],["set-gallery","🎞 首頁輪播"],["set-cake","🎂 蛋糕頁文字"]].map(([id, t]) => `<button type="button" onclick="document.getElementById('${id}').scrollIntoView({behavior:'smooth',block:'start'})" class="shrink-0 h-10 px-4 rounded-full border border-stone-200 bg-stone-50 text-sm font-black text-stone-600 hover:bg-white">${t}</button>`).join("")}
-      </div>
-    </div>
 
-    <section id="set-days" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 scroll-mt-24">
+    <section id="set-days" data-settings-section class="${settingsSection === "set-days" ? "" : "hidden "}bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 scroll-mt-24">
       <h3 class="text-lg font-black text-stone-900">📅 營業日</h3>
       <p class="text-sm font-bold text-stone-500 mt-1 mb-4">在月曆上點選開放的日期。先設定每週公休日，再按「＋ 本月營業日」就能一次選好整個月，遇到特別休假再點掉那一天。</p>
       <div class="rounded-2xl bg-stone-50 border border-stone-200 p-4 mb-5">
@@ -4150,10 +4147,10 @@ function renderSettings() {
 
     </section>
 
-    <section id="set-rules" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 scroll-mt-24">
+    <section id="set-rules" data-settings-section class="${settingsSection === "set-rules" ? "" : "hidden "}bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 scroll-mt-24">
       <div>
         <h3 class="text-lg font-black text-stone-900 mb-1">⏱ 日期規則</h3>
-        <p class="text-sm text-stone-500 mb-4">客人能選的日期 = 上方開放日期中，落在「最早～最晚」區間內的日子。超過截止時間下單，算隔天下單。分類各自的規則在「分類」頁設定。</p>
+        <p class="text-sm text-stone-500 mb-4">客人能選的日期 = 「營業日」開放的日期中，落在「最早～最晚」區間內的日子。超過截止時間下單，算隔天下單。分類各自的規則在「分類」頁設定。</p>
         <div class="grid grid-cols-2 md:grid-cols-5 gap-3 bg-stone-50 rounded-2xl p-4 border border-stone-200">
           ${[["pickup_min_days","自取最早 D+","3"],["pickup_max_days","自取最晚 D+","30"],["delivery_min_days","宅配最早 D+","7"],["delivery_max_days","宅配最晚 D+","30"]].map(([k, label, def]) => `
           <label class="block">
@@ -4178,7 +4175,7 @@ function renderSettings() {
       </div>
     </section>
 
-    <section id="set-shipping" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 scroll-mt-24">
+    <section id="set-shipping" data-settings-section class="${settingsSection === "set-shipping" ? "" : "hidden "}bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 scroll-mt-24">
       <h3 class="text-lg font-black text-stone-900 mb-1">🚚 運費</h3>
       <p class="text-sm text-stone-500 mb-4">客人選 7-11 取貨時加收的運費，門市自取不收。儲存後前台和結帳金額會一起更新。</p>
       <label class="block max-w-[200px]">
@@ -4187,6 +4184,35 @@ function renderSettings() {
       </label>
     </section>
 
+    <div class="settings-save-bar">
+      <span class="flex-1 text-sm font-black" id="settingsDirtyText">改完記得儲存</span>
+      <button type="button" onclick="saveSettingsTab(this)" class="h-11 px-6 rounded-xl bg-white text-[#3E4F66] font-black">儲存</button>
+    </div>`;
+    
+  document.querySelectorAll('[data-setting-row]').forEach(box => {
+    updateSettingCalendarAndTags(box);
+  });
+}
+
+
+// 「頁面」底下的網站版面：首頁（活動卡片、小圖輪播）與生日蛋糕頁文字；資料仍存在 Settings，共用同一個儲存
+function renderSiteContent() {
+  // 取得活動宣傳設定
+  const promo_enabled = isDisplayOn(getSettingsVal("promo_enabled", "TRUE"));
+  const promo_eyebrow = getSettingsVal("promo_eyebrow", "中秋限定禮盒");
+  const promo_title = getSettingsVal("promo_title", "把團圓的心意裝進一盒甜點");
+  const promo_desc = getSettingsVal("promo_desc", "限量製作，預購至 9 月 20 日，售完為止。");
+  const promo_image = getSettingsVal("promo_image", "images/seasonal-gift-box.jpg");
+  const promo_btn_text = getSettingsVal("promo_btn_text", "立即預購");
+  const promo_btn_link = getSettingsVal("promo_btn_link", "giftbox");
+  const gallery_images = getSettingsVal("gallery_images", "");
+
+  // 將分類動態轉換為按鈕跳轉的下拉選單
+  const categoryOptions = (adminData.categories || []).map(c =>
+     `<option value="${escapeHtml(c.id)}" ${c.id === promo_btn_link ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
+  ).join("");
+
+  document.getElementById("tab-sitehome").innerHTML = `${subTabNav("sitehome")}
     <section id="set-promo" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 scroll-mt-24">
       <div>
         <div class="flex items-center gap-3 mb-2">
@@ -4201,24 +4227,24 @@ function renderSettings() {
            <div class="space-y-4">
               <label class="block">
                  <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5 uppercase">活動小標題 (Eyebrow)</span>
-                 <input id="promo_eyebrow" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(promo_eyebrow)}" placeholder="例如：中秋限定禮盒" oninput="markUnsaved('settings');">
+                 <input id="promo_eyebrow" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(promo_eyebrow)}" placeholder="例如：中秋限定禮盒" oninput="markUnsaved('sitehome');">
               </label>
               <label class="block">
                  <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5 uppercase">活動大標題 (Title)</span>
-                 <input id="promo_title" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(promo_title)}" placeholder="例如：把團圓的心意裝進一盒甜點" oninput="markUnsaved('settings');">
+                 <input id="promo_title" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(promo_title)}" placeholder="例如：把團圓的心意裝進一盒甜點" oninput="markUnsaved('sitehome');">
               </label>
               <label class="block">
                  <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5 uppercase">活動說明 (Description)</span>
-                 <textarea id="promo_desc" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-white resize-none focus:outline-none focus:border-[#5B7290]" rows="2" placeholder="限量製作，售完為止..." oninput="markUnsaved('settings');">${escapeHtml(promo_desc)}</textarea>
+                 <textarea id="promo_desc" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-white resize-none focus:outline-none focus:border-[#5B7290]" rows="2" placeholder="限量製作，售完為止..." oninput="markUnsaved('sitehome');">${escapeHtml(promo_desc)}</textarea>
               </label>
               <div class="grid grid-cols-2 gap-3">
                   <label class="block">
                      <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5 uppercase">按鈕文字</span>
-                     <input id="promo_btn_text" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(promo_btn_text)}" placeholder="立即預購" oninput="markUnsaved('settings');">
+                     <input id="promo_btn_text" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white focus:outline-none focus:border-[#5B7290]" value="${escapeHtml(promo_btn_text)}" placeholder="立即預購" oninput="markUnsaved('sitehome');">
                   </label>
                   <label class="block">
                      <span class="text-[11px] font-black text-stone-500 tracking-widest block mb-1.5 uppercase">按鈕跳轉分類</span>
-                     <select id="promo_btn_link" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white cursor-pointer focus:outline-none focus:border-[#5B7290]" onchange="markUnsaved('settings');">
+                     <select id="promo_btn_link" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white cursor-pointer focus:outline-none focus:border-[#5B7290]" onchange="markUnsaved('sitehome');">
                         ${categoryOptions}
                      </select>
                   </label>
@@ -4241,20 +4267,6 @@ function renderSettings() {
       </div>
     </section>
 
-    <section id="set-cake" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 scroll-mt-24">
-      <div>
-        <h3 class="text-lg font-black text-stone-900 mb-1">🎂 生日蛋糕頁文字</h3>
-        <p class="text-sm text-stone-500 mb-4">蛋糕、夾餡、配件的品項與加價，在「蛋糕選項」分頁設定；每日限量在「分類」的生日蛋糕那一列設定。</p>
-        <div class="grid grid-cols-1 gap-3 bg-stone-50 rounded-2xl p-4 border border-stone-200">
-          <label class="block"><span class="text-[11px] font-black text-stone-500 block mb-1.5">開頭一句話</span><input id="cake_intro" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white" value="${escapeHtml(getSettingsVal("cake_intro", ""))}" oninput="markUnsaved('settings');"></label>
-          <label class="block"><span class="text-[11px] font-black text-stone-500 block mb-1.5">訂購須知（一行一點）</span><textarea id="cake_notice" rows="4" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-white leading-relaxed" oninput="markUnsaved('settings');">${escapeHtml(getSettingsVal("cake_notice", ""))}</textarea></label>
-          <label class="block"><span class="text-[11px] font-black text-stone-500 block mb-1.5">結尾一句話</span><input id="cake_outro" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white" value="${escapeHtml(getSettingsVal("cake_outro", ""))}" oninput="markUnsaved('settings');"></label>
-          <label class="block"><span class="text-[11px] font-black text-stone-500 block mb-1.5">店內慶生可選時段（逗號分隔）</span><input id="celebration_time_slots" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white" value="${escapeHtml(getSettingsVal("celebration_time_slots", "14:00,15:00,16:00,17:00"))}" oninput="markUnsaved('settings');"></label>
-        </div>
-      </div>
-
-    </section>
-
     <section id="set-gallery" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 scroll-mt-24">
       <div>
         <h3 class="text-lg font-black text-stone-900 mb-1">🎞 首頁小圖輪播</h3>
@@ -4267,24 +4279,36 @@ function renderSettings() {
       </div>
     </section>
     <div class="settings-save-bar">
-      <span class="flex-1 text-sm font-black" id="settingsDirtyText">改完記得儲存</span>
-      <button type="button" onclick="saveSettingsTab(this)" class="h-11 px-6 rounded-xl bg-white text-[#3E4F66] font-black">儲存設定</button>
+      <span class="flex-1 text-sm font-black">改完記得儲存</span>
+      <button type="button" onclick="saveSettingsTab(this)" class="h-11 px-6 rounded-xl bg-white text-[#3E4F66] font-black">儲存</button>
     </div>`;
-  // 蛋糕文字區塊移到最後（與上方導覽順序一致）
-  const cakeSec = document.getElementById("set-cake");
-  if (cakeSec) document.getElementById("set-gallery").after(cakeSec);
+  document.getElementById("tab-sitecake").innerHTML = `${subTabNav("sitecake")}
+    <section id="set-cake" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 scroll-mt-24">
+      <div>
+        <h3 class="text-lg font-black text-stone-900 mb-1">🎂 生日蛋糕頁文字</h3>
+        <p class="text-sm text-stone-500 mb-4">蛋糕、夾餡、配件的品項與加價，在「蛋糕選項」分頁設定；每日限量在「分類」的生日蛋糕那一列設定。</p>
+        <div class="grid grid-cols-1 gap-3 bg-stone-50 rounded-2xl p-4 border border-stone-200">
+          <label class="block"><span class="text-[11px] font-black text-stone-500 block mb-1.5">開頭一句話</span><input id="cake_intro" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white" value="${escapeHtml(getSettingsVal("cake_intro", ""))}" oninput="markUnsaved('sitecake');"></label>
+          <label class="block"><span class="text-[11px] font-black text-stone-500 block mb-1.5">訂購須知（一行一點）</span><textarea id="cake_notice" rows="4" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-white leading-relaxed" oninput="markUnsaved('sitecake');">${escapeHtml(getSettingsVal("cake_notice", ""))}</textarea></label>
+          <label class="block"><span class="text-[11px] font-black text-stone-500 block mb-1.5">結尾一句話</span><input id="cake_outro" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white" value="${escapeHtml(getSettingsVal("cake_outro", ""))}" oninput="markUnsaved('sitecake');"></label>
+          <label class="block"><span class="text-[11px] font-black text-stone-500 block mb-1.5">店內慶生可選時段（逗號分隔）</span><input id="celebration_time_slots" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white" value="${escapeHtml(getSettingsVal("celebration_time_slots", "14:00,15:00,16:00,17:00"))}" oninput="markUnsaved('sitecake');"></label>
+        </div>
+      </div>
+
+    </section>
+
+    <div class="settings-save-bar">
+      <span class="flex-1 text-sm font-black">改完記得儲存</span>
+      <button type="button" onclick="saveSettingsTab(this)" class="h-11 px-6 rounded-xl bg-white text-[#3E4F66] font-black">儲存</button>
+    </div>`;
   renderGalleryManager();
-    
-  document.querySelectorAll('[data-setting-row]').forEach(box => {
-    updateSettingCalendarAndTags(box);
-  });
 }
 
 function togglePromoSwitch(button) {
   const nextOn = !button.classList.contains("is-on");
   button.classList.toggle("is-on", nextOn);
   document.getElementById('promo_enabled').value = nextOn ? "TRUE" : "FALSE";
-  markUnsaved('settings');
+  markUnsaved('sitehome');
 }
 
 function saveSettingsTab(btn) {
@@ -4322,8 +4346,8 @@ function saveSettingsTab(btn) {
        value: currentSettingsMap[k]
     }));
 
-    await postAdmin({ action:"adminReplaceSheetRows", token:getToken(), sheetName: "Settings", rows }, `設定 已儲存。`, btn);
-    clearUnsaved("settings");
+    await postAdmin({ action:"adminReplaceSheetRows", token:getToken(), sheetName: "Settings", rows }, `已儲存。`, btn);
+    ["settings", "sitehome", "sitecake"].forEach(clearUnsaved);
   })();
 }
 
@@ -4840,7 +4864,7 @@ async function uploadPromoImage(fileInput) {
   document.getElementById("promo_image").value = url;
   document.getElementById("promo_preview").src = previewSrc(url);
   markUnsaved("settings");
-  showAdminToast("大圖已上傳，按「儲存設定」後生效", "success", 4200);
+  showAdminToast("大圖已上傳，按「儲存」後生效", "success", 4200);
 }
 async function uploadGalleryImages(fileInput) {
   const files = [...(fileInput.files || [])]; fileInput.value = "";
@@ -4850,7 +4874,7 @@ async function uploadGalleryImages(fileInput) {
   await withUploadToast(`照片上傳中（共 ${files.length} 張）...`, async () => {
     for (const f of files) { list.push(await uploadImageToGithub(f, 1080)); done++; }
   });
-  if (done) { setGalleryList(list); showAdminToast(`已上傳 ${done} 張，按「儲存設定」後生效`, "success", 4200); }
+  if (done) { setGalleryList(list); showAdminToast(`已上傳 ${done} 張，按「儲存」後生效`, "success", 4200); }
 }
 async function uploadBlockImage(fileInput, id) {
   const file = fileInput.files && fileInput.files[0]; fileInput.value = "";
