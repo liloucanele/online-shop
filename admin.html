@@ -213,6 +213,9 @@
       --admin-text-xl: 22px;
     }
     html { font-size: 15px; }
+    /* 固定保留右側捲軸的位置：切到內容較短的分頁（例如優惠券）時，畫面不會左右跳動 */
+    html { scrollbar-gutter: stable; }
+    @supports not (scrollbar-gutter: stable) { html { overflow-y: scroll; } }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
       font-size: var(--admin-text-base);
