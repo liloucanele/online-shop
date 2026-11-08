@@ -1,0 +1,65 @@
+# Apps Script 後端自動發布
+# - push：apps-script/ 有變更並合併到 main 時，自動上傳程式並把「現有的部署」更新成新版本（網址不變）
+# - 手動「pull」：把 Apps Script 上目前的程式抓回來，放到 apps-script-sync 分支（第一次串接、或有人直接在編輯器改過時用）
+# 需要的 GitHub 設定：Secret「CLASPRC_JSON」（clasp login 產生的 ~/.clasprc.json 內容）
+name: Apps Script 發布
+
+on:
+  push:
+    branches: [main]
+    paths: ["apps-script/**"]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "deploy＝發布到 Apps Script；pull＝把 Apps Script 目前的程式抓回 GitHub"
+        required: true
+        default: deploy
+        type: choice
+        options: [deploy, pull]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apps-script
+  cancel-in-progress: false
+
+env:
+  # 正式網站與後台使用的部署（網址裡 /macros/s/ 後面那一段）
+  DEPLOYMENT_ID: AKfycbxLxTXWmKZspDDSoIC43IK0GXVvubKFQAhfubVwz2OkFXnD6kJI-d4fgoOywX4ik7Km
+
+jobs:
+  apps-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 安裝 clasp 並登入
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          if [ -z "$CLASPRC_JSON" ]; then echo "::error::還沒設定 CLASPRC_JSON 這個 Secret"; exit 1; fi
+          npm install -g @google/clasp@2.4.2
+          printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
+      - name: 從 Apps Script 抓回目前的程式
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'pull'
+        run: |
+          cd apps-script
+          clasp pull
+          cd ..
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B apps-script-sync
+          git add apps-script
+          git commit -m "從 Apps Script 抓回目前的程式" || echo "沒有差異"
+          git push -f origin apps-script-sync
+      - name: 上傳並更新正式部署
+        if: github.event_name == 'push' || inputs.mode == 'deploy'
+        run: |
+          cd apps-script
+          if [ ! -f appsscript.json ]; then echo "::warning::還沒有從 Apps Script 抓回程式（apps-script/appsscript.json 不存在），這次不發布"; exit 0; fi
+          clasp push --force
+          clasp deploy --deploymentId "$DEPLOYMENT_ID" --description "GitHub ${GITHUB_SHA::7}"
+          echo "已發布到現有部署（網址不變）"
