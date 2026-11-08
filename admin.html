@@ -694,7 +694,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.4.1</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.5.0</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -723,11 +723,9 @@
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="categories" onclick="switchTab('categories')">分類<span class="unsaved-dot"></span></button>
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="products" onclick="switchTab('products')">產品<span class="unsaved-dot"></span></button>
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="packaging" onclick="switchTab('packaging')">包裝<span class="unsaved-dot"></span></button>
-      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="coupons" onclick="switchTab('coupons')">優惠券<span class="unsaved-dot"></span></button>
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="settings" onclick="switchTab('settings')">設定<span class="unsaved-dot"></span></button>
       <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="pages" onclick="switchTab('pages')">頁面<span class="unsaved-dot"></span></button>
-      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="cakeoptions" onclick="switchTab('cakeoptions')">蛋糕選項<span class="unsaved-dot"></span></button>
-      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="revenue" onclick="switchTab('revenue')">分潤統計<span class="unsaved-dot"></span></button>
+      <button class="tab-btn px-4 py-2 rounded-xl font-black text-sm tab-idle" data-tab="revenue" onclick="switchTab('revenue')">分潤<span class="unsaved-dot"></span></button>
     </div>
   </div>
 </div>
@@ -946,10 +944,40 @@ function logoutAdmin() {
   setLoggedInState(false);
 }
 
+// 優惠券放在「設定」底下當子頁：上方選單仍亮「設定」
+// 子分頁：優惠券在「設定」底下、蛋糕在「產品」底下；上方選單亮的是母分頁
+const SUB_TABS = {
+  settings: [["settings", "網站設定"], ["coupons", "優惠券"]],
+  products: [["products", "產品"], ["cakeoptions", "蛋糕"]]
+};
+const SUB_TAB_PARENT = { coupons: "settings", cakeoptions: "products" };
+const SUB_TAB_BTN = on => `shrink-0 h-10 px-4 rounded-xl text-sm font-black whitespace-nowrap ${on ? "bg-white text-stone-900 border border-stone-200" : "text-stone-500 hover:text-stone-800"}`;
+function subTabNav(active) {
+  const parent = SUB_TAB_PARENT[active] || active;
+  let buttons;
+  if (parent === "products") {
+    // 產品：全部＋每個分類（依「分類」頁的順序）＋蛋糕
+    const onProducts = active === "products";
+    const cats = [["", "全部"]].concat(prodGroups().map(g => [g.key, g.name]));
+    buttons = cats.map(([key, name]) => `<button type="button" data-cat="${escapeHtml(key)}" onclick="openProductCategory(this.dataset.cat)" class="${SUB_TAB_BTN(onProducts && prodState.cat === key)}">${escapeHtml(name)}</button>`).join("")
+      + `<button type="button" onclick="switchTab('cakeoptions')" class="${SUB_TAB_BTN(active === "cakeoptions")}">蛋糕</button>`;
+  } else {
+    const items = SUB_TABS[parent];
+    if (!items) return "";
+    buttons = items.map(([tab, label]) => `<button type="button" onclick="switchTab('${tab}')" class="${SUB_TAB_BTN(active === tab)}">${label}</button>`).join("");
+  }
+  return `<div class="flex w-fit max-w-full gap-1 p-1 rounded-2xl bg-stone-100 border border-stone-200 overflow-x-auto" style="scrollbar-width:none" data-no-dirty>${buttons}</div>`;
+}
+function openProductCategory(key) {
+  prodState.cat = key || "";
+  renderProducts();
+  switchTab("products");
+}
 function switchTab(tab) {
   currentTab = tab;
+  const menuTab = SUB_TAB_PARENT[tab] || tab;
   document.querySelectorAll(".tab-btn").forEach(btn => {
-    const active = btn.dataset.tab === tab;
+    const active = btn.dataset.tab === menuTab;
     btn.classList.toggle("tab-active", active);
     btn.classList.toggle("tab-idle", !active);
   });
@@ -2825,7 +2853,7 @@ function renderProducts() {
   const visibleGroups = groups.filter(g => (!prodState.cat || g.key === prodState.cat) && (g.items.length || !searching));
   const catOptions = groups.map(g => `<option value="${escapeHtml(g.key)}" ${prodState.cat === g.key ? "selected" : ""}>${escapeHtml(g.name)}（${g.items.length}）</option>`).join("");
 
-  el.innerHTML = `
+  el.innerHTML = `${subTabNav("products")}
   <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4" data-no-dirty>
     <div class="flex flex-wrap items-center gap-3">
       <div class="flex-1 min-w-[160px]">
@@ -2834,9 +2862,8 @@ function renderProducts() {
       </div>
       <button type="button" onclick="openProductEditor(-1)" class="h-11 rounded-xl bg-[#5B7290] text-white px-5 font-black hover:bg-[#3E4F66]">＋ 新增商品</button>
     </div>
-    <div class="grid grid-cols-2 md:grid-cols-[minmax(0,1fr)_200px_150px] gap-2">
-      <input type="search" id="prodSearch" value="${escapeHtml(prodState.q)}" oninput="prodState.q=this.value;renderProductList()" placeholder="搜尋商品名稱…" class="col-span-2 md:col-span-1 h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold min-w-0 outline-none focus:border-[#5B7290]">
-      <select onchange="prodState.cat=this.value;renderProductList()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold min-w-0 outline-none focus:border-[#5B7290]"><option value="">全部分類</option>${catOptions}</select>
+    <div class="grid grid-cols-[minmax(0,1fr)_120px] md:grid-cols-[minmax(0,1fr)_150px] gap-2">
+      <input type="search" id="prodSearch" value="${escapeHtml(prodState.q)}" oninput="prodState.q=this.value;renderProductList()" placeholder="搜尋商品名稱…" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold min-w-0 outline-none focus:border-[#5B7290]">
       <select onchange="prodState.status=this.value;renderProductList()" class="h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold min-w-0 outline-none focus:border-[#5B7290]">
         <option value="" ${!prodState.status ? "selected" : ""}>全部狀態</option><option value="ON" ${prodState.status === "ON" ? "selected" : ""}>上架中</option><option value="OFF" ${prodState.status === "OFF" ? "selected" : ""}>已下架</option>
       </select>
@@ -3369,8 +3396,9 @@ function renderListPage(tab) {
   const el = document.getElementById("tab-" + tab);
   if (!el || !adminData) return;
   const rows = cfg.rows();
+  const subNav = subTabNav(tab);
   const stat = cfg.hasDisplay ? `共 ${rows.length} ${cfg.unit.replace(/^個|^張/, m => m)}｜顯示 ${rows.filter(r => isDisplayOn(r.display)).length}｜隱藏 ${rows.filter(r => !isDisplayOn(r.display)).length}` : `共 ${rows.length} ${cfg.unit}｜進行中 ${rows.filter(r => couponStatus(r).rank === 0).length}`;
-  el.innerHTML = `
+  el.innerHTML = `${subNav}
   <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4" data-no-dirty>
     <div class="flex flex-wrap items-center gap-3">
       <div class="flex-1 min-w-[160px]">
@@ -4096,7 +4124,7 @@ function renderSettings() {
      `<option value="${escapeHtml(c.id)}" ${c.id === promo_btn_link ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
   ).join("");
 
-  document.getElementById("tab-settings").innerHTML = `
+  document.getElementById("tab-settings").innerHTML = `${subTabNav("settings")}
     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-3">
       <div>
         <h2 class="text-xl font-black text-stone-900">設定</h2>
