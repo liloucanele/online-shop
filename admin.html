@@ -679,6 +679,8 @@
     body.prod-editor-open { overflow: hidden; }
     .settings-save-bar { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 40; display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 18px; border-radius: 18px; background: #3E4F66; color: #fff; box-shadow: 0 14px 30px -12px rgba(28,25,23,.45); }
     .settings-save-bar button { min-height: 44px; }
+    /* 儲存列：這一頁有改動才出現 */
+    .tab-page:not([data-dirty]) .settings-save-bar { display: none; }
     .orders-split { display: grid; grid-template-columns: minmax(0, 1fr) 460px; gap: 20px; align-items: start; }
     .order-side { position: sticky; top: 78px; max-height: calc(100vh - 94px); overflow-y: auto; background: #f5f6f8; border: 1px solid #e4e2df; border-radius: 20px; }
     .order-side .pe-card { padding: 14px; }
@@ -696,7 +698,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.5.0</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.5.1</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -770,6 +772,7 @@ const unsavedTabs = new Set();
 function markUnsaved(tab) {
   if (!tab || ['dashboard', 'revenue', 'products', 'categories', 'packaging', 'coupons', 'cakeoptions'].includes(tab)) return;
   unsavedTabs.add(tab);
+  document.getElementById("tab-" + tab)?.setAttribute("data-dirty", "");
   if (tab === "settings") { const t = document.getElementById("settingsDirtyText"); if (t) t.textContent = "● 有變更尚未儲存"; }
   const parent = (typeof SUB_TAB_PARENT !== "undefined" && SUB_TAB_PARENT[tab]) || tab;
   const btn = document.querySelector(`.tab-btn[data-tab="${parent}"]`);
@@ -777,6 +780,7 @@ function markUnsaved(tab) {
 }
 function clearUnsaved(tab) {
   unsavedTabs.delete(tab);
+  document.getElementById("tab-" + tab)?.removeAttribute("data-dirty");
   const parentOf = t => (typeof SUB_TAB_PARENT !== "undefined" && SUB_TAB_PARENT[t]) || t;
   const parent = parentOf(tab);
   if ([...unsavedTabs].some(t => parentOf(t) === parent)) return;
@@ -785,6 +789,7 @@ function clearUnsaved(tab) {
 }
 function clearAllUnsaved() {
   unsavedTabs.clear();
+  document.querySelectorAll(".tab-page[data-dirty]").forEach(p => p.removeAttribute("data-dirty"));
   document.querySelectorAll('.tab-btn.has-unsaved').forEach(btn => btn.classList.remove('has-unsaved'));
 }
 
@@ -4892,7 +4897,7 @@ async function uploadPromoImage(fileInput) {
   if (!url) return;
   document.getElementById("promo_image").value = url;
   document.getElementById("promo_preview").src = previewSrc(url);
-  markUnsaved("settings");
+  markUnsaved("sitehome");
   showAdminToast("大圖已上傳，按「儲存」後生效", "success", 4200);
 }
 async function uploadGalleryImages(fileInput) {
@@ -4931,7 +4936,7 @@ function getGalleryList() {
 function setGalleryList(list) {
   document.getElementById("gallery_images").value = list.join(",");
   renderGalleryManager();
-  markUnsaved("settings");
+  markUnsaved("sitehome");
 }
 function renderGalleryManager() {
   const box = document.getElementById("galleryManager");
