@@ -10,7 +10,129 @@
 <link href="images/site.webmanifest" rel="manifest"/>
 <title>Lilou｜後台管理系統</title>
 <meta content="noindex,nofollow" name="robots"/>
-<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.5"></script>
+<!-- Lilou 後台 UI：數字滾動、按下回饋、提示升起、面板滑入、統一圖示（做法取自 Stageshow 開源元件，MIT） -->
+<style id="lilou-ui">
+    /* 數字滾動：每個數字是一條 0–9 的捲軸，只有改變的位數會轉 */
+    .lilou-roll { display: inline-flex; align-items: flex-end; white-space: pre; }
+    .lilou-roll__d { display: inline-block; height: 1.2em; line-height: 1.2em; overflow: hidden; font-variant-numeric: tabular-nums; }
+    .lilou-roll__reel { display: flex; flex-direction: column; transition: transform .42s cubic-bezier(.3,.75,.1,1); }
+    .lilou-roll__reel > span { display: block; height: 1.2em; line-height: 1.2em; text-align: center; }
+    .lilou-roll__t { line-height: 1.2em; }
+    /* 按下回饋：按下時輕微內縮（用 scale 屬性，不和既有的 transform 衝突） */
+    @layer base {
+      button { transition: scale .15s ease, color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease; }
+    }
+    button:not(:disabled):active { scale: .96; }
+    .admin-switch:not(:disabled):active, .prod-sort button:not(:disabled):active, .calendar-nav-btn:active { scale: .9; }
+    /* 按鈕內容切換（例如「儲存」→「儲存中…」）淡入 */
+    .lilou-swap { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; animation: lilouSwapIn .2s cubic-bezier(.3,.75,.1,1); }
+    @keyframes lilouSwapIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    /* 提示訊息：從下方輕柔升起，不再彈跳放大 */
+    .admin-toast { transform: translateY(18px) !important; transition: opacity .3s ease, transform .45s cubic-bezier(.3,.75,.1,1) !important; }
+    .admin-toast.show { transform: none !important; }
+    /* 底部「儲存排序」列、設定儲存列：出現時從下方升起 */
+    .prod-order-bar, .settings-save-bar { transition: opacity .3s ease, translate .45s cubic-bezier(.3,.75,.1,1); }
+    @starting-style { .prod-order-bar:not(.hidden), .settings-save-bar { opacity: 0; translate: 0 18px; } }
+    /* 右側編輯面板（訂單明細、產品、分類…）用 iPhone 式彈性曲線滑入 */
+    .prod-editor-panel { transition: transform .45s cubic-bezier(.3,.75,.1,1) !important; }
+    .prod-editor-backdrop { transition: opacity .35s ease !important; }
+    /* 確認視窗：背景淡入、視窗從下方滑上來 */
+    #adminConfirmModal { transition: opacity .3s ease !important; }
+    #adminConfirmBox { transition: transform .45s cubic-bezier(.3,.75,.1,1), opacity .3s ease !important; }
+    #adminConfirmBox.scale-95 { transform: translateY(24px) !important; opacity: 0; }
+    /* 備料清單點開的訂單列表：手機從底部滑上來，電腦稍微上浮 */
+    #prepItemSheet { transition: opacity .3s ease; }
+    #prepItemSheet > div { transition: translate .45s cubic-bezier(.3,.75,.1,1); }
+    #prepItemSheet.is-closing { opacity: 0; }
+    #prepItemSheet.is-closing > div { translate: 0 100%; }
+    @starting-style { #prepItemSheet { opacity: 0; } #prepItemSheet > div { translate: 0 100%; } }
+    @media (min-width: 768px) {
+      #prepItemSheet.is-closing > div { translate: 0 24px; }
+      @starting-style { #prepItemSheet > div { translate: 0 24px; } }
+    }
+    /* 統一圖示：同一套線條圖示（Lucide，ISC 授權），粗細大小一致 */
+    .lilou-ico { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: inline-block; vertical-align: middle; }
+    .lilou-ico--sm { width: 14px; height: 14px; vertical-align: -2px; }
+    .order-date-btn { min-height: 28px !important; }
+    button:has(> .lilou-ico:only-child) { display: inline-flex; align-items: center; justify-content: center; }
+    .prod-chevron .lilou-ico, .row-toggle-btn .chevron .lilou-ico { width: 16px; height: 16px; }
+    @media (prefers-reduced-motion: reduce) {
+      .lilou-roll__reel, .admin-toast, .prod-order-bar, .settings-save-bar, .prod-editor-panel, .prod-editor-backdrop,
+      #adminConfirmModal, #adminConfirmBox, #prepItemSheet, #prepItemSheet > div { transition: none !important; }
+      .lilou-swap { animation: none; }
+      button:not(:disabled):active { scale: none; }
+    }
+</style>
+<script>
+  // Lilou 後台 UI 小工具：數字滾動 lilouRoll()、記住上次數字再滾動 lilouRollAll()、圖示 ICON
+  (function () {
+    const SVG = (body, cls) => `<svg class="lilou-ico${cls ? " " + cls : ""}" viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
+    const P = {
+      close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+      left: '<path d="m15 18-6-6 6-6"/>',
+      right: '<path d="m9 18 6-6-6-6"/>',
+      down: '<path d="m6 9 6 6 6-6"/>',
+      up: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
+      dn: '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>',
+      arrow: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+      calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>'
+    };
+    window.ICON = {
+      close: SVG(P.close), closeSm: SVG(P.close, "lilou-ico--sm"),
+      left: SVG(P.left), right: SVG(P.right), rightSm: SVG(P.right, "lilou-ico--sm"),
+      down: SVG(P.down), up: SVG(P.up), dn: SVG(P.dn), arrowSm: SVG(P.arrow, "lilou-ico--sm"),
+      calendarSm: SVG(P.calendar, "lilou-ico--sm")
+    };
+    const reduced = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const keyOf = t => t.replace(/\d/g, "#");
+    function build(el, text) {
+      el.classList.add("lilou-roll");
+      el.innerHTML = "";
+      for (const ch of text) {
+        if (/\d/.test(ch)) {
+          const d = document.createElement("span"); d.className = "lilou-roll__d"; d.setAttribute("aria-hidden", "true");
+          const reel = document.createElement("span"); reel.className = "lilou-roll__reel";
+          for (let n = 0; n < 10; n++) { const s = document.createElement("span"); s.textContent = n; reel.appendChild(s); }
+          d.appendChild(reel); el.appendChild(d);
+        } else {
+          const s = document.createElement("span"); s.className = "lilou-roll__t"; s.setAttribute("aria-hidden", "true"); s.textContent = ch; el.appendChild(s);
+        }
+      }
+    }
+    function place(el, text, animate) {
+      const reels = el.querySelectorAll(".lilou-roll__reel");
+      let i = 0;
+      for (const ch of text) {
+        if (!/\d/.test(ch)) continue;
+        const reel = reels[i++];
+        if (!animate) reel.style.transition = "none";
+        reel.style.transform = `translateY(${-1.2 * Number(ch)}em)`;
+        if (!animate) { void reel.offsetHeight; reel.style.transition = ""; }
+      }
+    }
+    // 把數字從 from 滾到 to；位數不同時直接換字
+    window.lilouRoll = function (el, from, to) {
+      if (!el) return;
+      from = String(from); to = String(to);
+      el.setAttribute("aria-label", to);
+      if (from === to || reduced() || keyOf(from) !== keyOf(to)) { build(el, to); place(el, to, false); return; }
+      build(el, from); place(el, from, false);
+      requestAnimationFrame(() => requestAnimationFrame(() => place(el, to, true)));
+    };
+    // 畫面重畫後，標了 data-roll 的數字會從上次的值滾到新值（只用在數量，不用在金額）
+    const last = {};
+    window.lilouRollAll = function (root) {
+      (root || document).querySelectorAll("[data-roll]").forEach(el => {
+        if (el.offsetParent === null) return;
+        const key = el.dataset.roll, now = el.textContent.trim();
+        const prev = last[key];
+        last[key] = now;
+        if (prev !== undefined && prev !== now) lilouRoll(el, prev, now);
+      });
+    };
+  })();
+</script>
 <!--Developed by TylerChen Design 2026-->
 <style>
     :root {
@@ -708,11 +830,11 @@ function setButtonLoading(button, loadingText) {
   };
   button.disabled = true;
   button.classList.add("opacity-70", "cursor-wait");
-  button.innerHTML = `<span class="inline-flex items-center gap-2"><span class="ld-firework ld-firework-sm"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>${escapeHtml(loadingText || "處理中...")}</span>`;
+  button.innerHTML = `<span class="lilou-swap"><span class="ld-firework ld-firework-sm"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>${escapeHtml(loadingText || "處理中...")}</span>`;
   return function restoreButton() {
     button.disabled = original.disabled;
     button.classList.remove("opacity-70", "cursor-wait");
-    button.innerHTML = original.text;
+    button.innerHTML = `<span class="lilou-swap">${original.text}</span>`;
   };
 }
 
@@ -1653,14 +1775,16 @@ function renderDashboardContent() {
   const area = document.getElementById("dashboardStatsArea");
   if (!area || !adminData) return;
   area.innerHTML = [dashTodaySection(), renderFutureSevenDayPreview(), dashProductionSection(), `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">${dashStockSection()}${dashLimitSection()}</div>`, dashRevenueSection(), dashCouponSection()].join("");
+  lilouRollAll(area);
 }
 
 // 1. 今天要做的事
 function dashActionCard(label, count, note, onclick, tone) {
+  const rollKey = "act-" + label;
   const tones = { blue: "bg-[#eef2f7] text-[#3E4F66]", amber: "bg-amber-50 text-amber-800", stone: "bg-stone-50 text-stone-700", sky: "bg-sky-50 text-sky-800" };
   return `<button type="button" onclick="${onclick}" class="text-left rounded-2xl p-3.5 md:p-4 ${tones[tone]} ${count ? "" : "opacity-60"} hover:brightness-[.97] active:scale-[.99] transition min-h-[96px] flex flex-col">
     <span class="text-xs md:text-sm font-black">${label}</span>
-    <span class="text-3xl md:text-4xl font-black mono leading-tight mt-1">${count}</span>
+    <span class="text-3xl md:text-4xl font-black mono leading-tight mt-1" data-roll="${rollKey}">${count}</span>
     <span class="text-[11px] md:text-xs font-bold opacity-75 mt-auto">${note}</span>
   </button>`;
 }
@@ -1783,21 +1907,27 @@ function openPrepItemOrders(dayIdx, item) {
   closePrepItemOrders();
   const wrap = document.createElement("div");
   wrap.id = "prepItemSheet";
+  wrap.style.transitionProperty = "opacity";
   wrap.className = "fixed inset-0 z-[9990] flex items-end md:items-center justify-center bg-stone-900/40";
-  wrap.onclick = e => { if (e.target === wrap) closePrepItemOrders(); };
+  wrap.onclick = e => { if (e.target === wrap) closePrepItemOrders(true); };
   wrap.innerHTML = `<div class="bg-white w-full md:max-w-lg rounded-t-3xl md:rounded-3xl max-h-[80vh] flex flex-col">
     <div class="flex items-start justify-between gap-3 px-5 pt-5 pb-3 border-b border-stone-100">
       <div class="min-w-0"><h3 class="text-lg font-black text-stone-900 truncate">${title}</h3><p class="text-xs font-bold text-stone-400 mt-0.5">${sub}・點訂單看明細</p></div>
-      <button type="button" onclick="closePrepItemOrders()" class="shrink-0 w-9 h-9 rounded-full bg-stone-100 text-stone-500 font-black" aria-label="關閉">✕</button>
+      <button type="button" onclick="closePrepItemOrders(true)" class="shrink-0 w-9 h-9 rounded-full bg-stone-100 text-stone-500 font-black" aria-label="關閉">${ICON.close}</button>
     </div>
     <div class="overflow-y-auto px-4 py-3 space-y-2" style="padding-bottom:max(12px, env(safe-area-inset-bottom))">${list || `<p class="text-sm font-bold text-stone-400">沒有訂單。</p>`}</div>
   </div>`;
   document.body.appendChild(wrap);
   document.body.style.overflow = "hidden";
 }
-function closePrepItemOrders() {
+function closePrepItemOrders(animate) {
   const el = document.getElementById("prepItemSheet");
-  if (el) el.remove();
+  if (el && animate && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    el.id = "";
+    el.classList.add("is-closing");
+    el.style.pointerEvents = "none";
+    setTimeout(() => el.remove(), 450);
+  } else if (el) el.remove();
   document.body.style.overflow = "";
 }
 
@@ -1875,9 +2005,9 @@ function dashRevenueSection() {
     <div class="flex items-center justify-between gap-3 mb-3">
       <h3 class="font-black text-stone-900 text-base md:text-lg">💰 ${isCurrent ? "本月" : `${Number(m)} 月`}營業額</h3>
       <div class="flex items-center gap-1">
-        <button type="button" onclick="shiftDashMonth(-1)" class="w-10 h-10 rounded-xl border border-stone-200 bg-white font-black text-stone-600" aria-label="上個月">‹</button>
+        <button type="button" onclick="shiftDashMonth(-1)" class="w-10 h-10 rounded-xl border border-stone-200 bg-white font-black text-stone-600" aria-label="上個月">${ICON.left}</button>
         <span class="min-w-[92px] text-center text-sm font-black text-stone-700">${y} 年 ${Number(m)} 月</span>
-        <button type="button" onclick="shiftDashMonth(1)" class="w-10 h-10 rounded-xl border border-stone-200 bg-white font-black text-stone-600" aria-label="下個月">›</button>
+        <button type="button" onclick="shiftDashMonth(1)" class="w-10 h-10 rounded-xl border border-stone-200 bg-white font-black text-stone-600" aria-label="下個月">${ICON.right}</button>
       </div>
     </div>
     <div class="grid grid-cols-2 md:grid-cols-[1.3fr_1fr_1fr] gap-3 md:gap-4 items-stretch">
@@ -1887,7 +2017,7 @@ function dashRevenueSection() {
         <div class="text-xs font-bold text-stone-500 mt-1">${compareText}</div>
         ${futureText}
       </div>
-      <div class="rounded-2xl bg-stone-50 p-4"><div class="text-xs font-black text-stone-400">訂單數</div><div class="text-2xl font-black mono text-stone-900 mt-1">${monthOrders.length}</div><div class="text-xs font-bold text-stone-400 mt-1">平均客單價 ${formatCurrency(avg)}</div></div>
+      <div class="rounded-2xl bg-stone-50 p-4"><div class="text-xs font-black text-stone-400">訂單數</div><div class="text-2xl font-black mono text-stone-900 mt-1" data-roll="dash-month-orders">${monthOrders.length}</div><div class="text-xs font-bold text-stone-400 mt-1">平均客單價 ${formatCurrency(avg)}</div></div>
       <div class="rounded-2xl bg-stone-50 p-4"><div class="text-xs font-black text-stone-400">門市自取／店到店</div><div class="text-lg font-black mono text-stone-900 mt-1">${formatCurrency(store)}</div><div class="text-xs font-bold text-stone-400 mt-1">店到店 ${formatCurrency(revenue - store)}</div></div>
     </div>
     <div class="mt-4">${revenue ? renderRevenueLineChart(rows) : `<p class="text-sm font-bold text-stone-400 py-6 text-center">這個月還沒有營業額</p>`}</div>
@@ -1900,7 +2030,7 @@ const DASH_CARD_RE = /^<div class="bg-white rounded-3xl border border-stone-100 
 function dashCouponSection() {
   const list = (adminData.coupons || []).map((c, i) => ({ c, i, st: couponStatus(c) })).filter(x => x.c.code && x.st.rank !== 3).sort((a, b) => a.st.rank - b.st.rank);
   return `<section class="${DASH_CARD}">
-    ${dashTitle("🎟️", "優惠券", `<button type="button" onclick="switchTab('coupons')" class="text-xs font-black text-[#5B7290]">全部優惠券 ›</button>`)}
+    ${dashTitle("🎟️", "優惠券", `<button type="button" onclick="switchTab('coupons')" class="inline-flex items-center gap-0.5 text-xs font-black text-[#5B7290]">全部優惠券${ICON.rightSm}</button>`)}
     ${list.length ? `<div class="grid grid-cols-1 md:grid-cols-2 gap-2">${list.map(({ c, i, st }) => `
       <button type="button" onclick="switchTab('coupons');openRowEditor('coupons', ${i})" class="text-left rounded-xl bg-stone-50 border border-stone-100 px-3 py-2.5 flex items-center justify-between gap-3 hover:bg-white">
         <span class="min-w-0"><span class="block font-black text-stone-800">${escapeHtml(c.code)}</span><span class="block text-xs font-bold text-stone-400">${couponValueText(c)}${Number(c.min_spend) > 0 ? `・滿 ${money(c.min_spend)}` : ""}${c.end_date ? `・到 ${shortDate(c.end_date)}` : ""}</span></span>
@@ -1920,7 +2050,7 @@ function dashboardOverviewCard(label, value, note) {
 function dashboardStatusChip(label, value, status, colorClass = "bg-stone-50 text-stone-600 border-stone-200") {
   return `<button onclick="goToOrdersByStatus('${escapeHtml(status)}')" class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs md:text-sm font-semibold transition hover:bg-white ${colorClass}">
     <span>${escapeHtml(label)}</span>
-    <span class="mono font-semibold">${value || 0}</span>
+    <span class="mono font-semibold" data-roll="chip-${escapeHtml(status)}">${value || 0}</span>
   </button>`;
 }
 
@@ -2295,7 +2425,7 @@ function skipOrderStep(order) {
 function nextStepButton(order, cls = "") {
   const n = nextOrderStep(order);
   if (!n) return "";
-  return `<button type="button" onclick="event.stopPropagation();quickAdvanceOrder('${escapeHtml(order.id)}')" class="shrink-0 h-10 px-3.5 rounded-xl bg-[#5B7290] text-white text-[13px] font-black hover:bg-[#3E4F66] whitespace-nowrap ${cls}">${n.label} →</button>`;
+  return `<button type="button" onclick="event.stopPropagation();quickAdvanceOrder('${escapeHtml(order.id)}')" class="shrink-0 h-10 px-3.5 rounded-xl bg-[#5B7290] text-white text-[13px] font-black hover:bg-[#3E4F66] whitespace-nowrap ${cls}"><span class="inline-flex items-center gap-1">${n.label}${ICON.arrowSm}</span></button>`;
 }
 function orderNotesHtml(order) {
   const cust = (order.note || "").toString().trim();
@@ -2369,7 +2499,7 @@ function orderDetailPanel(order, mode) {
   const row = (k, v) => v ? `<span class="text-stone-400 font-bold">${k}</span><span class="min-w-0 break-words">${v}</span>` : "";
   return `<div class="order-edit flex flex-col min-h-0 ${mode === "overlay" ? "h-full" : ""}" data-edit-order-id="${id}">
     <header class="flex items-center gap-2 px-4 py-3 border-b border-stone-200 bg-white ${mode === "overlay" ? "pt-[calc(12px+env(safe-area-inset-top))]" : "sticky top-0 z-10 rounded-t-[20px]"}">
-      ${mode === "overlay" ? `<button type="button" onclick="closeOrderDetail()" aria-label="返回" class="w-10 h-10 -ml-1 rounded-xl text-xl font-black text-stone-500 hover:bg-stone-100">‹</button>` : ""}
+      ${mode === "overlay" ? `<button type="button" onclick="closeOrderDetail()" aria-label="返回" class="w-10 h-10 -ml-1 rounded-xl text-xl font-black text-stone-500 hover:bg-stone-100">${ICON.left}</button>` : ""}
       <div class="flex-1 min-w-0"><div class="text-base font-black text-stone-900 truncate">${escapeHtml(order.name || "-")}</div><div class="text-[11px] font-bold text-stone-400 truncate">${id}・${escapeHtml(formatOrderTimestampMinute(order.timestamp))} 下單</div></div>
       <div class="text-lg font-black mono text-stone-900">${formatMoneyForOrder(amount.total)}</div>
     </header>
@@ -2377,10 +2507,10 @@ function orderDetailPanel(order, mode) {
       <section class="pe-card">
         <div class="flex items-center justify-between"><span class="pe-title">訂單進度</span><span class="text-[11px] font-bold text-stone-400">有 Email 的客人會收到狀態通知</span></div>
         ${progress}
-        ${next ? `<button type="button" onclick="quickAdvanceOrder('${id}')" class="h-12 rounded-xl bg-[#5B7290] text-white text-[15px] font-black hover:bg-[#3E4F66]">${escapeHtml(status.replace("訂單", ""))} → ${escapeHtml(next.to)}</button>` : ""}
-        ${skip ? `<button type="button" onclick="quickAdvanceOrder('${id}', true)" class="h-11 rounded-xl border-2 border-[#5B7290] bg-white text-[#3E4F66] text-[14px] font-black hover:bg-[#eef2f7]">${escapeHtml(status.replace("訂單", ""))} → 直接${escapeHtml(skip.to)}</button>` : ""}
+        ${next ? `<button type="button" onclick="quickAdvanceOrder('${id}')" class="h-12 rounded-xl bg-[#5B7290] text-white text-[15px] font-black hover:bg-[#3E4F66] inline-flex items-center justify-center gap-1.5">${escapeHtml(status.replace("訂單", ""))}${ICON.arrowSm}${escapeHtml(next.to)}</button>` : ""}
+        ${skip ? `<button type="button" onclick="quickAdvanceOrder('${id}', true)" class="h-11 rounded-xl border-2 border-[#5B7290] bg-white text-[#3E4F66] text-[14px] font-black hover:bg-[#eef2f7] inline-flex items-center justify-center gap-1.5">${escapeHtml(status.replace("訂單", ""))}${ICON.arrowSm}直接${escapeHtml(skip.to)}</button>` : ""}
         <details class="group rounded-xl border border-stone-200 bg-stone-50">
-          <summary class="list-none cursor-pointer px-3 py-2.5 text-sm font-black text-stone-600 flex items-center justify-between">改成其他狀態、付款連結、貨運編號、備註<span class="prod-chevron">▾</span></summary>
+          <summary class="list-none cursor-pointer px-3 py-2.5 text-sm font-black text-stone-600 flex items-center justify-between">改成其他狀態、付款連結、貨運編號、備註<span class="prod-chevron">${ICON.down}</span></summary>
           <div class="px-3 pb-3 space-y-3">
             <label class="block"><span class="text-xs font-black text-stone-500">訂單狀態</span><select class="admin-status mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-white" data-original-value="${escapeHtml(status)}">${statuses.map(st => `<option value="${st}" ${st === status ? "selected" : ""}>${escapeHtml(adminStatusOptionLabel(st))}</option>`).join("")}</select></label>
             ${isPrepaidDelivery ? `<label class="block"><span class="text-xs font-black text-stone-500">信用卡付款連結</span><input class="admin-payment mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-white" value="${escapeHtml(order.paymentLink || "")}" data-original-value="${escapeHtml(order.paymentLink || "")}" placeholder="信用卡付款連結"></label>` : `<input type="hidden" class="admin-payment" value="${escapeHtml(order.paymentLink || "")}" data-original-value="${escapeHtml(order.paymentLink || "")}">`}
@@ -2399,11 +2529,19 @@ function orderDetailPanel(order, mode) {
       <section class="pe-card">
         <div class="flex items-center justify-between"><span class="pe-title">取貨資訊</span>${order.phone ? `<a href="tel:${escapeHtml(order.phone)}" class="inline-flex items-center gap-1 h-9 px-3 rounded-full bg-[#eef2f7] text-[#3E4F66] text-xs font-black">${PHONE_ICON}打電話</a>` : ""}</div>
         <div class="grid grid-cols-[72px_1fr] gap-y-1.5 text-sm">
-          ${row(isDelivery ? "到貨日" : "取貨日", `<b>${escapeHtml(formatDateDisplayWithWeekday(order.date) || order.date || "-")}</b>`)}
+          ${row(isDelivery ? "到貨日" : "取貨日", `<span class="flex flex-wrap items-center gap-x-2 gap-y-1"><b>${escapeHtml(formatDateDisplayWithWeekday(order.date) || order.date || "-")}</b><button type="button" onclick="toggleOrderDateEdit(this)" class="order-date-btn inline-flex items-center gap-1 h-7 px-2.5 rounded-full border border-stone-200 bg-white text-[#3E4F66] text-xs font-black hover:bg-[#eef2f7]">${ICON.calendarSm}改日期</button></span>`)}
           ${row("方式", escapeHtml(getOrderShippingLabel(order).replace(/^\S+\s*/, "") + "・" + getOrderPaymentLabel(order).replace(/^\S+\s*/, "")))}
           ${row(isDelivery ? "收件地點" : "取貨地點", escapeHtml(order.address || "-"))}
           ${row("電話", escapeHtml(order.phone || "-"))}
           ${row("Email", escapeHtml(order.email || "-"))}
+        </div>
+        <div class="order-date-edit hidden rounded-xl border border-stone-200 bg-stone-50 p-3 space-y-2">
+          <label class="block"><span class="text-xs font-black text-stone-500">新的${isDelivery ? "到貨" : "取貨"}日期</span><input type="date" class="admin-order-date mt-1 w-full h-11 rounded-xl border border-stone-200 px-3 bg-white" value="${escapeHtml(normalizeOrderDateForCompare(order.date))}"></label>
+          <p class="text-[11px] font-bold text-stone-400 leading-relaxed">可以選任何日期，不受公休日、營業日和每日限量限制。只改日期，不會寄信給客人；需要通知請寫在「給客人的訂單備註」。</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="toggleOrderDateEdit(this)" class="h-11 rounded-xl border border-stone-200 bg-white text-stone-500 font-black">取消</button>
+            <button type="button" onclick="saveOrderDate('${id}', this)" class="h-11 rounded-xl bg-[#3E2D20] text-white font-black">儲存日期</button>
+          </div>
         </div>
       </section>
       <section class="pe-card">
@@ -2487,6 +2625,44 @@ function orderCard(order) {
       ${nextStepButton(order)}
     </div>
   </article>`;
+}
+
+// 改取貨／到貨日期：客人臨時改期時用，不檢查公休日、營業日與每日限量
+function toggleOrderDateEdit(btn) {
+  const card = btn.closest(".pe-card");
+  const box = card && card.querySelector(".order-date-edit");
+  if (!box) return;
+  const open = box.classList.toggle("hidden") === false;
+  if (open) { const input = box.querySelector(".admin-order-date"); if (input) input.focus(); }
+}
+function formatOrderDateForSheet(ymd) {
+  const d = new Date(ymd + "T00:00:00");
+  const w = ["日", "一", "二", "三", "四", "五", "六"][d.getDay()];
+  return `${ymd.replace(/-/g, "/")} (週${w})`;
+}
+function saveOrderDate(orderId, btn) {
+  const o = findOrder(orderId);
+  const card = btn.closest(".pe-card");
+  const value = card?.querySelector(".admin-order-date")?.value || "";
+  if (!o) return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) { showAdminToast("請先選擇日期", "error"); return; }
+  if (value === normalizeOrderDateForCompare(o.date)) { showAdminToast("日期沒有變更", "info"); return; }
+  const before = formatDateDisplayWithWeekday(o.date) || o.date || "未設定";
+  const after = formatDateDisplayWithWeekday(value);
+  showAdminConfirm(`把 ${o.name || ""}（${orderId}）的日期\n從 ${before} 改成 ${after}？`, async () => {
+    const restore = setButtonLoading(btn, "儲存中...");
+    const date = formatOrderDateForSheet(value);
+    try {
+      const data = await prodPost({ action: "adminUpdateOrder", orderId, orderStatus: o.orderStatus || "", paymentLink: o.paymentLink || "", trackingNo: o.trackingNo || "", statusNote: o.statusNote || "", internalNote: o.internalNote || "", date });
+      if (!data.date) throw new Error("後端還沒更新，日期沒有存進去。請先更新 Apps Script。");
+      Object.assign(o, { date: data.date, lastUpdate: data.lastUpdate || o.lastUpdate });
+      refreshOrderViews(orderId);
+      showAdminToast(`${orderId} 已改到 ${after}`, "success");
+    } catch (err) {
+      if (restore) restore();
+      showAdminToast("改日期失敗：" + err.message, "error", 4800);
+    }
+  }, "更改日期確認");
 }
 
 function orderEditBox(orderId) { return document.querySelector(`.order-edit[data-edit-order-id="${CSS.escape(orderId)}"]`); }
@@ -2622,7 +2798,7 @@ function renderProductList() {
           ${g.en ? `<span class="block text-xs font-bold text-stone-400 truncate">${escapeHtml(g.en)}</span>` : ""}
         </span>
         <span class="text-xs font-bold text-stone-500 whitespace-nowrap">${g.items.length} 項・上架 ${onN}</span>
-        <span class="prod-chevron ${collapsed ? "" : "is-open"}">▾</span>
+        <span class="prod-chevron ${collapsed ? "" : "is-open"}">${ICON.down}</span>
       </button>
       ${collapsed ? "" : `<div class="divide-y divide-stone-100 border-t border-stone-100">
         ${items.map((p, idx) => productRowHtml(p, idx, items.length, searching)).join("") || `<div class="px-4 py-6 text-center text-sm font-bold text-stone-400">這個分類還沒有商品</div>`}
@@ -2648,8 +2824,8 @@ function productRowHtml(p, idx, total, searching) {
     <button type="button" class="admin-switch ${on ? "is-on" : ""}" onclick="toggleProductDisplay(this)" aria-label="${on ? "上架中，點一下下架" : "已下架，點一下上架"}" title="${on ? "上架中" : "已下架"}"><span></span></button>
     ${searching ? "" : `<div class="prod-sort">
       <button type="button" class="prod-sort-top hidden md:inline-flex" onclick="moveProduct(this,'top')" ${idx === 0 ? "disabled" : ""} title="置頂" aria-label="置頂">⤒</button>
-      <button type="button" onclick="moveProduct(this,-1)" ${idx === 0 ? "disabled" : ""} title="往上" aria-label="往上">↑</button>
-      <button type="button" onclick="moveProduct(this,1)" ${idx === total - 1 ? "disabled" : ""} title="往下" aria-label="往下">↓</button>
+      <button type="button" onclick="moveProduct(this,-1)" ${idx === 0 ? "disabled" : ""} title="往上" aria-label="往上">${ICON.up}</button>
+      <button type="button" onclick="moveProduct(this,1)" ${idx === total - 1 ? "disabled" : ""} title="往下" aria-label="往下">${ICON.dn}</button>
     </div>`}
   </div>`;
 }
@@ -2760,7 +2936,7 @@ function openProductEditor(index) {
   <div class="prod-editor-backdrop" onclick="closeProductEditor()"></div>
   <div class="prod-editor-panel" role="dialog" aria-modal="true" aria-label="${isNew ? "新增商品" : "編輯商品"}">
     <header class="prod-editor-head">
-      <button type="button" onclick="closeProductEditor()" class="h-10 px-3 -ml-2 rounded-xl font-black text-stone-500 hover:bg-stone-100" aria-label="關閉">✕</button>
+      <button type="button" onclick="closeProductEditor()" class="h-10 px-3 -ml-2 rounded-xl font-black text-stone-500 hover:bg-stone-100" aria-label="關閉">${ICON.close}</button>
       <h3 class="flex-1 text-base font-black text-stone-900 truncate">${isNew ? "新增商品" : "編輯商品"}</h3>
       <button type="button" onclick="saveProductEditor(this)" class="h-10 px-5 rounded-xl bg-[#5B7290] text-white font-black hover:bg-[#3E4F66]">儲存</button>
     </header>
@@ -2808,7 +2984,7 @@ function openProductEditor(index) {
       </section>
 
       <details class="pe-card pe-details" ${hasLabel ? "" : ""}>
-        <summary class="pe-title flex items-center cursor-pointer list-none"><span class="flex-1">食品標示${hasLabel ? "" : `<span class="ml-2 text-xs font-bold text-stone-400">尚未填寫</span>`}</span><span class="prod-chevron">▾</span></summary>
+        <summary class="pe-title flex items-center cursor-pointer list-none"><span class="flex-1">食品標示${hasLabel ? "" : `<span class="ml-2 text-xs font-bold text-stone-400">尚未填寫</span>`}</span><span class="prod-chevron">${ICON.down}</span></summary>
         <div class="space-y-3 pt-3">
           ${peField("成分", peArea("ingredients", p.ingredients, 2))}
           ${peField("過敏原", peArea("allergens", p.allergens, 2))}
@@ -3160,7 +3336,7 @@ function renderListBody(tab) {
       ${g.name ? `<button type="button" class="prod-group-head" onclick="toggleListGroup('${tab}','${escapeHtml(g.key)}')">
         <span class="flex-1 min-w-0 text-left"><span class="block text-base font-black text-stone-900 truncate">${escapeHtml(g.name)}</span>${g.en ? `<span class="block text-xs font-bold text-stone-400 truncate">${escapeHtml(g.en)}</span>` : ""}</span>
         <span class="text-xs font-bold text-stone-500 whitespace-nowrap">${g.items.length} 項</span>
-        <span class="prod-chevron ${collapsed ? "" : "is-open"}">▾</span>
+        <span class="prod-chevron ${collapsed ? "" : "is-open"}">${ICON.down}</span>
       </button>` : ""}
       ${collapsed ? "" : `<div class="divide-y divide-stone-100 ${g.name ? "border-t border-stone-100" : ""}">${body}</div>${addBtn}`}
     </section>`;
@@ -3179,14 +3355,14 @@ function listRowHtml(tab, cfg, r, idx, total, searching) {
         ${sub ? `<span class="block text-xs font-bold text-stone-400 truncate">${escapeHtml(sub)}</span>` : ""}
         <span class="block text-xs font-bold text-stone-500 mt-0.5">${cfg.meta(r).join('<span class="text-stone-300 mx-1">·</span>')}</span>
       </span>
-      ${cfg.hasDisplay ? "" : `<span class="text-stone-300 font-black pr-1">›</span>`}
+      ${cfg.hasDisplay ? "" : `<span class="text-stone-300 pr-1">${ICON.right}</span>`}
     </button>
     ${cfg.rowAction ? cfg.rowAction(r) : ""}
     ${cfg.hasDisplay ? `<button type="button" class="admin-switch ${on ? "is-on" : ""}" onclick="toggleRowDisplay('${tab}', ${r.__i})" aria-label="${on ? "顯示中，點一下隱藏" : "隱藏中，點一下顯示"}"><span></span></button>` : ""}
     ${cfg.sortable && !searching ? `<div class="prod-sort">
       <button type="button" class="prod-sort-top hidden md:inline-flex" onclick="moveRow('${tab}', ${r.__i}, 'top')" ${idx === 0 ? "disabled" : ""} title="置頂" aria-label="置頂">⤒</button>
-      <button type="button" onclick="moveRow('${tab}', ${r.__i}, -1)" ${idx === 0 ? "disabled" : ""} title="往上" aria-label="往上">↑</button>
-      <button type="button" onclick="moveRow('${tab}', ${r.__i}, 1)" ${idx === total - 1 ? "disabled" : ""} title="往下" aria-label="往下">↓</button>
+      <button type="button" onclick="moveRow('${tab}', ${r.__i}, -1)" ${idx === 0 ? "disabled" : ""} title="往上" aria-label="往上">${ICON.up}</button>
+      <button type="button" onclick="moveRow('${tab}', ${r.__i}, 1)" ${idx === total - 1 ? "disabled" : ""} title="往下" aria-label="往下">${ICON.dn}</button>
     </div>` : ""}
   </div>`;
 }
@@ -3271,7 +3447,7 @@ function openRowEditor(tab, i) {
   <div class="prod-editor-backdrop" onclick="closeRowEditor()"></div>
   <div class="prod-editor-panel" role="dialog" aria-modal="true" aria-label="${isNew ? "新增" : "編輯"}${cfg.title}">
     <header class="prod-editor-head">
-      <button type="button" onclick="closeRowEditor()" class="h-10 px-3 -ml-2 rounded-xl font-black text-stone-500 hover:bg-stone-100" aria-label="關閉">✕</button>
+      <button type="button" onclick="closeRowEditor()" class="h-10 px-3 -ml-2 rounded-xl font-black text-stone-500 hover:bg-stone-100" aria-label="關閉">${ICON.close}</button>
       <h3 class="flex-1 text-base font-black text-stone-900 truncate">${isNew ? "新增" : "編輯"}${cfg.title}</h3>
       <button type="button" onclick="saveRowEditor(this)" class="h-10 px-5 rounded-xl bg-[#5B7290] text-white font-black hover:bg-[#3E4F66]">儲存</button>
     </header>
@@ -3434,8 +3610,8 @@ function renderEditableTable(tab, sheetName, keys, labels, rows, textareaLong = 
       </div>
       <div class="hidden md:flex items-center justify-end gap-2 -mb-1 text-xs font-bold text-stone-400">
         <span>欄位很多，可用下方捲軸、按住 Shift 滾動滑鼠，或按右側按鈕左右移動</span>
-        <button type="button" onclick="scrollAdminTable('${tab}', -1)" aria-label="向左" class="w-9 h-9 rounded-lg border border-stone-200 bg-white text-stone-600 font-black hover:bg-stone-50">‹</button>
-        <button type="button" onclick="scrollAdminTable('${tab}', 1)" aria-label="向右" class="w-9 h-9 rounded-lg border border-stone-200 bg-white text-stone-600 font-black hover:bg-stone-50">›</button>
+        <button type="button" onclick="scrollAdminTable('${tab}', -1)" aria-label="向左" class="w-9 h-9 rounded-lg border border-stone-200 bg-white text-stone-600 font-black hover:bg-stone-50">${ICON.left}</button>
+        <button type="button" onclick="scrollAdminTable('${tab}', 1)" aria-label="向右" class="w-9 h-9 rounded-lg border border-stone-200 bg-white text-stone-600 font-black hover:bg-stone-50">${ICON.right}</button>
       </div>
       <div class="overflow-x-auto max-h-[70vh] admin-table-scroll" data-table-scroll="${tab}">
         <table class="w-full text-sm table-fixed ${getEditableTableMinWidth(tab)}" data-edit-table="${tab}" data-keys="${keys.join(",")}" data-labels="${labels.join(",")}">
@@ -3535,9 +3711,9 @@ function pageBlockCardHtml(b, i, total) {
       <span class="flex-1"></span>
       <span class="text-xs font-bold text-stone-500">顯示</span>
       <button type="button" onclick="toggleBlockDisplay('${id}')" class="admin-switch ${isDisplayOn(b.display) ? "is-on" : ""}" aria-label="顯示區塊"><span></span></button>
-      <button type="button" onclick="moveBlock('${id}', -1)" ${i === 0 ? "disabled" : ""} aria-label="往上" class="w-9 h-9 rounded-lg border border-stone-200 font-black text-stone-500 disabled:opacity-30">↑</button>
-      <button type="button" onclick="moveBlock('${id}', 1)" ${i === total - 1 ? "disabled" : ""} aria-label="往下" class="w-9 h-9 rounded-lg border border-stone-200 font-black text-stone-500 disabled:opacity-30">↓</button>
-      <button type="button" onclick="deleteBlock('${id}')" aria-label="刪除區塊" class="w-9 h-9 rounded-lg bg-red-50 text-red-500 font-black">✕</button>
+      <button type="button" onclick="moveBlock('${id}', -1)" ${i === 0 ? "disabled" : ""} aria-label="往上" class="w-9 h-9 rounded-lg border border-stone-200 font-black text-stone-500 disabled:opacity-30">${ICON.up}</button>
+      <button type="button" onclick="moveBlock('${id}', 1)" ${i === total - 1 ? "disabled" : ""} aria-label="往下" class="w-9 h-9 rounded-lg border border-stone-200 font-black text-stone-500 disabled:opacity-30">${ICON.dn}</button>
+      <button type="button" onclick="deleteBlock('${id}')" aria-label="刪除區塊" class="w-9 h-9 rounded-lg bg-red-50 text-red-500 font-black">${ICON.close}</button>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <label class="block"><span class="text-xs font-black text-stone-500 block mb-1">標題</span><input data-block-field="title" class="${PAGE_INPUT}" value="${escapeHtml(b.title)}" placeholder="例：婚禮小物"></label>
@@ -3982,7 +4158,7 @@ function renderSettings() {
     <section id="set-gallery" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 scroll-mt-24">
       <div>
         <h3 class="text-lg font-black text-stone-900 mb-1">🎞 首頁小圖輪播</h3>
-        <p class="text-sm text-stone-500 mb-4">首頁大圖下方可左右滑的方形照片。按「上傳照片」加入（可一次多選），用箭頭調整順序，✕ 移除。</p>
+        <p class="text-sm text-stone-500 mb-4">首頁大圖下方可左右滑的方形照片。按「上傳照片」加入（可一次多選），用箭頭調整順序，按叉叉移除。</p>
         <input type="hidden" id="gallery_images" value="${escapeHtml(gallery_images)}">
         <div id="galleryManager" class="grid grid-cols-3 md:grid-cols-6 gap-3"></div>
         <div class="mt-3 flex gap-2">
@@ -4130,9 +4306,9 @@ function updateSettingCalendarAndTags(box) {
 
   let html = `
   <div class="flex items-center justify-between mb-3 bg-stone-50 rounded-xl p-1 border border-stone-100">
-      <button type="button" onclick="changeCalendarMonth(this, -1)" class="calendar-nav-btn w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-white rounded-lg transition-all font-black text-lg">‹</button>
+      <button type="button" onclick="changeCalendarMonth(this, -1)" class="calendar-nav-btn w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-white rounded-lg transition-all font-black text-lg">${ICON.left}</button>
       <input type="month" value="${viewMonth}" onchange="changeCalendarMonthTo(this)" class="font-black text-stone-700 bg-transparent border-none outline-none text-center cursor-pointer">
-      <button type="button" onclick="changeCalendarMonth(this, 1)" class="calendar-nav-btn w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-white rounded-lg transition-all font-black text-lg">›</button>
+      <button type="button" onclick="changeCalendarMonth(this, 1)" class="calendar-nav-btn w-8 h-8 flex items-center justify-center text-stone-500 hover:bg-white rounded-lg transition-all font-black text-lg">${ICON.right}</button>
   </div>`;
 
   html += `<div class="grid grid-cols-7 gap-1 text-center text-xs mb-4">`;
@@ -4190,7 +4366,7 @@ function updateSettingCalendarAndTags(box) {
                       const dayStr = date.split('-')[2];
                       return `<span class="inline-flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm font-black text-stone-700 hover:bg-white transition-colors">
                           ${dayStr} <span class="text-stone-400 text-xs">(${w})</span>
-                          <button type="button" onclick="toggleCalendarDate(this, '${date}')" class="tag-remove-btn text-stone-400 hover:text-red-500 w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-50 ml-1 transition-colors" title="移除">×</button>
+                          <button type="button" onclick="toggleCalendarDate(this, '${date}')" class="tag-remove-btn text-stone-400 hover:text-red-500 w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-50 ml-1 transition-colors" title="移除">${ICON.closeSm}</button>
                       </span>`;
                   }).join('')}
               </div>
@@ -4450,7 +4626,7 @@ function editRowHtml(tab, keys, row = {}, textareaLong = false, labels = []) {
     }
 
     return `<td class="px-2 py-2 align-top ${getAdminCellClass(tab, key)}" data-label="${escapeHtml(labels[idx] || "")}"${isDetail ? ' data-detail="1"' : ""}>${mobileTagHtml}${field}</td>`;
-  }).join("")}<td class="px-1 py-2 align-top text-center" data-label="">${ADMIN_MOBILE_SUMMARY_KEYS[tab] ? `<button type="button" class="row-toggle-btn md:hidden" onclick="toggleAdminRowDetail(this)"><span>更多欄位</span><span class="chevron">▾</span></button>` : ""}<button type="button" onclick="deleteAdminRow(this, '${tab}')" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">✕</button></td></tr>`;
+  }).join("")}<td class="px-1 py-2 align-top text-center" data-label="">${ADMIN_MOBILE_SUMMARY_KEYS[tab] ? `<button type="button" class="row-toggle-btn md:hidden" onclick="toggleAdminRowDetail(this)"><span>更多欄位</span><span class="chevron">${ICON.down}</span></button>` : ""}<button type="button" onclick="deleteAdminRow(this, '${tab}')" title="刪除" aria-label="刪除" class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100">${ICON.close}</button></td></tr>`;
 }
 
 // ===== 商品照片欄位：填 GitHub images 資料夾的路徑或完整網址 =====
@@ -4612,9 +4788,9 @@ function renderGalleryManager() {
     <div class="rounded-xl border border-stone-200 bg-white overflow-hidden">
       <div class="aspect-square bg-stone-100"><img src="${escapeHtml(previewSrc(url))}" alt="" class="w-full h-full object-cover"></div>
       <div class="flex">
-        <button type="button" onclick="moveGalleryImage(${i}, -1)" ${i === 0 ? "disabled" : ""} aria-label="往前" class="flex-1 h-9 text-stone-500 font-black hover:bg-stone-50 disabled:opacity-30">‹</button>
-        <button type="button" onclick="removeGalleryImage(${i})" aria-label="移除" class="flex-1 h-9 text-red-500 font-black hover:bg-red-50">✕</button>
-        <button type="button" onclick="moveGalleryImage(${i}, 1)" ${i === list.length - 1 ? "disabled" : ""} aria-label="往後" class="flex-1 h-9 text-stone-500 font-black hover:bg-stone-50 disabled:opacity-30">›</button>
+        <button type="button" onclick="moveGalleryImage(${i}, -1)" ${i === 0 ? "disabled" : ""} aria-label="往前" class="flex-1 h-9 text-stone-500 font-black hover:bg-stone-50 disabled:opacity-30">${ICON.left}</button>
+        <button type="button" onclick="removeGalleryImage(${i})" aria-label="移除" class="flex-1 h-9 text-red-500 font-black hover:bg-red-50">${ICON.close}</button>
+        <button type="button" onclick="moveGalleryImage(${i}, 1)" ${i === list.length - 1 ? "disabled" : ""} aria-label="往後" class="flex-1 h-9 text-stone-500 font-black hover:bg-stone-50 disabled:opacity-30">${ICON.right}</button>
       </div>
     </div>`).join("") : `<div class="col-span-3 md:col-span-6 rounded-xl border border-dashed border-stone-200 py-6 text-center text-sm font-bold text-stone-400">尚未設定，前台會顯示網頁內建的照片</div>`;
 }
