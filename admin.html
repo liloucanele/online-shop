@@ -958,7 +958,7 @@ const SUB_TABS = {
   pages: [["sitehome", "首頁"], ["sitecake", "生日蛋糕頁"], ["pages", "自訂頁面"]]
 };
 const SUB_TAB_PARENT = { coupons: "settings", cakeoptions: "products", sitehome: "pages", sitecake: "pages" };
-const SUB_TAB_BTN = on => `shrink-0 h-10 px-4 rounded-xl text-sm font-black whitespace-nowrap ${on ? "bg-white text-stone-900 border border-stone-200" : "text-stone-500 hover:text-stone-800"}`;
+const SUB_TAB_BTN = on => `shrink-0 px-4 py-2 rounded-xl text-sm font-black whitespace-nowrap transition-colors ${on ? "bg-[#5B7290]/15 text-[#3E4F66]" : "text-stone-600 hover:bg-stone-50"}`;
 function subTabNav(active) {
   const parent = SUB_TAB_PARENT[active] || active;
   let buttons;
@@ -971,15 +971,15 @@ function subTabNav(active) {
   } else {
     if (parent === "settings") {
       // 設定：營業日／日期規則／運費 是同一頁的三個區塊（共用一次儲存），優惠券是另一頁
-      return `<div class="flex w-fit max-w-full gap-1 p-1 rounded-2xl bg-stone-100 border border-stone-200 overflow-x-auto" style="scrollbar-width:none" data-no-dirty>${SUB_TABS.settings.map(([key, label]) => key === "coupons"
+      return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-3" data-no-dirty><div class="flex gap-2 overflow-x-auto" style="scrollbar-width:none">${SUB_TABS.settings.map(([key, label]) => key === "coupons"
         ? `<button type="button" onclick="switchTab('coupons')" class="${SUB_TAB_BTN(active === "coupons")}">${label}</button>`
-        : `<button type="button" data-settings-btn="${key}" onclick="openSettingsSection('${key}')" class="${SUB_TAB_BTN(active === "settings" && settingsSection === key)}">${label}</button>`).join("")}</div>`;
+        : `<button type="button" data-settings-btn="${key}" onclick="openSettingsSection('${key}')" class="${SUB_TAB_BTN(active === "settings" && settingsSection === key)}">${label}</button>`).join("")}</div></div>`;
     }
     const items = SUB_TABS[parent];
     if (!items) return "";
     buttons = items.map(([tab, label]) => `<button type="button" onclick="switchTab('${tab}')" class="${SUB_TAB_BTN(active === tab)}">${label}</button>`).join("");
   }
-  return `<div class="flex w-fit max-w-full gap-1 p-1 rounded-2xl bg-stone-100 border border-stone-200 overflow-x-auto" style="scrollbar-width:none" data-no-dirty>${buttons}</div>`;
+  return `<div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-3" data-no-dirty><div class="flex gap-2 overflow-x-auto" style="scrollbar-width:none">${buttons}</div></div>`;
 }
 let settingsSection = "set-days";
 function openSettingsSection(key) {
