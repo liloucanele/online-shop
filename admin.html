@@ -954,7 +954,6 @@ function logoutAdmin() {
 // 子分頁：優惠券在「設定」底下、蛋糕在「產品」底下；上方選單亮的是母分頁
 const SUB_TABS = {
   settings: [["set-days", "營業日"], ["set-rules", "日期規則"], ["set-shipping", "運費"], ["coupons", "優惠券"]],
-  products: [["products", "產品"], ["cakeoptions", "蛋糕"]],
   pages: [["sitehome", "首頁"], ["sitecake", "生日蛋糕頁"], ["pages", "自訂頁面"]]
 };
 const SUB_TAB_PARENT = { coupons: "settings", cakeoptions: "products", sitehome: "pages", sitecake: "pages" };
@@ -966,8 +965,7 @@ function subTabNav(active) {
     // 產品：全部＋每個分類（依「分類」頁的順序）＋蛋糕
     const onProducts = active === "products";
     const cats = [["", "全部"]].concat(prodGroups().map(g => [g.key, g.name]));
-    buttons = cats.map(([key, name]) => `<button type="button" data-cat="${escapeHtml(key)}" onclick="openProductCategory(this.dataset.cat)" class="${SUB_TAB_BTN(onProducts && prodState.cat === key)}">${escapeHtml(name)}</button>`).join("")
-      + `<button type="button" onclick="switchTab('cakeoptions')" class="${SUB_TAB_BTN(active === "cakeoptions")}">蛋糕</button>`;
+    buttons = cats.map(([key, name]) => `<button type="button" data-cat="${escapeHtml(key)}" onclick="openProductCategory(this.dataset.cat)" class="${SUB_TAB_BTN(onProducts && prodState.cat === key)}">${escapeHtml(name)}</button>`).join("");
   } else {
     if (parent === "settings") {
       // 設定：營業日／日期規則／運費 是同一頁的三個區塊（共用一次儲存），優惠券是另一頁
@@ -1003,6 +1001,12 @@ function switchTab(tab) {
   });
   document.querySelectorAll(".tab-page").forEach(page => page.classList.add("hidden"));
   document.getElementById("tab-" + tab).classList.remove("hidden");
+  // 生日蛋糕分類：同一頁下方接著顯示蛋糕選項（夾餡、配件等）
+  if (tab === "products" && isCakeCategory(prodState.cat)) document.getElementById("tab-cakeoptions").classList.remove("hidden");
+}
+function isCakeCategory(key) {
+  if (!key) return false;
+  return (adminData?.categories || []).some(c => prodCatKey(c.id) === key && (c.behavior || "").toString().trim().toLowerCase() === "cake");
 }
 
 async function loadAll() {
@@ -3417,7 +3421,7 @@ function renderListPage(tab) {
   const el = document.getElementById("tab-" + tab);
   if (!el || !adminData) return;
   const rows = cfg.rows();
-  const subNav = subTabNav(tab);
+  const subNav = tab === "cakeoptions" ? "" : subTabNav(tab);
   const stat = cfg.hasDisplay ? `共 ${rows.length} ${cfg.unit.replace(/^個|^張/, m => m)}｜顯示 ${rows.filter(r => isDisplayOn(r.display)).length}｜隱藏 ${rows.filter(r => !isDisplayOn(r.display)).length}` : `共 ${rows.length} ${cfg.unit}｜進行中 ${rows.filter(r => couponStatus(r).rank === 0).length}`;
   el.innerHTML = `${subNav}
   <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 space-y-4" data-no-dirty>
@@ -4289,7 +4293,7 @@ function renderSiteContent() {
     <section id="set-cake" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 md:p-5 scroll-mt-24">
       <div>
         <h3 class="text-lg font-black text-stone-900 mb-1">🎂 生日蛋糕頁文字</h3>
-        <p class="text-sm text-stone-500 mb-4">蛋糕、夾餡、配件的品項與加價，在「蛋糕選項」分頁設定；每日限量在「分類」的生日蛋糕那一列設定。</p>
+        <p class="text-sm text-stone-500 mb-4">蛋糕、夾餡、配件的品項與加價，在「產品 › 生日蛋糕」設定；每日限量在「分類」的生日蛋糕那一列設定。</p>
         <div class="grid grid-cols-1 gap-3 bg-stone-50 rounded-2xl p-4 border border-stone-200">
           <label class="block"><span class="text-[11px] font-black text-stone-500 block mb-1.5">開頭一句話</span><input id="cake_intro" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-white" value="${escapeHtml(getSettingsVal("cake_intro", ""))}" oninput="markUnsaved('sitecake');"></label>
           <label class="block"><span class="text-[11px] font-black text-stone-500 block mb-1.5">訂購須知（一行一點）</span><textarea id="cake_notice" rows="4" class="w-full rounded-xl border border-stone-200 px-3 py-2 bg-white leading-relaxed" oninput="markUnsaved('sitecake');">${escapeHtml(getSettingsVal("cake_notice", ""))}</textarea></label>
