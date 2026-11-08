@@ -3432,7 +3432,7 @@ function renderListPage(tab) {
       </div>
       <button type="button" onclick="openRowEditor('${tab}', -1)" class="h-11 rounded-xl bg-[#5B7290] text-white px-5 font-black hover:bg-[#3E4F66]">＋ 新增${cfg.title}</button>
     </div>
-    ${rows.length > 6 ? `<input type="search" value="${escapeHtml(st.q)}" oninput="lsState('${tab}').q=this.value;renderListBody('${tab}')" placeholder="搜尋…" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold outline-none focus:border-[#5B7290]">` : ""}
+    ${rows.length > 6 && tab !== "cakeoptions" ? `<input type="search" value="${escapeHtml(st.q)}" oninput="lsState('${tab}').q=this.value;renderListBody('${tab}')" placeholder="搜尋…" class="w-full h-11 rounded-xl border border-stone-200 px-3 bg-stone-50 text-sm font-bold outline-none focus:border-[#5B7290]">` : ""}
     <p class="text-xs font-bold text-stone-400">${cfg.hint}</p>
   </div>
   <div id="list-${tab}" class="space-y-4" data-no-dirty></div>
