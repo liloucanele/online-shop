@@ -592,7 +592,7 @@ function doGet(e) {
     if (action === "diag") {
       let github = "ok";
       try { const c = githubConfig_(); github = "ok（" + c.repo + "／" + c.branch + "）"; } catch (err) { github = err.message; }
-      return jsonOutput({ status: "success", codeVersion: "2026-11-01-fastquery", scriptId: ScriptApp.getScriptId(), github: github });
+      return jsonOutput({ status: "success", codeVersion: "2026-11-08-orderdate", scriptId: ScriptApp.getScriptId(), github: github });
     }
     if (action === "adminLogin") return jsonOutput({ status: "error", message: "後台已更新，請重新整理後台頁面再登入。" });
     if (action === "adminGetAll") return jsonOutput(adminGetAll_(e.parameter.token));
@@ -1490,9 +1490,15 @@ function adminUpdateOrder_(data) {
   if (headerMap["Tracking_No"]) sheet.getRange(targetRow, headerMap["Tracking_No"]).setValue((data.trackingNo || "").toString().trim());
   if (headerMap["Status_Note"]) sheet.getRange(targetRow, headerMap["Status_Note"]).setValue((data.statusNote || "").toString().trim());
   if (headerMap["Internal_Note"]) sheet.getRange(targetRow, headerMap["Internal_Note"]).setValue((data.internalNote || "").toString().trim());
+  // 後台改取貨／到貨日期（客人改期用）：只有後台有送 date 才改，不檢查公休日、營業日與每日限量
+  const newDate = (data.date || "").toString().trim();
+  if (newDate && headerMap["Date"]) {
+    if (!/^\d{4}\/\d{2}\/\d{2}/.test(newDate)) throw new Error("日期格式不正確。");
+    sheet.getRange(targetRow, headerMap["Date"]).setNumberFormat("@").setValue(newDate);
+  }
 
   const nowText = Utilities.formatDate(new Date(), TIMEZONE, "yyyy/MM/dd HH:mm:ss");
   if (headerMap["Last_Update"]) sheet.getRange(targetRow, headerMap["Last_Update"]).setValue(nowText);
   if (newStatus && newStatus !== oldStatus) try { sendStatusEmail_(sheet, targetRow, headerMap, newStatus); } catch (e) {}
-  return { status: "success", message: "訂單已更新。", orderId: orderId, lastUpdate: nowText };
+  return { status: "success", message: "訂單已更新。", orderId: orderId, lastUpdate: nowText, date: newDate || undefined };
 }
