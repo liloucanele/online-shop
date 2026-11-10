@@ -1005,6 +1005,9 @@ function sendStatusEmail_(sheet, row, headerMap, status) {
   } else if (status === "待付款") {
     subject = "Lilou｜請完成付款";
     message = "您的訂單已完成確認。\n\n請依付款通知完成信用卡付款，付款完成後我們將安排後續製作與出貨。\n\n若未收到付款通知，也可至「查詢訂單」查看最新進度。";
+  } else if (status === "待出貨" && isStorePickupMethod_(getCellValueByHeader_(sheet, row, headerMap, "Shipping_Method"))) {
+    subject = "Lilou｜訂單已確認";
+    message = "訂單已確認，正在為您準備中；請於您選定的取貨日期前往取貨。\n\n門市地址：\n" + STORE_ADDRESS + "\n\n營業時間：\n14:00－18:00（固定週一、二公休）";
   } else if (status === "待出貨") {
     subject = "Lilou｜準備出貨中";
     message = "目前正安排製作與包裝，完成後將立即為您出貨。";
