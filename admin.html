@@ -643,7 +643,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.5.2</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.5.3</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -797,9 +797,11 @@ function hideAdminInlineMessage() {
   el.classList.add("hidden");
 }
 
-function showAdminToast(message, type = "info", duration = 2600) {
+function showAdminToast(message, type = "info", duration = 2600, key = "") {
   const area = document.getElementById("adminToastArea");
   if (!area) return;
+  // 同一件事（例如同步資料）只留一個提示：新的出現時，把同一組舊的收掉
+  if (key) area.querySelectorAll(".admin-toast").forEach(old => { if (old.dataset.key === key) old.remove(); });
 
   const toast = document.createElement("div");
   const isError = type === "error";
@@ -808,6 +810,7 @@ function showAdminToast(message, type = "info", duration = 2600) {
   const bgClass = isError ? "bg-red-600" : isSuccess ? "bg-emerald-600" : "bg-[#5B7290]";
   const icon = isLoading ? `<span class="ld-firework"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>` : isError ? "❌" : isSuccess ? "✅" : "ℹ️";
 
+  if (key) toast.dataset.key = key;
   toast.className = `admin-toast ${bgClass} text-white flex items-center gap-2.5 text-[15px] font-semibold tracking-wide`;
   toast.innerHTML = `<span class="shrink-0 flex items-center justify-center">${icon}</span><span class="leading-relaxed whitespace-nowrap">${escapeHtml(message)}</span>`;
   area.appendChild(toast);
@@ -822,6 +825,7 @@ function showAdminToast(message, type = "info", duration = 2600) {
 
 function removeAdminToast(toast) {
   if (!toast) return;
+  delete toast.dataset.key;
   toast.classList.remove("show");
   setTimeout(() => toast.remove(), 240);
 }
@@ -995,11 +999,29 @@ function isCakeCategory(key) {
   return (adminData?.categories || []).some(c => prodCatKey(c.id) === key && (c.behavior || "").toString().trim().toLowerCase() === "cake");
 }
 
-async function loadAll() {
+// 同步資料：同一時間只跑一次。正在同步時又被叫到（例如重複觸發、剛儲存完），
+// 不會再開第二個，而是等這次跑完再安靜地補抓一次最新資料（不再跳「同步資料中」），畫面上只會有一組提示
+let loadAllRunning = null;
+let loadAllAgain = false;
+function loadAll() {
+  if (loadAllRunning) { loadAllAgain = true; return loadAllRunning; }
+  loadAllRunning = (async () => {
+    try {
+      await loadAllOnce();
+      while (loadAllAgain) { loadAllAgain = false; await loadAllOnce(true); }
+    } finally {
+      loadAllRunning = null;
+      loadAllAgain = false;
+    }
+  })();
+  return loadAllRunning;
+}
+
+async function loadAllOnce(quiet = false) {
   const token = getToken();
   if (!token) { setLoggedInState(false); return; }
-  const restoreButton = setButtonLoading(getActiveActionButton(), "同步中...");
-  const loadingToast = showAdminToast("同步資料中...", "loading", 0);
+  const restoreButton = quiet ? null : setButtonLoading(getActiveActionButton(), "同步中...");
+  const loadingToast = quiet ? null : showAdminToast("同步資料中...", "loading", 0, "sync");
   hideAdminInlineMessage();
   try {
     const res = await fetch(`${API_URL}?action=adminGetAll&token=${encodeURIComponent(token)}&_=${Date.now()}`);
@@ -1007,7 +1029,7 @@ async function loadAll() {
     if (data.status !== "success") {
       hideAdminInlineMessage();
       removeAdminToast(loadingToast);
-      showAdminToast(data.message || "載入失敗。", "error");
+      showAdminToast(data.message || "載入失敗。", "error", 2600, "sync");
       if ((data.message || "").includes("登入")) logoutAdmin();
       return;
     }
@@ -1016,11 +1038,11 @@ async function loadAll() {
     renderAll();
     hideAdminInlineMessage();
     removeAdminToast(loadingToast);
-    showAdminToast(`資料已更新 ${formatAdminNow().slice(11)}`, "success");
+    showAdminToast(`資料已更新 ${formatAdminNow().slice(11)}`, "success", 2600, "sync");
   } catch (err) {
     hideAdminInlineMessage();
     removeAdminToast(loadingToast);
-    showAdminToast("載入失敗：" + err.message, "error", 4200);
+    showAdminToast("載入失敗：" + err.message, "error", 4200, "sync");
   } finally {
     if (restoreButton) restoreButton();
   }
