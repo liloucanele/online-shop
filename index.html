@@ -1204,7 +1204,6 @@
                                         <option value="store">門市自取付款</option>
                                         <option value="delivery_cod">7-11取貨付款（運費+$129）</option>
                                     </select>
-                                    <p id="storePickupHoursNote" class="mt-1.5 text-xs font-bold text-stone-500 leading-relaxed">門市取貨時間為14:00-21:00 。若當天營業時間臨時變動，我們會主動與您聯繫。</p>
                                 </div>
                                 <div>
                                     <label id="dateLabel" for="shipDate" class="block text-xs md:text-sm font-bold text-[#5B7290] mb-1.5">門市自取日期 *</label>
@@ -1229,7 +1228,7 @@
                                 <div>若您選擇 7-11取貨（線上付款），付款連結將寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的付款按鈕完成付款。</div>
                             </div>
 
-                            <div id="midAutumnNotice" class="hidden bg-orange-50 border border-orange-200 rounded-xl p-4 text-xs md:text-sm text-orange-900 font-bold leading-relaxed">
+                            <div id="midAutumnNotice" class="hidden space-y-3 bg-orange-50 border border-orange-200 rounded-xl p-4 text-xs md:text-sm text-orange-900 font-bold leading-relaxed">
                             </div>
 
                             <div>
@@ -1861,8 +1860,7 @@
 
             enforcePickupOnlyShipping(true);
             method = document.getElementById('shipMethod').value;
-            const storeHoursNote = document.getElementById('storePickupHoursNote');
-            if (storeHoursNote) storeHoursNote.hidden = method !== 'store';
+            renderCategoryDateNotices();
             const addrInput = document.getElementById('custAddress');
             const shipFeeDisplay = document.getElementById('shipFeeDisplay');
             const dateLabel = document.getElementById('dateLabel');
@@ -1996,11 +1994,15 @@
             return { dates, fullDates, blockedBy };
         }
 
+        const LILOU_STORE_PICKUP_HOURS = "門市取貨時間為14:00-21:00 。若當天營業時間臨時變動，我們會主動與您聯繫。";
         // 購物車內分類的提醒文字（後台「分類 → date_notice」）
         function renderCategoryDateNotices() {
             const box = document.getElementById('midAutumnNotice');
             if (!box) return;
-            const notices = cart.length ? getCartCategories().map(c => (c.date_notice || '').trim()).filter(Boolean) : [];
+            // 同樣的提醒只出現一次；選門市自取時加上取貨時間（提醒裡已經寫了就不重複）
+            const notices = [...new Set(cart.length ? getCartCategories().map(c => (c.date_notice || '').trim()).filter(Boolean) : [])];
+            const methodSel = document.getElementById('shipMethod');
+            if (methodSel && methodSel.value === 'store' && !notices.some(n => n.includes(LILOU_STORE_PICKUP_HOURS) || n.includes('14:00-21:00'))) notices.push(LILOU_STORE_PICKUP_HOURS);
             if (!notices.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
             box.innerHTML = notices.map(n => `<div class="whitespace-pre-line">${lilouEscapeHtml(n)}</div>`).join('');
             box.classList.remove('hidden');
