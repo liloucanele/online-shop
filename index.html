@@ -1228,7 +1228,7 @@
                                 <div>若您選擇 7-11取貨（線上付款），付款連結將寄送至您的 Email，請留意收件並於期限內完成付款。若未收到信件，可至「查詢訂單」輸入手機號碼，透過訂單中的付款按鈕完成付款。</div>
                             </div>
 
-                            <div id="midAutumnNotice" class="hidden bg-orange-50 border border-orange-200 rounded-xl p-4 text-xs md:text-sm text-orange-900 font-bold leading-relaxed">
+                            <div id="midAutumnNotice" class="hidden space-y-3 bg-orange-50 border border-orange-200 rounded-xl p-4 text-xs md:text-sm text-orange-900 font-bold leading-relaxed">
                             </div>
 
                             <div>
@@ -1322,7 +1322,7 @@
         <div class="max-w-3xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
             <div class="space-y-1.5">
                 <div class="text-white font-black text-base md:text-lg tracking-widest">粒露 Lilou｜迷你可麗露專賣</div>
-                <div class="text-xs md:text-sm text-stone-500 font-medium tracking-wide">高雄市前鎮區景德路72巷12號<br>門市取貨時間為14:00-21:00 。若當天營業時間臨時變動，我們會主動與您聯繫。<br>週一、二公休</div>
+                <div class="text-xs md:text-sm text-stone-500 font-medium tracking-wide">高雄市前鎮區景德路72巷12號<br>週一、二公休</div>
                 <div class="text-xs text-stone-500 pt-1">© 2026 Lilou. All rights reserved.</div>
             </div>
             
@@ -1860,6 +1860,7 @@
 
             enforcePickupOnlyShipping(true);
             method = document.getElementById('shipMethod').value;
+            renderCategoryDateNotices();
             const addrInput = document.getElementById('custAddress');
             const shipFeeDisplay = document.getElementById('shipFeeDisplay');
             const dateLabel = document.getElementById('dateLabel');
@@ -1993,11 +1994,15 @@
             return { dates, fullDates, blockedBy };
         }
 
+        const LILOU_STORE_PICKUP_HOURS = "門市取貨時間為14:00-21:00 。若當天營業時間臨時變動，我們會主動與您聯繫。";
         // 購物車內分類的提醒文字（後台「分類 → date_notice」）
         function renderCategoryDateNotices() {
             const box = document.getElementById('midAutumnNotice');
             if (!box) return;
-            const notices = cart.length ? getCartCategories().map(c => (c.date_notice || '').trim()).filter(Boolean) : [];
+            // 同樣的提醒只出現一次；選門市自取時加上取貨時間（提醒裡已經寫了就不重複）
+            const notices = [...new Set(cart.length ? getCartCategories().map(c => (c.date_notice || '').trim()).filter(Boolean) : [])];
+            const methodSel = document.getElementById('shipMethod');
+            if (methodSel && methodSel.value === 'store' && !notices.some(n => n.includes(LILOU_STORE_PICKUP_HOURS) || n.includes('14:00-21:00'))) notices.push(LILOU_STORE_PICKUP_HOURS);
             if (!notices.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
             box.innerHTML = notices.map(n => `<div class="whitespace-pre-line">${lilouEscapeHtml(n)}</div>`).join('');
             box.classList.remove('hidden');
