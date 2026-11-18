@@ -1204,6 +1204,7 @@
                                         <option value="store">門市自取付款</option>
                                         <option value="delivery_cod">7-11取貨付款（運費+$129）</option>
                                     </select>
+                                    <p id="storePickupHoursNote" class="mt-1.5 text-xs font-bold text-stone-500 leading-relaxed">門市取貨時間為14:00-21:00 。若當天營業時間臨時變動，我們會主動與您聯繫。</p>
                                 </div>
                                 <div>
                                     <label id="dateLabel" for="shipDate" class="block text-xs md:text-sm font-bold text-[#5B7290] mb-1.5">門市自取日期 *</label>
@@ -1860,6 +1861,8 @@
 
             enforcePickupOnlyShipping(true);
             method = document.getElementById('shipMethod').value;
+            const storeHoursNote = document.getElementById('storePickupHoursNote');
+            if (storeHoursNote) storeHoursNote.hidden = method !== 'store';
             const addrInput = document.getElementById('custAddress');
             const shipFeeDisplay = document.getElementById('shipFeeDisplay');
             const dateLabel = document.getElementById('dateLabel');
