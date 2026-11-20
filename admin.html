@@ -643,7 +643,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.5.3</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.5.4</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -1893,6 +1893,18 @@ function dashTitle(icon, text, right = "") {
 }
 function orderDay(o) { return normalizeOrderDateForCompare(o.date) || ""; }
 function isLive(o) { return o.orderStatus !== "已取消"; }
+// 已過取貨／到貨日但還沒完成：取貨日在今天以前（今天不算），狀態還停在確認中／待付款／待出貨／可取貨
+const OVERDUE_STATUSES = ["可取貨", "待出貨", "待付款", "訂單確認中"];
+function isOverdueOrder(o, today) { const d = orderDay(o); return !!d && d < (today || getTodayDateInputValue()) && OVERDUE_STATUSES.includes(o.orderStatus); }
+function goToOverdueOrders() {
+  switchTab("orders");
+  requestAnimationFrame(() => {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    set("orderSearch", ""); set("orderMethodFilter", ""); set("orderStartDate", ""); set("orderEndDate", "");
+    set("orderSortFilter", "arrivalAsc"); set("orderStatusFilter", "overdue");
+    filterOrders();
+  });
+}
 function monthKeyOf(dateStr) { return (dateStr || "").slice(0, 7); }
 function shiftMonth(key, n) { const [y, m] = key.split("-").map(Number); const d = new Date(y, m - 1 + n, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; }
 function daysInMonth(key) { const [y, m] = key.split("-").map(Number); return new Date(y, m, 0).getDate(); }
@@ -1931,7 +1943,7 @@ function dashTodaySection() {
   const unpaid = orders.filter(o => o.orderStatus === "待付款");
   const confirming = orders.filter(o => o.orderStatus === "訂單確認中");
   const newToday = orders.filter(o => getOrderCreatedDate(o) === today).length;
-  const overdue = orders.filter(o => { const d = orderDay(o); return d && d < today && ["可取貨", "待出貨", "待付款", "訂單確認中"].includes(o.orderStatus); });
+  const overdue = orders.filter(o => isOverdueOrder(o, today)).sort((a, b) => compareTextValue(orderDay(a), orderDay(b)));
   const list = todayLeft.slice(0, 6);
   return `<section class="${DASH_CARD}">
     ${dashTitle("☀️", "今天要做的事", `<span class="text-xs font-bold text-stone-400">${formatMonthDayWithWeekday(today)}・今日新訂單 ${newToday} 筆</span>`)}
@@ -1941,7 +1953,7 @@ function dashTodaySection() {
       ${dashActionCard("待付款", unpaid.length, unpaid.length ? "記得追款" : "目前沒有", "goToOrdersByStatus('待付款')", "amber")}
       ${dashActionCard("確認中", confirming.length, confirming.length ? "新訂單待確認" : "目前沒有", "goToOrdersByStatus('訂單確認中')", "stone")}
     </div>
-    ${overdue.length ? `<button type="button" onclick="goToOrdersByStatus('')" class="mt-3 w-full text-left rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-700">⚠️ 有 ${overdue.length} 筆訂單已過取貨／到貨日但還沒完成：${overdue.slice(0, 3).map(o => escapeHtml(o.id)).join("、")}${overdue.length > 3 ? "…" : ""}</button>` : ""}
+    ${overdue.length ? `<button type="button" onclick="goToOverdueOrders()" class="mt-3 w-full text-left rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-700">⚠️ 有 ${overdue.length} 筆訂單已過取貨／到貨日但還沒完成：${overdue.slice(0, 3).map(o => `${escapeHtml(o.id)}（${orderDay(o).slice(5).replace("-", "/")} ${escapeHtml(o.orderStatus || "未設定")}）`).join("、")}${overdue.length > 3 ? "…" : ""}<span class="block text-xs font-bold text-red-500 mt-0.5">點這裡只看這 ${overdue.length} 筆 →</span></button>` : ""}
     ${list.length ? `<div class="mt-4">
       <div class="text-xs font-black text-stone-400 mb-2">今天還沒取的</div>
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">${list.map(o => `
@@ -2363,6 +2375,7 @@ function renderOrders() {
             <option value="已出貨">已出貨（店到店）</option>
             <option value="已完成">已完成</option>
             <option value="已取消">已取消</option>
+            <option value="overdue">⚠️ 已過日期未完成</option>
           </select>
           <select id="orderMethodFilter" onchange="filterOrders()" class="h-11 w-full rounded-xl border border-stone-200 px-2 bg-stone-50 min-w-0">
             <option value="">全部配送</option>
@@ -2455,7 +2468,7 @@ function filterOrders() {
     const methodType = getOrderMethodType(o);
 
     const keywordOk = !q || text.includes(q) || (q.replace(/\D/g, "").length >= 3 && (o.phone || "").toString().replace(/\D/g, "").includes(q.replace(/\D/g, "")));
-    const statusOk = status === "已取消" ? o.orderStatus === "已取消" : ((!status || o.orderStatus === status) && o.orderStatus !== "已取消");
+    const statusOk = status === "已取消" ? o.orderStatus === "已取消" : status === "overdue" ? isOverdueOrder(o) : ((!status || o.orderStatus === status) && o.orderStatus !== "已取消");
     if (keywordOk && methodOk_(o, method) && dateOk_(orderDate, startDate, endDate)) chipBase.push(o);
     const methodOk = !method || methodType === method;
     const startOk = !startDate || (orderDate && orderDate >= startDate);
@@ -2498,7 +2511,7 @@ function filterOrders() {
   const rangeText = startDate && !endDate ? `｜日期：${startDate} 之後` : startDate && endDate ? `｜日期：${startDate}～${endDate}` : !startDate && endDate ? `｜日期：${endDate} 以前` : "｜日期：全部";
   updateOrderFilterSummary(startDate, endDate, method, sortMode);
   updateOrderRangeButtons(getOrderRangeMode(startDate, endDate));
-  const countLabel = status === "已取消" ? "筆已取消訂單" : "筆有效訂單";
+  const countLabel = status === "已取消" ? "筆已取消訂單" : status === "overdue" ? "筆已過取貨／到貨日、還沒完成的訂單" : "筆有效訂單";
   const hiddenVoidText = status === "已取消" || voidCount <= 0 ? "" : `｜已取消 ${voidCount}`;
   document.getElementById("orderCount").textContent = `${effectiveOrders.length} ${countLabel}｜門市自取 ${storeCount}｜7-11店到店 ${deliveryCreditCount + deliveryCodCount}${hiddenVoidText}${rangeText}｜排序：${getOrderSortLabel(sortMode)}`;
   renderOrderStatusChips(chipBase, status);
@@ -2520,16 +2533,16 @@ function filterOrders() {
 
 // ===== 訂單管理（第三階段）：狀態標籤、下一步、右側／全版詳細 =====
 const orderUi = { selected: "", list: [], wide: false };
-const ORDER_CHIPS = [["", "全部"], ["訂單確認中", "確認中"], ["待付款", "待付款"], ["待出貨", "待出貨"], ["可取貨", "可取貨"], ["已出貨", "已出貨"], ["已完成", "已完成"], ["已取消", "已取消"]];
+const ORDER_CHIPS = [["", "全部"], ["訂單確認中", "確認中"], ["待付款", "待付款"], ["待出貨", "待出貨"], ["可取貨", "可取貨"], ["已出貨", "已出貨"], ["已完成", "已完成"], ["已取消", "已取消"], ["overdue", "⚠️ 已過日期"]];
 function isWideOrders() { return !!(window.matchMedia && window.matchMedia("(min-width: 1024px)").matches); }
 function renderOrderStatusChips(base, current) {
   const box = document.getElementById("orderStatusChips");
   if (!box) return;
   box.innerHTML = ORDER_CHIPS.map(([v, label]) => {
-    const n = v ? base.filter(o => o.orderStatus === v).length : base.filter(o => o.orderStatus !== "已取消").length;
-    if (v && !n && v !== current && (v === "已出貨" || v === "已取消")) return "";
+    const n = v === "overdue" ? base.filter(o => isOverdueOrder(o)).length : v ? base.filter(o => o.orderStatus === v).length : base.filter(o => o.orderStatus !== "已取消").length;
+    if (v && !n && v !== current && (v === "已出貨" || v === "已取消" || v === "overdue")) return "";
     const on = (current || "") === v;
-    return `<button type="button" onclick="setOrderStatusChip('${v}')" class="shrink-0 h-9 px-3 rounded-full text-[13px] font-black inline-flex items-center gap-1.5 border ${on ? "bg-[#5B7290] text-white border-[#5B7290]" : `bg-white ${v ? statusClass(v) : "text-stone-600 border-stone-200"}`}">${label}<span class="text-[11px] font-bold ${on ? "text-white/80" : "opacity-70"}">${n}</span></button>`;
+    return `<button type="button" onclick="setOrderStatusChip('${v}')" class="shrink-0 h-9 px-3 rounded-full text-[13px] font-black inline-flex items-center gap-1.5 border ${on ? "bg-[#5B7290] text-white border-[#5B7290]" : `bg-white ${v === "overdue" ? "text-red-700 border-red-200 bg-red-50" : v ? statusClass(v) : "text-stone-600 border-stone-200"}`}">${label}<span class="text-[11px] font-bold ${on ? "text-white/80" : "opacity-70"}">${n}</span></button>`;
   }).join("");
 }
 function setOrderStatusChip(v) { const sel = document.getElementById("orderStatusFilter"); if (sel) sel.value = v; filterOrders(); }
