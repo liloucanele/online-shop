@@ -2375,7 +2375,7 @@ function renderOrders() {
             <option value="已出貨">已出貨（店到店）</option>
             <option value="已完成">已完成</option>
             <option value="已取消">已取消</option>
-            <option value="overdue">⚠️ 已過日期未完成</option>
+            <option value="overdue" hidden>⚠️ 已過日期未完成</option>
           </select>
           <select id="orderMethodFilter" onchange="filterOrders()" class="h-11 w-full rounded-xl border border-stone-200 px-2 bg-stone-50 min-w-0">
             <option value="">全部配送</option>
@@ -2540,7 +2540,8 @@ function renderOrderStatusChips(base, current) {
   if (!box) return;
   box.innerHTML = ORDER_CHIPS.map(([v, label]) => {
     const n = v === "overdue" ? base.filter(o => isOverdueOrder(o)).length : v ? base.filter(o => o.orderStatus === v).length : base.filter(o => o.orderStatus !== "已取消").length;
-    if (v && !n && v !== current && (v === "已出貨" || v === "已取消" || v === "overdue")) return "";
+    if (v === "overdue" && v !== current) return "";
+    if (v && !n && v !== current && (v === "已出貨" || v === "已取消")) return "";
     const on = (current || "") === v;
     return `<button type="button" onclick="setOrderStatusChip('${v}')" class="shrink-0 h-9 px-3 rounded-full text-[13px] font-black inline-flex items-center gap-1.5 border ${on ? "bg-[#5B7290] text-white border-[#5B7290]" : `bg-white ${v === "overdue" ? "text-red-700 border-red-200 bg-red-50" : v ? statusClass(v) : "text-stone-600 border-stone-200"}`}">${label}<span class="text-[11px] font-bold ${on ? "text-white/80" : "opacity-70"}">${n}</span></button>`;
   }).join("");
