@@ -1322,7 +1322,7 @@
         <div class="max-w-3xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
             <div class="space-y-1.5">
                 <div class="text-white font-black text-base md:text-lg tracking-widest">粒露 Lilou｜迷你可麗露專賣</div>
-                <div class="text-xs md:text-sm text-stone-500 font-medium tracking-wide">高雄市前鎮區景德路72巷12號<br>週一、二公休</div>
+                <div class="text-xs md:text-sm text-stone-500 font-medium tracking-wide">高雄市前鎮區景德路72巷12號<br><span id="footerClosedDays">週一、二公休</span></div>
                 <div class="text-xs text-stone-500 pt-1">© 2026 Lilou. All rights reserved.</div>
             </div>
             
@@ -2273,7 +2273,7 @@
                 } else if (cachedText) {
                     // 快取過期：商品資料等最新的，但首頁圖片先用上次的設定，不必等試算表回應
                     const old = JSON.parse(cachedText);
-                    if (old && old.settings) { renderHeroGallery(old.settings.gallery_images); renderPromoSection(old.settings); }
+                    if (old && old.settings) { renderHeroGallery(old.settings.gallery_images); renderPromoSection(old.settings); renderFooterClosedDays(old.settings.closed_weekdays); }
                 }
             } catch (err) {
                 console.warn("讀取快取失敗", err);
@@ -2393,6 +2393,7 @@
                 renderHeroGallery(data.settings.gallery_images);
 
                 renderPromoSection(data.settings, localCategories[0]?.id);
+                renderFooterClosedDays(data.settings.closed_weekdays);
             }
 
             // 即時重新繪製上方頁籤與下方面板，確保試算表改名後自動替換
@@ -2405,6 +2406,16 @@
         }
 
         // 首頁活動大圖：只有開啟活動時才下載圖片
+        // 頁尾公休日：跟後台「每週公休日」連動（0=日、1=一 … 6=六），沒設定時保留原本文字
+        function renderFooterClosedDays(raw) {
+            const el = document.getElementById('footerClosedDays');
+            if (!el || raw === undefined || raw === null) return;
+            const labels = ['日', '一', '二', '三', '四', '五', '六'];
+            const days = Array.from(new Set(raw.toString().split(',').map(v => v.trim()).filter(v => /^[0-6]$/.test(v)).map(Number)))
+                .sort((x, y) => ((x + 6) % 7) - ((y + 6) % 7));
+            el.textContent = days.length ? `週${days.map(d => labels[d]).join('、')}公休` : '全年無休';
+        }
+
         function renderPromoSection(settings, fallbackLink) {
             const promoSection = document.getElementById('seasonalGiftSection');
             if (!promoSection || !settings) return;
