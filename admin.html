@@ -570,6 +570,8 @@
     @media (min-width: 768px) {
       #tabMenu { top: 84px; } /* 電腦版維持原樣即可，因為沒有瀏海問題 */
     }
+    /* 主選單固定在上方時，底下內容會捲過去；改成不透明（顏色和原本半透明疊在頁面底色上一樣），避免文字疊在一起 */
+    #tabMenu.seg-track { background: #E7E9EB; }
     .tab-menu-hidden {
       transform: translateY(-130%); 
       opacity: 0;
