@@ -363,6 +363,7 @@ function getFormOptions() {
   const prodImageIdx = findHeaderIndex_(prodHeaders, ["image", "圖片"]);
   const prodMinIdx = findHeaderIndex_(prodHeaders, ["min_per_order", "每筆最少"]);
   const prodMaxIdx = findHeaderIndex_(prodHeaders, ["max_per_order", "每筆最多"]);
+  const prodUnlimitedIdx = findHeaderIndex_(prodHeaders, ["unlimited_stock", "庫存無上限"]);
 
   const products = [];
   for (let i = 1; i < prodDisplay.length; i++) {
@@ -391,7 +392,8 @@ function getFormOptions() {
       name_en: prodNameEnIdx >= 0 ? row[prodNameEnIdx].toString().trim() : "",
       image: prodImageIdx >= 0 ? row[prodImageIdx].toString().trim() : "",
       min_per_order: prodMinIdx >= 0 ? (lilouNum_(row[prodMinIdx]) || 0) : 0,
-      max_per_order: prodMaxIdx >= 0 ? (lilouNum_(row[prodMaxIdx]) || 0) : 0
+      max_per_order: prodMaxIdx >= 0 ? (lilouNum_(row[prodMaxIdx]) || 0) : 0,
+      unlimited_stock: prodUnlimitedIdx >= 0 ? isUnlimitedStock_(row[prodUnlimitedIdx]) : false
     });
   }
 
@@ -594,7 +596,7 @@ function doGet(e) {
     if (action === "diag") {
       let github = "ok";
       try { const c = githubConfig_(); github = "ok（" + c.repo + "／" + c.branch + "）"; } catch (err) { github = err.message; }
-      return jsonOutput({ status: "success", codeVersion: "2026-11-08-multiqty", scriptId: ScriptApp.getScriptId(), github: github });
+      return jsonOutput({ status: "success", codeVersion: "2026-11-25-unlimited-stock", scriptId: ScriptApp.getScriptId(), github: github });
     }
     if (action === "adminLogin") return jsonOutput({ status: "error", message: "後台已更新，請重新整理後台頁面再登入。" });
     if (action === "adminGetAll") return jsonOutput(adminGetAll_(e.parameter.token));
@@ -845,6 +847,7 @@ function lilouVerifyOrderPricing_(opts, data) {
 
   // 庫存（前台已檢查，這裡防止繞過網頁）
   for (const name in qtyByName) {
+    if (prodByName[name].unlimited_stock) continue; // 庫存無上限：不檢查數量
     const stock = Number(prodByName[name].stock) || 0;
     if (qtyByName[name] > stock) return { error: "「" + name + "」庫存不足（剩 " + Math.max(0, stock) + " 個），請調整數量。" };
   }
@@ -917,6 +920,9 @@ function lilouCouponActive_(c) {
   return true;
 }
 
+// 商品「庫存無上限」開關：TRUE 時不受庫存數量限制、不會售完
+function isUnlimitedStock_(v) { return /^(true|1|yes|y|是)$/i.test((v === undefined || v === null ? "" : v).toString().trim()); }
+
 function updateProductStock(ss, orderDetails) {
   try {
     const prodSheet = ss.getSheetByName("Products");
@@ -927,6 +933,7 @@ function updateProductStock(ss, orderDetails) {
     const headers = prodData[0].map(h => h.toString().trim());
     const nameCol0 = findHeaderIndex_(headers, ["name", "Name", "Product_Name", "商品名稱"]);
     const stockCol0 = findHeaderIndex_(headers, ["stock", "Stock", "庫存"]);
+    const unlimitedCol0 = findHeaderIndex_(headers, ["unlimited_stock", "庫存無上限"]);
     if (nameCol0 < 0 || stockCol0 < 0) return;
 
     const lowStockProducts = [];
@@ -935,6 +942,7 @@ function updateProductStock(ss, orderDetails) {
     for (let i = 1; i < prodData.length; i++) {
       const productName = (prodData[i][nameCol0] || "").toString().trim();
       if (!productName) continue;
+      if (unlimitedCol0 >= 0 && isUnlimitedStock_(prodData[i][unlimitedCol0])) continue; // 庫存無上限：不扣庫存、不發完售通知
       const escapedName = productName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const regex = new RegExp(escapedName + "\\((\\d+)[^)]*\\)", "g");
       let match, totalPurchasedQty = 0;
@@ -1137,6 +1145,7 @@ function adminGetAll_(token) {
     type: (o.type || o.Type || "combo").toString().trim().toLowerCase(), display: (o.display !== undefined && o.display !== "") ? o.display : "TRUE",
     shipping_rule: (o.shipping_rule || o.Shipping_Rule || o.shipping || "all").toString().trim().toLowerCase(), sort: o.sort || o.Sort || ((index + 1) * 10),
     name_en: o.name_en || "", image: o.image || "", min_per_order: o.min_per_order || "", max_per_order: o.max_per_order || "",
+    unlimited_stock: o.unlimited_stock === undefined || o.unlimited_stock === null ? "" : o.unlimited_stock.toString().trim(),
     description: o.description || o.Description || o.product_description || o["商品描述"] || "", ingredients: o.ingredients || o.Ingredients || "", allergens: o.allergens || o.Allergens || "", storage: o.storage || o.Storage || "", weight: o.weight || o.Weight || "", nutrition: o.nutrition || o.Nutrition || "", origin_manufacturer: o.origin_manufacturer || o.Origin_Manufacturer || o["原產地與製造商"] || ""
   })).filter(o => o.name).sort((a, b) => (Number(a.sort) || 999999) - (Number(b.sort) || 999999) || a.name.localeCompare(b.name, 'zh-Hant'));
 
@@ -1185,7 +1194,7 @@ function adminReplaceSheetRows_(token, sheetName, rows) {
   const config = {
     Categories: categoryConfig,
     "Categories 分類管理": categoryConfig,
-    Products: { coreHeaders: ["name", "price", "stock", "type", "display", "shipping_rule", "sort", "description", "ingredients", "allergens", "storage", "weight", "nutrition", "origin_manufacturer", "name_en", "image", "min_per_order", "max_per_order"], keyHeader: "name" },
+    Products: { coreHeaders: ["name", "price", "stock", "type", "display", "shipping_rule", "sort", "description", "ingredients", "allergens", "storage", "weight", "nutrition", "origin_manufacturer", "name_en", "image", "min_per_order", "max_per_order", "unlimited_stock"], keyHeader: "name" },
     Packaging: { coreHeaders: ["name", "extra_price", "box_size", "type", "display", "sort", "name_en", "multi_qty"], keyHeader: "name" },
     Coupons: { coreHeaders: ["code", "type", "value", "min_spend", "start_date", "end_date"], keyHeader: "code" },
     Settings: { coreHeaders: ["setting_name", "value"], keyHeader: "setting_name" },
@@ -1241,7 +1250,7 @@ function adminReplaceSheetRows_(token, sheetName, rows) {
 
 // 商品圖片上傳：存到雲端硬碟「Lilou 商品圖片」資料夾，設為知道連結者可檢視，回傳圖片網址
 // ===== 商品單項儲存（只更新那一列，多人同時編輯不會互相覆蓋）=====
-const PRODUCT_FIELDS = ["name", "name_en", "image", "price", "stock", "min_per_order", "max_per_order", "type", "display", "shipping_rule", "sort", "description", "ingredients", "allergens", "storage", "weight", "nutrition", "origin_manufacturer"];
+const PRODUCT_FIELDS = ["name", "name_en", "image", "price", "stock", "unlimited_stock", "min_per_order", "max_per_order", "type", "display", "shipping_rule", "sort", "description", "ingredients", "allergens", "storage", "weight", "nutrition", "origin_manufacturer"];
 
 function productSheetInfo_() {
   const ss = SpreadsheetApp.openById(GLOBAL_SPREADSHEET_ID);

@@ -1523,6 +1523,9 @@
             normalized.image = (normalized.image || "").toString().trim();
             normalized.min_per_order = Number(normalized.min_per_order) || 0;
             normalized.max_per_order = Number(normalized.max_per_order) || 0;
+            // 庫存無上限：後台開啟後不受庫存數量限制、不會售完（每筆限購仍有效）
+            normalized.unlimited_stock = normalized.unlimited_stock === true || lilouIsTruthy(normalized.unlimited_stock);
+            if (normalized.unlimited_stock) normalized.stock = 9999;
             normalized.real_stock = normalized.stock;
             // 每筆限購：把「可購買上限」壓在限購數量，沿用原本所有庫存檢查
             if (normalized.max_per_order > 0) normalized.stock = Math.min(normalized.stock, normalized.max_per_order);
