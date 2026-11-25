@@ -391,6 +391,8 @@
     .admin-edit-row.is-inactive input,
     .admin-edit-row.is-inactive select,
     .admin-edit-row.is-inactive textarea { color: #78716c !important; }
+    .pe-stock-off { opacity: .45; }
+    .pe-stock-off input { pointer-events: none; }
     .admin-stock-zero { border-color: #fecaca !important; background: #fef2f2 !important; color: #dc2626 !important; }
     .admin-stock-low { border-color: #fed7aa !important; background: #fff7ed !important; color: #c2410c !important; }
     .admin-edit-search { min-width: 180px; }
@@ -643,7 +645,7 @@
 <body class="bg-[#F4F6F9] text-stone-800 min-h-screen">
 <header class="bg-[#5B7290] text-white sticky top-0 z-40 shadow-sm">
 <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.5.4</span></div></div>
+<div><div class="flex items-center gap-2"><h1 class="text-sm md:text-lg font-black tracking-wide">LILOU｜後台管理系統</h1><span class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.08em] text-white/90">3.5.5</span></div></div>
 <div class="flex items-center gap-2">
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="adminReloadBtn" onclick="loadAll()" title="重新整理資料">重新整理</button>
 <button class="hidden border border-white/30 rounded-xl px-3 py-2 text-xs font-black hover:bg-white/10" id="logoutBtn" onclick="logoutAdmin()">登出</button>
@@ -2078,7 +2080,7 @@ function closePrepItemOrders(animate) {
 
 // 3. 庫存提醒
 function dashStockSection() {
-  const low = (adminData.products || []).map((p, i) => ({ p, i })).filter(({ p }) => p.name && isDisplayOn(p.display) && Number(p.stock || 0) <= 5).sort((a, b) => Number(a.p.stock || 0) - Number(b.p.stock || 0));
+  const low = (adminData.products || []).map((p, i) => ({ p, i })).filter(({ p }) => p.name && isDisplayOn(p.display) && !isUnlimitedStock(p) && Number(p.stock || 0) <= 5).sort((a, b) => Number(a.p.stock || 0) - Number(b.p.stock || 0));
   return `<section class="${DASH_CARD}">
     ${dashTitle("📦", "庫存提醒", `<span class="text-xs font-bold text-stone-400">上架中、剩 5 個以下</span>`)}
     ${low.length ? `<div class="space-y-1.5">${low.slice(0, 8).map(({ p, i }) => {
@@ -2847,7 +2849,7 @@ function cancelOrderEdit(orderId) {
 }
 
 // ===== 產品頁（第三階段）：依分類分組、上下排序、單項編輯 =====
-const PROD_TEXT_FIELDS = ["name","name_en","image","price","stock","min_per_order","max_per_order","type","display","shipping_rule","description","ingredients","allergens","storage","weight","nutrition","origin_manufacturer"];
+const PROD_TEXT_FIELDS = ["name","name_en","image","price","stock","unlimited_stock","min_per_order","max_per_order","type","display","shipping_rule","description","ingredients","allergens","storage","weight","nutrition","origin_manufacturer"];
 const prodState = { q: "", cat: "", status: "", collapsed: new Set(), orderDirty: false, savedOrder: null, editing: null, editorBaseline: "" };
 const SHIPPING_LABEL = { all: "", pickup: "僅自取", delivery: "僅宅配" };
 
@@ -2875,12 +2877,20 @@ function prodMatches(p) {
   if (prodState.status === "OFF" && isDisplayOn(p.display)) return false;
   return true;
 }
+// 商品「庫存無上限」：要明確開啟才算（空白＝關閉）
+function isUnlimitedStock(p) {
+  const v = ((p && p.unlimited_stock) ?? "").toString().trim().toUpperCase();
+  return v === "TRUE" || v === "1" || v === "YES" || v === "Y" || v === "是";
+}
 function prodMetaHtml(p) {
   const bits = [];
   if (p.price !== "" && p.price !== undefined) bits.push(`NT$${escapeHtml(p.price)}`);
+  if (isUnlimitedStock(p)) bits.push(`<span class="text-emerald-600">庫存無上限</span>`);
+  else {
   const stock = Number(p.stock || 0);
   const stockCls = stock <= 0 ? "text-red-500" : stock <= 5 ? "text-amber-600" : "";
   bits.push(`<span class="${stockCls}">庫存 ${escapeHtml(p.stock === "" || p.stock === undefined ? "0" : p.stock)}</span>`);
+  }
   const ship = SHIPPING_LABEL[(p.shipping_rule || "all").toString().trim().toLowerCase()];
   if (ship) bits.push(ship);
   const lim = [];
@@ -3117,10 +3127,11 @@ function openProductEditor(index) {
       <section class="pe-card">
         <h4 class="pe-title">庫存與限購</h4>
         <div class="grid grid-cols-3 gap-3">
-          ${peField("庫存", peNum("stock", p.stock, "0"))}
+          <div data-pe-stock-field class="${isUnlimitedStock(p) ? "pe-stock-off" : ""}">${peField("庫存", peNum("stock", p.stock, "0"))}</div>
           ${peField("每筆最少", peNum("min_per_order", p.min_per_order, "不限"))}
           ${peField("每筆最多", peNum("max_per_order", p.max_per_order, "不限"))}
         </div>
+        ${peSwitchRow("unlimited_stock", isUnlimitedStock(p), "庫存無上限", "不限數量、不會售完，下單也不扣庫存", "依上面的庫存數量販售，賣完就顯示已售完")}
         ${peField("配送方式", `<select data-pe="shipping_rule" class="${PE_INPUT}"><option value="all" ${ship === "all" ? "selected" : ""}>自取與宅配</option><option value="pickup" ${ship === "pickup" ? "selected" : ""}>僅自取</option><option value="delivery" ${ship === "delivery" ? "selected" : ""}>僅宅配</option></select>`)}
       </section>
 
@@ -3285,6 +3296,10 @@ function peToggleSwitch(btn) {
   const row = btn.parentElement;
   row.querySelector("input[data-pe]").value = on ? "TRUE" : "FALSE";
   row.querySelector("[data-pe-switch-text]").textContent = on ? btn.dataset.onText : btn.dataset.offText;
+  if (row.querySelector('input[data-pe="unlimited_stock"]')) {
+    const f = btn.closest(".prod-editor")?.querySelector("[data-pe-stock-field]");
+    if (f) f.classList.toggle("pe-stock-off", on);
+  }
 }
 function peDisplayRow(on, label = "在前台顯示") {
   return `<div class="flex items-center gap-3 rounded-xl bg-stone-50 border border-stone-200 px-3 py-2.5">
