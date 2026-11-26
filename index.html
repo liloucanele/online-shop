@@ -926,6 +926,24 @@
         .cake-choice.is-on { box-shadow: 0 0 0 1px #5B7290 inset !important; }
         .cake-choice.is-on .dot { box-shadow: inset 0 0 0 4px #fff !important; }
     </style>
+    <!-- 字體：宙黑體 Zev Hei TC（SIL OFL 1.1，見 fonts/zev-hei-tc/LICENSE.md）
+         lilou-zev.woff2：只含目前網站用到的字（約 360KB），先載入
+         zevheitc_n.css：完整字型切片，商品名稱出現新字時才會下載那一小塊 -->
+    <link rel="preload" href="fonts/lilou-zev.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="fonts/zev-hei-tc/css/zevheitc_n.css" media="print" onload="this.media='all'">
+    <style id="lilou-font">
+        @font-face {
+            font-family: 'Lilou Zev';
+            src: url('fonts/lilou-zev.woff2') format('woff2');
+            font-weight: 400 900;
+            font-style: normal;
+            font-display: swap;
+        }
+        :root {
+            --font-sans: 'Lilou Zev', 'ZevHeiTC-N Web', -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+        }
+        html, body, .font-sans { font-family: var(--font-sans); }
+    </style>
 </head>
 <body class="bg-[#F4F6F9] text-[#222222] min-h-screen flex flex-col font-sans antialiased selection:bg-[#5B7290]/20">
 
